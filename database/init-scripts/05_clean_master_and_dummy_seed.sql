@@ -39,8 +39,9 @@ DELETE FROM tbl_s_unregistered_devices;
 DELETE FROM tbl_m_devices;
 DELETE FROM tbl_m_zones;
 
--- 2. Clean viewer usernames in tbl_m_users
+-- 2. Clean viewer usernames in tbl_m_users & set AdminPass123! password
 UPDATE tbl_m_users SET username = 'viewer_site16', name = 'Viewer SITE_16', email = 'site16@infrahub.co.id' WHERE username = 'viewer_indo';
+UPDATE tbl_m_users SET password = N'$2a$11$t.1YzAstuec0n9QzystLLuwUoq5pRIpR9t88GiMjz2MdYxfT6PGHG' WHERE username IN ('admin_infrahub', 'noc_operator', 'tracking_operator');
 
 -- 3. Seed BTS Zones & Devices (Tower + Genset)
 INSERT INTO tbl_m_zones (id, site_id, zone_code, zone_name, description, latitude, longitude, created_at, updated_at) VALUES ('29C6844C-1B67-50BE-9B15-FAC03B6E6D18', 'A0D5AA6D-3870-49CA-9983-CBDEF467F0BE', N'ZN-SITE_01-A', N'SITE_01 - Sector Alpha', N'BTS Coverage Sector Alpha (Regional Station Alpha, Area 1)', -1.186, 114.8373, GETDATE(), GETDATE());
