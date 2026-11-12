@@ -1,0 +1,746 @@
+/* =========================
+   GLOBAL RESET
+========================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #FAFAFA;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
+}
+
+/* =========================
+   HEADER
+========================= */
+.main-header {
+    width: 100%;
+    height: 68px;
+    background: #334155;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    width: 30px;
+    height: 35px;
+    border-radius: 5px;
+    color: #334155;
+}
+
+.logo-text {
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.nav-item {
+    color: white;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 6px 16px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.nav-item.active {
+    background: white;
+}
+
+.nav-item.active .nav-text {
+    color: #334155;
+    font-weight: 500;
+}
+
+.nav-text {
+    color: white;
+    font-size: 14px;
+}
+
+.nav-item.active .nav-text {
+    color: #334155;
+}
+
+.nav-item.active .nav-text i {
+    color: #334155;
+}
+
+.stat-label::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.active-label::before {
+    background-color: #1976d2;
+}
+
+.maintenance-label::before {
+    background-color: #ff9800;
+}
+
+.nonactive-label::before {
+    background-color: #d32f2f;
+}
+
+.header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background: #0C58CA;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+/* =========================
+   MAIN CONTAINER
+========================= */
+.main-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 88px clamp(20px, 3vw, 40px) 40px;
+    min-height: calc(100vh - 68px);
+}
+
+/* =========================
+   PAGE HEADER
+========================= */
+.page-header {
+    margin-bottom: 20px;
+}
+
+.page-header h1 {
+    color: #1e293b;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.page-header p {
+    color: #637083;
+    font-size: 14px;
+}
+
+/* =========================
+   CARD BASE
+========================= */
+.card {
+    background: white;
+    box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    border: none;
+}
+
+.card-header {
+    background: white;
+    border-bottom: none;
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 18px;
+    color: #2C323A;
+}
+
+/* =========================
+   SITE CARD
+========================= */
+.site-item {
+    background: white;
+    box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.site-item:hover {
+    background: #e0f2fe;
+    transform: translateX(2px);
+}
+
+.site-item.active {
+    background: #334155;
+    color: white;
+}
+
+.site-item.selected {
+    background: #334155;
+    color: white;
+}
+
+.site-item {
+    user-select: none;
+}
+
+/* =========================
+   SITE CARD LAYOUT
+========================= */
+.site-card-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.site-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px !important;
+}
+
+/* =========================
+   SITE LOCATIONS SCROLL
+========================= */
+.site-locations-scroll {
+    max-height: clamp(180px, 25vh, 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-bottom: 12px;
+    padding-right: 4px;
+    flex-shrink: 0;
+}
+
+/* Custom Scrollbar */
+.site-locations-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.site-locations-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.site-locations-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.site-locations-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* =========================
+   SITE DROPDOWN
+========================= */
+.site-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 0;
+}
+
+.site-dropdown-header:hover {
+    opacity: 0.8;
+}
+
+.dropdown-icon {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.site-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 8px;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.site-dropdown-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 14px;
+}
+
+.site-dropdown-item:hover {
+    background: #f1f5f9;
+}
+
+.site-dropdown-item:active {
+    background: #e2e8f0;
+}
+
+.card-header {
+    position: relative;
+}
+
+/* =========================
+   SITE STATS
+========================= */
+.site-stats {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 12px;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+}
+
+.stat-label {
+    color: #637083;
+    font-weight: 400;
+}
+
+.stat-value {
+    color: #2C323A;
+    font-weight: 600;
+}
+
+/* =========================
+   MAP CARD
+========================= */
+.map-container {
+    width: 100%;
+    height: clamp(250px, 40vh, 400px);
+    background: #e5e7eb;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.map-detail {
+    border-radius: 10px;
+    padding: 4px 12px;
+    box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    background: white;
+    border: 1px solid #f1f5f9;
+    gap: 4px;
+}
+
+/* =========================
+   POWER MONITOR
+========================= */
+.power-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.power-item {
+    height: 60px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.power-voltage {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3B82F6;
+}
+
+.power-ampere {
+    background: rgba(20, 184, 166, 0.15);
+    color: #14B8A6;
+}
+
+.power-watt {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22C55E;
+}
+
+.power-frequency {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3B82F6;
+}
+
+.power-powerfactor {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8B5CF6;
+}
+
+.power-energy {
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366F1;
+}
+
+/* =========================
+   EARTH & WEATHER
+========================= */
+.side-metric-card {
+    text-align: center;
+}
+
+.metric-box {
+    height: 45px;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.earth-resistance-box {
+    background: #94a3b8;
+    color: white;
+}
+
+.weather-box {
+    background: #334155;
+    color: white;
+}
+
+/* =========================
+   METRIC CARDS
+========================= */
+.metric-card {
+    text-align: center;
+    padding: 20px;
+}
+
+.metric-title {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.metric-value-large {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* =========================
+   SMALL CARD
+========================= */
+.small-card {
+    width: 190px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+/* Extra Large Screens (1920px+) */
+@media (min-width: 1920px) {
+    .main-container {
+        max-width: 1600px;
+    }
+}
+
+/* Large Desktop (1440px - 1919px) */
+@media (max-width: 1440px) {
+    .page-title {
+        font-size: 28px;
+    }
+}
+
+/* Standard Desktop (1200px - 1439px) */
+@media (max-width: 1200px) {
+    .main-header {
+        padding: 0 30px;
+    }
+
+    .page-title {
+        font-size: 26px;
+    }
+
+    .nav-menu {
+        gap: 24px;
+    }
+}
+
+/* Tablet Landscape (992px - 1199px) */
+@media (max-width: 992px) {
+    .power-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-card {
+        margin-bottom: 20px;
+    }
+
+    .main-header {
+        padding: 0 20px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .nav-menu {
+        gap: 16px;
+    }
+
+    .nav-item {
+        font-size: 13px;
+        padding: 5px 12px;
+    }
+}
+
+/* Tablet Portrait (768px - 991px) */
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+
+    .main-container {
+        padding-top: 88px;
+        padding-bottom: 30px;
+    }
+
+    .main-header {
+        padding: 0 16px;
+    }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .page-subtitle {
+        font-size: 14px;
+    }
+
+    /* Stack columns vertically */
+    .row>[class*="col-"] {
+        margin-bottom: 20px;
+    }
+
+    .d-flex.gap-3 {
+        flex-direction: column;
+    }
+
+    .small-card {
+        width: 100%;
+    }
+}
+
+/* Mobile (576px - 767px) */
+@media (max-width: 576px) {
+    .main-header {
+        height: 60px;
+        padding: 0 12px;
+    }
+
+    .logo-text {
+        font-size: 16px;
+    }
+
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .main-container {
+        padding: 76px 12px 20px;
+    }
+
+    .page-title {
+        font-size: 20px;
+    }
+
+    .page-subtitle {
+        font-size: 13px;
+    }
+
+    .card-header,
+    .card-body {
+        padding: 16px;
+    }
+
+    .card-title {
+        font-size: 16px;
+    }
+
+    .power-item {
+        height: 50px;
+        font-size: 18px;
+    }
+
+    .metric-title {
+        font-size: 14px;
+    }
+}
+
+/* Small Mobile (320px - 575px) */
+@media (max-width: 375px) {
+    .logo-text {
+        font-size: 14px;
+    }
+
+    .page-title {
+        font-size: 18px;
+    }
+
+    .main-container {
+        padding: 76px 8px 16px;
+    }
+}
+
+/* =========================
+   Header Manage Dropdown
+========================= */
+.manage-dropdown-content {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    background-color: #ffffff;
+    min-width: 220px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.manage-dropdown-item {
+    color: #475569;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.manage-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.manage-dropdown-item:hover {
+    background-color: #f8fafc;
+}
+
+/* =========================
+   HEADER TRACKING VARIANT (Yellow)
+========================= */
+.main-header.header-tracking {
+    background: #D4952B;
+}
+
+.main-header.header-tracking .logo-text {
+    color: white;
+}
+
+.main-header.header-tracking .nav-item {
+    color: white;
+}
+
+.main-header.header-tracking .nav-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.main-header.header-tracking .nav-item.active {
+    background: white;
+}
+
+.main-header.header-tracking .nav-item.active .nav-text {
+    color: #D4952B;
+}
+
+.main-header.header-tracking .nav-item.active .nav-text i {
+    color: #D4952B;
+}
+
+.main-header.header-tracking .notification-icon {
+    color: white;
+}
+
+/* =========================
+   HEADER UPS VARIANT (Dark Blue)
+========================= */
+.main-header.header-ups {
+    background: #0f172a;
+}
+
+.main-header.header-ups .logo-text {
+    color: white;
+}
+
+.main-header.header-ups .nav-item {
+    color: white;
+}
+
+.main-header.header-ups .nav-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.main-header.header-ups .nav-item.active {
+    background: white;
+}
+
+.main-header.header-ups .nav-item.active .nav-text {
+    color: #0f172a;
+}
+
+.main-header.header-ups .nav-item.active .nav-text i {
+    color: #0f172a;
+}
+
+.main-header.header-ups .notification-icon {
+    color: white;
+}

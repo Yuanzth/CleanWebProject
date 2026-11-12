@@ -1,0 +1,67 @@
+<div class="unit-detail-overlay" id="unitDetailOverlay">
+    @* Collapsed State *@
+    <div class="unit-detail-collapsed" id="unitDetailCollapsed">
+        <i class="fa-solid fa-truck-monster"></i>
+        <span>Detail Unit</span>
+        <i class="fa-solid fa-chevron-down" style="margin-left: auto; font-size: 10px; color: #94a3b8;"></i>
+    </div>
+
+    @* Expanded State *@
+    <div class="unit-detail-expanded" id="unitDetailExpanded">
+        <button class="unit-detail-close" id="unitDetailClose" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="unit-detail-image">
+            <!-- Compass Heading Display (Top Left) -->
+            <div class="compass-heading-badge" id="compassHeadingBadge">
+                <span id="miniHeadingText" class="heading-value">--°</span>
+            </div>
+            
+            <!-- Large Unit Image (Center) -->
+            <div class="unit-image-center">
+                <img src="/assets/img/Tracking/HeavyDutyTruck/HD_Green.png" alt="Unit" id="detailUnitImage" class="detail-unit-img">
+            </div>
+        </div>
+
+        <div class="unit-detail-info">
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">Name</span>
+                <span class="unit-detail-value" id="detailUnitName">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">Kecepatan</span>
+                <span class="unit-detail-value speed" id="detailUnitSpeed">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">Gps</span>
+                <span class="unit-detail-value gps-excellent" id="detailUnitGps">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">Satellite</span>
+                <span class="unit-detail-value" id="detailUnitSatellite">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">RSSI</span>
+                <span class="unit-detail-value" id="detailUnitRssi">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">RSRP</span>
+                <span class="unit-detail-value" id="detailUnitRsrp">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">RSRQ</span>
+                <span class="unit-detail-value" id="detailUnitRsrq">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">SINR</span>
+                <span class="unit-detail-value" id="detailUnitSinr">-</span>
+            </div>
+            <div class="unit-detail-row">
+                <span class="unit-detail-label">Last Update</span>
+                <span class="unit-detail-value" id="detailUnitLastUpdate">-</span>
+            </div>
+        </div>
+
+    </div>
+</div>

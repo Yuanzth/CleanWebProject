@@ -1,0 +1,37 @@
+# ─── .NET Build & User Files ───
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.DotSettings.user
+
+# ─── Python & Environment ───
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+dist_installer/
+build_*/
+*.msi
+*.exe
+
+# ─── Large Raw SQL Dumps (>100MB Git Limit) ───
+# Raw backup archives excluded in favor of clean database/init-scripts/
+backup_20260903_142521/
+backup_20260903_142250/
+full_backup_eendso_03_09_26.sql
+*.sql.gz
+*.bak
+
+# ─── OS & IDE Temp Files ───
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,476 @@
+@model List<ITAssetTrack.Models.SerahTerima>
+@{
+    ViewData["Title"] = "Daftar Serah Terima Asset";
+    ViewData["PageLabel"] = "Serah Terima";
+}
+<!-- Tab Nav (Hidden for Viewer) -->
+@if (!User.IsInRole("Viewer"))
+{
+    <div class="tab-nav d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Index","SerahTerima")" class="tab-btn active">
+                <i class="bi bi-list-task"></i> Daftar Serah Terima
+            </a>
+            <a href="@Url.Action("Penyerahan","SerahTerima")" class="tab-btn">
+                <i class="bi bi-box-arrow-up"></i> Penyerahan
+            </a>
+            <a href="@Url.Action("Pengembalian","SerahTerima")" class="tab-btn">
+                <i class="bi bi-box-arrow-in-down"></i> Pengembalian
+            </a>
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#importKepemilikanModal">
+            <i class="bi bi-upload me-1"></i> Import Kepemilikan
+        </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="list-toolbar">
+        <div class="search-input">
+            <i class="bi bi-search"></i>
+            <input type="text" id="stSearch" placeholder="Cari komputer, user, site, no dokumen..." />
+        </div>
+    </div>
+
+    <!-- List -->
+    @if (Model.Any())
+    {
+        <div class="st-list" id="stList">
+            @foreach (var st in Model)
+            {
+                <div class="st-card" data-search="@(st.ComputerName + " " + st.NamaUser + " " + st.Site + " " + st.NoDokumen)">
+                    <div class="st-icon">
+                        <i class="bi @(st.DeviceType == "Notebook" ? "bi-laptop" : "bi-display")"></i>
+                    </div>
+                    <div class="st-info">
+                        <div class="st-computer">@st.ComputerName</div>
+                        <div class="st-meta d-flex flex-wrap align-items-center gap-1 gap-sm-2">
+                            <span class="text-nowrap">📄 @st.NoDokumen</span>
+                            <span class="text-muted d-none d-sm-inline">•</span>
+                            <span class="text-nowrap">👤 @st.NamaUser</span>
+                            <span class="text-muted d-none d-sm-inline">•</span>
+                            <span class="text-nowrap">📍 @st.Site</span>
+                            <span class="text-muted d-none d-sm-inline">•</span>
+                            <span class="text-nowrap">🗓 @st.Tanggal.ToString("dd/MM/yyyy")</span>
+                            <span class="text-muted d-none d-sm-inline">•</span>
+                            <span class="text-nowrap">💾 @st.Ram / @st.Storage</span>
+                        </div>
+                        <div style="margin-top:4px;">
+                            <span class="badge @(st.Status == "Submitted" ? "badge-complete" : "badge-draft")">
+                                @st.Status
+                            </span>
+                            <span class="badge badge-scheduled" style="margin-left:4px;">@st.Jenis</span>
+                            @if (!string.IsNullOrEmpty(st.AdditionalHardware))
+                            {
+                                foreach (var hw in st.AdditionalHardware.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span class="badge badge-scheduled" style="margin-left:4px;">@hw.Trim()</span>
+                                }
+                            }
+                        </div>
+                    </div>
+                    <div class="st-actions">
+                        @if (st.Tipe == "Penyerahan" && st.Status == "Submitted" && !User.IsInRole("Viewer"))
+                        {
+                            <a href="@Url.Action("Pengembalian","SerahTerima", new { id = st.Id })" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-1 me-1" title="Proses Pengembalian Aset Ini" style="font-size:12px;font-weight:600;">
+                                <i class="bi bi-box-arrow-in-down"></i> Pengembalian
+                            </a>
+                        }
+                        @if (!User.IsInRole("Viewer"))
+                        {
+                            <a href="@Url.Action("Edit","SerahTerima", new { id = st.Id })" class="btn-icon" title="Edit / Detail">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                        }
+                        <a href="@Url.Action("Print","SerahTerima", new { id = st.Id })" target="_blank" class="btn-icon" title="Cetak Dokumen Official / PDF">
+                            <i class="bi bi-printer-fill"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state" style="background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);">
+            <i class="bi bi-inbox"></i>
+            <p>Belum ada data Serah Terima.</p>
+            <a href="@Url.Action("Penyerahan","SerahTerima")" class="btn btn-primary" style="margin-top:12px;">
+                <i class="bi bi-plus-lg"></i> Buat Form Penyerahan
+            </a>
+        </div>
+    }
+
+    <!-- Modal Import Kepemilikan -->
+    <div class="modal fade" id="importKepemilikanModal" tabindex="-1" aria-labelledby="importKepemilikanModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form asp-action="ImportKepemilikan" asp-controller="SerahTerima" method="post" enctype="multipart/form-data">
+              <div class="modal-header">
+                <h5 class="modal-title" id="importKepemilikanModalLabel">Import Data Kepemilikan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Pilih File Excel (.xlsx)</label>
+                    <input type="file" name="file" class="form-control" accept=".xlsx" required />
+                    <small class="text-muted">Kolom: SN, NamaUser, NRP, Division</small>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Mulai Import</button>
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+}
+else
+{
+    var penyerahan = Model.Where(s => s.Tipe == "Penyerahan").OrderByDescending(s => s.Tanggal).FirstOrDefault();
+    var pengembalian = Model.Where(s => s.Tipe == "Pengembalian").OrderByDescending(s => s.Tanggal).FirstOrDefault();
+    var photosDict = ViewBag.Photos as Dictionary<Guid, List<ITAssetTrack.Models.SerahTerimaPhoto>> ?? new Dictionary<Guid, List<ITAssetTrack.Models.SerahTerimaPhoto>>();
+    var penyerahanPhotos = penyerahan != null && photosDict.ContainsKey(penyerahan.Id) ? photosDict[penyerahan.Id] : new List<ITAssetTrack.Models.SerahTerimaPhoto>();
+    var pengembalianPhotos = pengembalian != null && photosDict.ContainsKey(pengembalian.Id) ? photosDict[pengembalian.Id] : new List<ITAssetTrack.Models.SerahTerimaPhoto>();
+    
+    var missingItems = new List<string>();
+    if (penyerahan != null && pengembalian != null)
+    {
+        var penList = (penyerahan.AdditionalHardware ?? "")
+            .Split(new[] { ',', ';', '/' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToList();
+
+        var pengList = (pengembalian.AdditionalHardware ?? "")
+            .Split(new[] { ',', ';', '/' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToList();
+
+        foreach (var item in penList)
+        {
+            if (!pengList.Any(p => string.Equals(p, item, StringComparison.OrdinalIgnoreCase)))
+            {
+                missingItems.Add(item);
+            }
+        }
+    }
+
+    <div class="row g-4 mt-n2 mb-4">
+        <!-- BUKTI PENYERAHAN -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-primary bg-gradient text-white py-3 px-4 rounded-top" style="background: linear-gradient(135deg, var(--infrahub-blue), #0d6efd) !important;">
+                    <h5 class="mb-0 fw-bold text-white"><i class="bi bi-box-arrow-up me-2"></i>Bukti Penyerahan Laptop</h5>
+                </div>
+                <div class="card-body p-4 bg-white">
+                    @if (penyerahan != null)
+                    {
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">No. Dokumen</span>
+                            <span class="fw-bold text-dark">@penyerahan.NoDokumen</span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Tanggal Penyerahan</span>
+                            <span class="fw-bold text-dark">@penyerahan.Tanggal.ToString("dd MMMM yyyy")</span>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Nama Karyawan / NRP</span>
+                                <span class="fw-bold text-dark">@penyerahan.NamaUser / @penyerahan.NRP</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Divisi / Site</span>
+                                <span class="fw-bold text-dark">@penyerahan.Division / @penyerahan.Site</span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Computer Name</span>
+                            <span class="fw-bold text-primary font-monospace">@penyerahan.ComputerName</span>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Model / Tipe</span>
+                                <span class="fw-bold text-dark">@penyerahan.DeviceType</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Serial Number (SN)</span>
+                                <span class="fw-bold text-dark font-monospace">@penyerahan.SerialNumber</span>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">RAM</span>
+                                <span class="fw-bold text-dark">@penyerahan.Ram</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Storage</span>
+                                <span class="fw-bold text-dark">@penyerahan.Storage</span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Aksesoris Tambahan</span>
+                            <span class="fw-bold text-dark">@(string.IsNullOrEmpty(penyerahan.AdditionalHardware) ? "-" : penyerahan.AdditionalHardware)</span>
+                        </div>
+
+                        @if (penyerahanPhotos.Any())
+                        {
+                            <div class="mb-3 border-bottom pb-2">
+                                <span class="text-muted small d-block mb-1">Dokumentasi Foto Serah Terima</span>
+                                <div class="d-flex gap-2 flex-wrap mt-1">
+                                    @foreach (var ph in penyerahanPhotos)
+                                    {
+                                        <div class="position-relative">
+                                            <img src="@ph.FilePath" alt="Foto Evidence" class="rounded border" style="width: 80px; height: 60px; object-fit: cover; cursor: pointer; transition: transform 0.2s;" onclick="window.open('@ph.FilePath','_blank')" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mt-4">
+                            <label class="fw-bold text-muted small d-block mb-2">Tanda Tangan Pengesahan Serah Terima:</label>
+                            <div class="row text-center g-2">
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(penyerahan.SignaturePenyerah))
+                                        {
+                                            <img src="@penyerahan.SignaturePenyerah" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">SMO / IT Staff</span>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(penyerahan.SignaturePenerima))
+                                        {
+                                            <img src="@penyerahan.SignaturePenerima" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">User / Penerima</span>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(penyerahan.SignatureDiketahui))
+                                        {
+                                            <img src="@penyerahan.SignatureDiketahui" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">SMO Leader</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                            Belum ada dokumen penyerahan laptop yang tercatat.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- BUKTI PENGEMBALIAN -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-success bg-gradient text-white py-3 px-4 rounded-top" style="background: linear-gradient(135deg, #198754, #20c997) !important;">
+                    <h5 class="mb-0 fw-bold text-white"><i class="bi bi-box-arrow-in-down me-2"></i>Bukti Pengembalian Laptop</h5>
+                </div>
+                <div class="card-body p-4 bg-white d-flex flex-column">
+                    @if (pengembalian != null)
+                    {
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">No. Dokumen Pengembalian</span>
+                            <span class="fw-bold text-dark">@pengembalian.NoDokumen</span>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Tanggal Pengembalian</span>
+                            <span class="fw-bold text-dark">@pengembalian.Tanggal.ToString("dd MMMM yyyy")</span>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Nama Karyawan / NRP</span>
+                                <span class="fw-bold text-dark">@pengembalian.NamaUser / @pengembalian.NRP</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Divisi / Site</span>
+                                <span class="fw-bold text-dark">@pengembalian.Division / @pengembalian.Site</span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Computer Name</span>
+                            <span class="fw-bold text-primary font-monospace">@pengembalian.ComputerName</span>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Model / Tipe</span>
+                                <span class="fw-bold text-dark">@pengembalian.DeviceType</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Serial Number (SN)</span>
+                                <span class="fw-bold text-dark font-monospace">@pengembalian.SerialNumber</span>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3 border-bottom pb-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">RAM</span>
+                                <span class="fw-bold text-dark">@pengembalian.Ram</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Storage</span>
+                                <span class="fw-bold text-dark">@pengembalian.Storage</span>
+                            </div>
+                        </div>
+                        <div class="mb-3 border-bottom pb-2">
+                            <span class="text-muted small d-block">Aksesoris Tambahan</span>
+                            <span class="fw-bold text-dark">@(string.IsNullOrEmpty(pengembalian.AdditionalHardware) ? "-" : pengembalian.AdditionalHardware)</span>
+                        </div>
+
+                        @if (pengembalianPhotos.Any() || missingItems.Any())
+                        {
+                            <div class="row g-3 mb-3 border-bottom pb-2 align-items-center">
+                                @if (pengembalianPhotos.Any() && missingItems.Any())
+                                {
+                                    <div class="col-6 border-end">
+                                        <span class="text-muted small d-block mb-1">Dokumentasi Foto Serah Terima</span>
+                                        <div class="d-flex gap-2 flex-wrap mt-1">
+                                            @foreach (var ph in pengembalianPhotos)
+                                            {
+                                                <div class="position-relative">
+                                                    <img src="@ph.FilePath" alt="Foto Evidence" class="rounded border" style="width: 80px; height: 60px; object-fit: cover; cursor: pointer; transition: transform 0.2s;" onclick="window.open('@ph.FilePath','_blank')" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="alert alert-warning border-0 m-0 p-2 rounded-3" style="background-color: #fff3cd; border-left: 4px solid #ffc107 !important;">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1rem;"></i>
+                                                <span class="fw-bold text-dark" style="font-size: 11px;">Peringatan Pengembalian Kurang Lengkap</span>
+                                            </div>
+                                            <p class="mb-0 text-muted" style="font-size: 10px; line-height: 1.3;">
+                                                Terdapat <strong>@missingItems.Count</strong> item dari penyerahan sebelumnya yang belum dikembalikan: 
+                                                <span class="text-danger fw-bold">@string.Join(", ", missingItems)</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                }
+                                else if (pengembalianPhotos.Any())
+                                {
+                                    <div class="col-12">
+                                        <span class="text-muted small d-block mb-1">Dokumentasi Foto Serah Terima</span>
+                                        <div class="d-flex gap-2 flex-wrap mt-1">
+                                            @foreach (var ph in pengembalianPhotos)
+                                            {
+                                                <div class="position-relative">
+                                                    <img src="@ph.FilePath" alt="Foto Evidence" class="rounded border" style="width: 80px; height: 60px; object-fit: cover; cursor: pointer; transition: transform 0.2s;" onclick="window.open('@ph.FilePath','_blank')" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else if (missingItems.Any())
+                                {
+                                    <div class="col-12">
+                                        <div class="alert alert-warning border-0 m-0 p-3 rounded-3" style="background-color: #fff3cd; border-left: 4px solid #ffc107 !important;">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 1.1rem;"></i>
+                                                <span class="fw-bold text-dark small">Peringatan Pengembalian Kurang Lengkap</span>
+                                            </div>
+                                            <p class="mb-0 text-muted small" style="line-height: 1.4;">
+                                                Terdapat <strong>@missingItems.Count</strong> item dari penyerahan sebelumnya yang belum dikembalikan: 
+                                                <span class="text-danger fw-bold">@string.Join(", ", missingItems)</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <div class="mt-4">
+                            <label class="fw-bold text-muted small d-block mb-2">Tanda Tangan Pengesahan Pengembalian:</label>
+                            <div class="row text-center g-2">
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(pengembalian.SignaturePenyerah))
+                                        {
+                                            <img src="@pengembalian.SignaturePenyerah" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">SMO / IT Staff</span>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(pengembalian.SignaturePenerima))
+                                        {
+                                            <img src="@pengembalian.SignaturePenerima" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">User / Penerima</span>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded bg-light p-2" style="min-height:90px; display:flex; align-items:center; justify-content:center;">
+                                        @if (!string.IsNullOrEmpty(pengembalian.SignatureDiketahui))
+                                        {
+                                            <img src="@pengembalian.SignatureDiketahui" style="max-height:60px; max-width:100%;" />
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Belum TTD</span>
+                                        }
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px; display:block; margin-top:4px;">SMO Leader</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 my-auto text-muted w-100">
+                            <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-2 opacity-50"></i>
+                            Tidak ada perangkat yang sedang dikembalikan.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Search filter logic for non-viewer
+        document.getElementById('stSearch')?.addEventListener('input', function () {
+            const val = this.value.toLowerCase();
+            document.querySelectorAll('.st-card').forEach(card => {
+                const text = (card.dataset.search || '').toLowerCase();
+                card.style.display = text.includes(val) ? '' : 'none';
+            });
+        });
+    });
+</script>
+}

@@ -1,0 +1,322 @@
+@model List<ITAssetTrack.Models.UnscheduledMaint>
+@{
+    bool isApprover1 = User.IsInRole("Approver1");
+    bool isApprover2 = User.IsInRole("Approver2");
+    bool isApprover = isApprover1 || isApprover2;
+    
+    string activeTab = ViewBag.ActiveTab as string ?? "pending";
+    var photos = ViewBag.Photos as List<ITAssetTrack.Models.MaintenancePhoto> ?? new List<ITAssetTrack.Models.MaintenancePhoto>();
+
+    ViewData["Title"] = isApprover ? "Persetujuan Trouble Log (Unscheduled)" : "Persetujuan & TTD Unscheduled PM";
+    ViewData["PageLabel"] = "Approval Unscheduled";
+}
+
+
+
+<!-- Tab Navigation -->
+<div class="tab-nav mb-3 p-2">
+    <div class="d-flex gap-1 gap-sm-2 w-100">
+        <a href="@Url.Action("UnscheduledApprovals", "Maintenance", new { tab = "pending" })" 
+           class="tab-btn flex-fill text-center justify-content-center @(activeTab == "pending" ? "active" : "")">
+            <i class="bi bi-pen me-1"></i> Belum di TTD
+            <span class="badge bg-danger ms-1">@Model.Count(x => activeTab == "pending")</span>
+        </a>
+        <a href="@Url.Action("UnscheduledApprovals", "Maintenance", new { tab = "approved" })" 
+           class="tab-btn flex-fill text-center justify-content-center @(activeTab == "approved" ? "active" : "")">
+            <i class="bi bi-check2-all me-1"></i> Sudah di TTD
+            <span class="badge bg-success ms-1">@Model.Count(x => activeTab == "approved")</span>
+        </a>
+    </div>
+</div>
+
+<!-- Main Content Card -->
+<div class="card shadow-sm border-0" style="background:#fff; border-radius:12px; padding:24px;">
+    <div class="table-wrapper">
+        @if (Model.Any())
+        {
+            <table class="data-table" id="approvalsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th style="width: 110px;">Tanggal</th>
+                        <th>User & Site</th>
+                        <th>Detail Aset</th>
+                        <th>Keluhan & Catatan</th>
+                        <th>SLA Waktu</th>
+                        <th style="text-align:center; width: 150px;">Aksi / Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Count; i++)
+                    {
+                        var ticket = Model[i];
+                        string priorityBadge = ticket.Priority == "Urgent" ? "bg-danger" : "bg-info text-dark";
+                        var ticketPhotos = photos.Where(p => p.MaintenanceId == ticket.Id).ToList();
+
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td>
+                                <div class="fw-semibold">@ticket.Tanggal.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted small">ID: @ticket.Id.ToString().Substring(0, 8)...</div>
+                            </td>
+                            <td>
+                                <strong class="text-dark">@ticket.NamaUser</strong><br />
+                                <span class="text-muted small"><i class="bi bi-geo-alt-fill me-1"></i>@ticket.Site</span>
+                            </td>
+                            <td>
+                                <span class="fw-semibold">@ticket.ComputerName</span><br />
+                                <span class="font-monospace small text-muted">@ticket.SerialNumber</span>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <strong>Masalah:</strong> <span class="text-muted">@ticket.Keluhan</span>
+                                </div>
+                                <div class="small mt-1">
+                                    <strong>Tindakan:</strong> <span class="text-success fw-semibold">@ticket.Remark</span>
+                                </div>
+                                @if (ticketPhotos.Any())
+                                {
+                                    <div class="mt-2">
+                                        @foreach (var photo in ticketPhotos)
+                                        {
+                                            <a href="@photo.FilePath" target="_blank" class="d-inline-block me-1" title="Lihat Foto Dokumentasi">
+                                                <img src="@photo.FilePath" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--gray-300);" />
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (ticket.StartTime != TimeSpan.Zero)
+                                {
+                                    <div class="small">
+                                        <i class="bi bi-clock-history me-1"></i>Mulai: @DateTime.Today.Add(ticket.StartTime).ToString("HH:mm")<br/>
+                                        <i class="bi bi-calendar-check me-1"></i>Selesai: @(ticket.EndTime != TimeSpan.Zero ? DateTime.Today.Add(ticket.EndTime).ToString("HH:mm") : "-")
+                                    </div>
+                                    <div class="mt-1">
+                                        <span class="badge bg-secondary font-monospace" style="font-size:10px;">
+                                            @{
+                                                var dur = ticket.EndTime - ticket.StartTime;
+                                                @($"{(int)dur.TotalHours}j {dur.Minutes}m")
+                                            }
+                                        </span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">-</span>
+                                }
+                            </td>
+                            <td style="text-align:center;">
+                                @if (activeTab == "pending")
+                                {
+                                    <button type="button" class="btn btn-sm btn-danger btn-sign-approval" 
+                                            data-id="@ticket.Id" 
+                                            data-user="@ticket.NamaUser" 
+                                            data-sn="@ticket.SerialNumber"
+                                            style="border-radius:6px; font-weight:600; font-size:12px; white-space:nowrap; padding: 6px 12px;">
+                                        <i class="bi bi-pencil-square me-1"></i> Tanda Tangan
+                                    </button>
+                                }
+                                else
+                                {
+                                     <div class="d-flex flex-column align-items-end align-items-sm-center justify-content-end gap-1 small ms-auto text-end" style="width: fit-content;">
+                                         @if (!string.IsNullOrEmpty(ticket.TechSignature))
+                                         {
+                                             <div class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Teknisi</div>
+                                         }
+                                         @if (ticket.LeaderApproved)
+                                         {
+                                             <div class="fw-semibold mt-1" style="color:#7c3aed;"><i class="bi bi-check-circle-fill me-1"></i>PIC TEAM</div>
+                                         }
+                                         @if (ticket.SectionHeadApproved)
+                                         {
+                                             <div class="text-primary fw-semibold mt-1"><i class="bi bi-check-circle-fill me-1"></i>Section Head</div>
+                                         }
+                                     </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 48px;"></i>
+                <p class="mt-3 text-secondary" style="font-weight: 500;">
+                    @if (activeTab == "pending")
+                    {
+                        <span>Tidak ada tiket trouble log yang memerlukan persetujuan tanda tangan Anda saat ini.</span>
+                    }
+                    else
+                    {
+                        <span>Belum ada riwayat perbaikan yang Anda setujui.</span>
+                    }
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal Signature Pad Approval -->
+<div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg" style="border-radius:12px; border:none;">
+            <div class="modal-header" style="background:var(--infrahub-blue); color:white; border-top-left-radius:12px; border-top-right-radius:12px;">
+                <h5 class="modal-title fw-bold" id="approvalModalLabel"><i class="bi bi-pen me-2"></i>Tanda Tangan Persetujuan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="targetTicketId" />
+                
+                <div class="mb-3 text-center">
+                    <p class="mb-1 text-secondary" style="font-size: 13px;">Menyetujui perbaikan perangkat untuk:</p>
+                    <h6 class="fw-bold text-dark mb-0" id="targetUserLabel">Nama User</h6>
+                    <small class="font-monospace text-muted" id="targetSnLabel">SN-XXXX</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-dark mb-2">Goreskan Tanda Tangan Anda di bawah ini: <span class="text-danger">*</span></label>
+                    <div style="border: 1px solid var(--gray-300); border-radius: 8px; background: #fafafa; position: relative;">
+                        <canvas id="approverCanvas" style="width: 100%; height: 200px; display: block; cursor: crosshair;"></canvas>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnClearApprover" style="border-radius:6px;">
+                        <i class="bi bi-trash me-1"></i> Bersihkan
+                    </button>
+                    <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Tanda tangan digital wajib digoreskan</span>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 bg-light" style="border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius:8px;">Batal</button>
+                <button type="button" class="btn btn-primary px-4 shadow-sm" id="btnSubmitApproval" style="border-radius:8px; font-weight:600;">
+                    <i class="bi bi-check-lg me-1"></i> Simpan Persetujuan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script>
+        var sigPad = null;
+        var approvalModal = null;
+
+        $(document).ready(function() {
+            function ajaxPost(url, data) {
+                return $.post(url, data);
+            }
+
+            // Initialize Modal
+            approvalModal = new bootstrap.Modal(document.getElementById('approvalModal'));
+
+            // Setup Signature Pad inside Modal
+            // Initialize SignaturePad only when modal becomes fully visible (canvas has real dimensions)
+            document.getElementById('approvalModal').addEventListener('shown.bs.modal', function () {
+                var canvas = document.getElementById('approverCanvas');
+                if (!canvas) return;
+                var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                if (!sigPad) {
+                    sigPad = new SignaturePad(canvas, {
+                        backgroundColor: 'rgba(255, 255, 255, 0)',
+                        penColor: 'rgb(0, 0, 0)'
+                    });
+                } else {
+                    sigPad.clear();
+                }
+            });
+
+            // Click Clear button
+            $('#btnClearApprover').on('click', function() {
+                if (sigPad) sigPad.clear();
+            });
+
+            // Click Sign button to trigger Modal
+            $(document).on('click', '.btn-sign-approval', function() {
+                var id = $(this).data('id');
+                var user = $(this).data('user');
+                var sn = $(this).data('sn');
+
+                $('#targetTicketId').val(id);
+                $('#targetUserLabel').text(user);
+                $('#targetSnLabel').text(sn);
+
+                if (sigPad) sigPad.clear();
+                approvalModal.show();
+            });
+
+            // Submit Approval Signature
+            $('#btnSubmitApproval').on('click', function() {
+                var id = $('#targetTicketId').val();
+                
+                if (!sigPad || sigPad.isEmpty()) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tanda Tangan Kosong',
+                        text: 'Silakan goreskan tanda tangan Anda terlebih dahulu.',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+
+                var signatureBase64 = sigPad.toDataURL();
+
+                Swal.fire({
+                    title: 'Simpan Persetujuan?',
+                    text: 'Dokumen perbaikan akan ditandatangani dan disetujui.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Setujui!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.showLoading();
+                        
+                        ajaxPost('@Url.Action("ApproveUnscheduledTicket", "Maintenance")', {
+                            id: id,
+                            signature: signatureBase64
+                        })
+                        .done(function(r) {
+                            Swal.close();
+                            if (r.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil disetujui',
+                                    text: r.message,
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(function() {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal',
+                                    text: r.message
+                                });
+                            }
+                        })
+                        .fail(function() {
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Gagal menghubungi server untuk memproses tanda tangan.'
+                            });
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

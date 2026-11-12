@@ -1,0 +1,91 @@
+@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+@{ ViewData["Title"] = "UPS Monitoring"; }
+
+@section styles {
+    <link rel="stylesheet" href="/assets/css/ups.css">
+    <style>
+        body { background: var(--ups-bg-page, #0a0e1a) !important; }
+    </style>
+}
+
+<div class="ups-page">
+    @await Html.PartialAsync("_page-header")
+    @await Html.PartialAsync("_selection-placeholder")
+
+    <div class="ups-monitoring-content ups-hidden" id="ups-content">
+        <!-- Glassmorphism Offline/Error State Banner Overlay -->
+        <div id="ups-offline-overlay" class="ups-monitoring-offline-overlay" style="display: none;">
+            <div class="ups-offline-content">
+                <div class="ups-offline-icon-wrapper">
+                    <i class="fa-solid fa-link-slash"></i>
+                </div>
+                <div class="ups-offline-info">
+                    <div class="ups-offline-status-title" id="ups-offline-status-text">KONEKSI PERANGKAT TERPUTUS</div>
+                    <div class="ups-offline-sub" id="ups-offline-sub-text">Perangkat UPS mati atau komunikasi jaringan terputus. Menggunakan telemetry terakhir.</div>
+                </div>
+                <div class="ups-offline-meta">
+                    <div class="ups-offline-pill" id="ups-offline-ip-pill"><i class="fa-solid fa-network-wired"></i> <span id="ups-offline-ip">-</span></div>
+                    <div class="ups-offline-pill ups-offline-pill--downtime" id="ups-offline-downtime-pill"><i class="fa-solid fa-clock-rotate-left"></i> <span id="ups-offline-downtime-text">Down: --</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ups-card-grid">
+            
+            @await Html.PartialAsync("_electrical-card", new Dictionary<string, object> {
+                { "card_id", "ups-card-ups-input" },
+                { "title", "UPS Input" },
+                { "icon_class", "fa-solid fa-plug-circle-bolt" },
+                { "icon_variant", "input" },
+                { "value_id", "ups-ups-input-voltage" },
+                { "value", "--" },
+                { "unit", "V" },
+                { "badges", new List<Dictionary<string, object>> {
+                    new Dictionary<string, object> { { "prefix", "R:" }, { "value_id", "ups-input-voltage-a" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "prefix", "S:" }, { "value_id", "ups-input-voltage-b" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "prefix", "T:" }, { "value_id", "ups-input-voltage-c" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "value_id", "ups-input-ampere" }, { "value", "--" }, { "suffix", "A" } },
+                    new Dictionary<string, object> { { "value_id", "ups-input-freq" }, { "value", "--" }, { "suffix", "Hz" } }
+                }}
+            })
+
+            @await Html.PartialAsync("_electrical-card", new Dictionary<string, object> {
+                { "card_id", "ups-card-ups-output" },
+                { "title", "UPS Output" },
+                { "icon_class", "fa-solid fa-bolt" },
+                { "icon_variant", "output" },
+                { "value_id", "ups-ups-output-voltage" },
+                { "value", "--" },
+                { "unit", "V" },
+                { "badges", new List<Dictionary<string, object>> {
+                    new Dictionary<string, object> { { "prefix", "R:" }, { "value_id", "ups-output-voltage-a" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "prefix", "S:" }, { "value_id", "ups-output-voltage-b" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "prefix", "T:" }, { "value_id", "ups-output-voltage-c" }, { "value", "--" } },
+                    new Dictionary<string, object> { { "value_id", "ups-output-ampere" }, { "value", "--" }, { "suffix", "A" } },
+                    new Dictionary<string, object> { { "value_id", "ups-output-freq" }, { "value", "--" }, { "suffix", "Hz" } }
+                }}
+            })
+
+            @await Html.PartialAsync("_ground-card")
+            @await Html.PartialAsync("_battery-card")
+            @await Html.PartialAsync("_temperature-card")
+            @await Html.PartialAsync("_watt-card")
+        </div>
+
+        @await Html.PartialAsync("_chart-panel")
+    </div>
+</div>
+
+@section scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/assets/js/ups/monitoring.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-ups');
+        }
+    });
+</script>
+}

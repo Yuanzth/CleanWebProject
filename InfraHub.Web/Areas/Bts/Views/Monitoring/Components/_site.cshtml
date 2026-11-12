@@ -1,0 +1,631 @@
+<div class="card h-100 site-card-container" id="siteCard">
+    <div class="card-header">
+        <div class="site-dropdown-header" onclick="toggleSiteDropdown()">
+            <strong id="selectedAreaName">Select Site</strong>
+            <svg class="dropdown-icon" id="dropdownIcon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </div>
+        <div class="site-dropdown-menu" id="siteDropdownMenu" style="display: none;"></div>
+    </div>
+
+    <div class="card-body site-card-body">
+        <div class="site-locations-scroll">
+            <div id="siteContent">
+                <p class="text-center text-muted small mt-3">Please select a site first</p>
+            </div>
+        </div>
+
+        <div class="site-stats">
+            <div class="stat-row">
+                <span class="stat-label active-label">Active</span>
+                <span class="stat-value" id="activeCount">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label maintenance-label">Tower/Generator Down</span>
+                <span class="stat-value" id="maintenanceCount">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label nonactive-label">Non Active</span>
+                <span class="stat-value" id="nonActiveCount">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let siteData       = [];
+    let selectedSite   = null;
+    let selectedZones  = [];
+    let selectedZoneId = null;
+    let pendingHighlight = null;
+    let sidebarRefreshInFlight = false;
+
+    // ── Anti-loop flag ────────────────────────────────────────────
+    let _isHighlighting = false;
+
+    function setStats(active = 0, maintenance = 0, nonActive = 0) {
+        const activeEl = document.getElementById('activeCount');
+        const maintenanceEl = document.getElementById('maintenanceCount');
+        const nonActiveEl = document.getElementById('nonActiveCount');
+        if (activeEl) activeEl.textContent = parseInt(active, 10) || 0;
+        if (maintenanceEl) maintenanceEl.textContent = parseInt(maintenance, 10) || 0;
+        if (nonActiveEl) nonActiveEl.textContent = parseInt(nonActive, 10) || 0;
+    }
+
+    function statusBucket(status) {
+        const value = String(status || '').toLowerCase();
+        if (['active', '1', 'up', 'online'].includes(value)) return 'active';
+        if (['maintenance', 'partial', 'warning'].includes(value)) return 'maintenance';
+        return 'nonactive';
+    }
+
+    function setStatsFromAllSites() {
+        let active = 0, maintenance = 0, inactive = 0;
+        siteData.forEach(site => {
+            active += parseInt(site.active, 10) || 0;
+            maintenance += parseInt(site.maintenance, 10) || 0;
+            inactive += parseInt(site.inactive, 10) || 0;
+        });
+        setStats(active, maintenance, inactive);
+    }
+
+    function setStatsFromZones(zones = []) {
+        let active = 0, maintenance = 0, nonActive = 0;
+        zones.forEach(zone => {
+            const b = statusBucket(zone.zone_status || zone.status);
+            if (b === 'active') active++;
+            else if (b === 'maintenance') maintenance++;
+            else nonActive++;
+        });
+        setStats(active, maintenance, nonActive);
+    }
+
+    function setStatsFromZone(zone) {
+        const b = statusBucket(zone.zone_status || zone.status);
+        if (b === 'active') setStats(1, 0, 0);
+        else if (b === 'maintenance') setStats(0, 1, 0);
+        else setStats(0, 0, 1);
+    }
+
+    function toggleSiteDropdown() {
+        const menu = document.getElementById('siteDropdownMenu');
+        const icon = document.getElementById('dropdownIcon');
+        if (!menu) return;
+        if (menu.style.display === 'none' || menu.style.display === '') {
+            menu.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+            document.getElementById('areaSearchInput')?.focus();
+        } else {
+            menu.style.display = 'none';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    function filterDropdown() {
+        const filter = (document.getElementById('areaSearchInput')?.value || '')
+            .toLowerCase().replace(/[^a-z0-9]/gi, '');
+        const items = document.getElementById('dropdownListContainer')
+            ?.getElementsByClassName('site-dropdown-item') || [];
+        for (let i = 0; i < items.length; i++) {
+            const code = (items[i].getAttribute('data-site-code') || '').toLowerCase().replace(/[^a-z0-9]/gi, '');
+            const name = (items[i].getAttribute('data-site-name') || '').toLowerCase().replace(/[^a-z0-9]/gi, '');
+            items[i].style.display = (code.includes(filter) || name.includes(filter)) ? '' : 'none';
+        }
+    }
+
+    function renderZones(zones = []) {
+        const siteContent = document.getElementById('siteContent');
+        if (!siteContent) return;
+        if (!Array.isArray(zones) || zones.length === 0) {
+            siteContent.innerHTML = '<p class="text-center text-muted small mt-3">No zones found for this site</p>';
+            return;
+        }
+        siteContent.innerHTML = zones.map(zone => `
+            <div class="site-item" data-zone-id="${zone.zone_id}"
+                 onclick="handleZoneClick(this, ${JSON.stringify(zone).replace(/"/g, '&quot;')})">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>${zone.zone_name || '-'}</span>
+                    <small class="text-muted" style="font-size:0.75rem; text-transform:capitalize;">
+                        ${zone.zone_status || '-'}
+                    </small>
+                </div>
+            </div>
+        `).join('');
+    }
+
+
+    // Helper: ambil koordinat zona, fallback ke koordinat site
+    function parseZoneCoord(zoneVal, siteVal) {
+        const v = parseFloat(zoneVal);
+        return (!isNaN(v) && v !== 0) ? v : parseFloat(siteVal);
+    }
+
+    function buildAllSiteLocations() {
+        return siteData
+            .map(site => ({
+                id: site.id,
+                code: site.code,
+                name: site.name,
+                has_sensor_issue: !!site.has_sensor_issue,
+                sensor_issue_count: parseInt(site.sensor_issue_count, 10) || 0,
+                latitude: parseFloat(site.latitude),
+                longitude: parseFloat(site.longitude)
+            }))
+            .filter(site => !isNaN(site.latitude) && !isNaN(site.longitude) && site.latitude !== 0 && site.longitude !== 0);
+    }
+
+    function applySelectedZoneUI(zoneId) {
+        if (!zoneId) return;
+        document.querySelectorAll('#siteContent .site-item').forEach(el => el.classList.remove('selected'));
+        const zoneEl = Array.from(document.querySelectorAll('#siteContent .site-item'))
+            .find(el => String(el.dataset.zoneId || '') === String(zoneId));
+        if (zoneEl) zoneEl.classList.add('selected');
+    }
+
+    function syncMapAndStatsAfterRefresh() {
+        if (selectedSite && Array.isArray(selectedZones) && selectedZones.length > 0) {
+            if (selectedZoneId) {
+                const zone = selectedZones.find(z => String(z.zone_id) === String(selectedZoneId));
+                if (zone) {
+                    applySelectedZoneUI(selectedZoneId);
+                    setStatsFromZone(zone);
+
+                    if (typeof window.setMonitoringMapViewLevel === 'function') {
+                        window.setMonitoringMapViewLevel('zone');
+                    }
+
+                    if (typeof fetchZoneData === 'function') {
+                        fetchZoneData(zone.zone_id, true, true);
+                    } else if (typeof window.updateMapMarkers === 'function') {
+                        window.updateMapMarkers([zone], 'tower');
+                    }
+                    return;
+                }
+                selectedZoneId = null;
+            }
+
+            setStatsFromZones(selectedZones);
+            if (typeof window.setMonitoringMapViewLevel === 'function') {
+                window.setMonitoringMapViewLevel('site-zones');
+            }
+            if (typeof window.updateMapMarkers === 'function') {
+                window.updateMapMarkers(selectedZones, 'tower');
+            }
+            return;
+        }
+
+        setStatsFromAllSites();
+        if (typeof window.setMonitoringMapViewLevel === 'function') {
+            window.setMonitoringMapViewLevel('all-sites');
+        }
+        const locations = buildAllSiteLocations();
+        if (locations.length > 0 && typeof window.updateMapMarkers === 'function') {
+            window.updateMapMarkers(locations, 'site');
+        }
+    }
+
+    async function selectSite(siteId, options = {}) {
+        const site = siteData.find(s => String(s.id) === String(siteId));
+        if (!site) return;
+
+        const silent = options.silent === true;
+        const preserveZoneSelection = options.preserveZoneSelection === true;
+        selectedSite = site;
+        if (!preserveZoneSelection) {
+            selectedZoneId = null;
+        }
+
+        const title = document.getElementById('selectedAreaName');
+        if (title) title.textContent = `${site.code} - ${site.name}`;
+
+        if (!silent) setStats(site.active || 0, site.maintenance || 0, site.inactive || 0);
+
+        const menu = document.getElementById('siteDropdownMenu');
+        if (menu && menu.style.display === 'block') toggleSiteDropdown();
+
+        
+        try {
+            const response = await fetch(`/api/monitoring/site-zones?site_id=${site.id}`, {
+                credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+            });
+            const result = await response.json();
+
+            const mapPayload = {
+                lat: parseFloat(site.latitude),
+                lng: parseFloat(site.longitude),
+                zones: []
+            };
+
+            if (result.status === 'success' && Array.isArray(result.data)) {
+                selectedZones = result.data.map(z => ({
+                    id                    : z.zone_id,
+                    zone_id               : z.zone_id,
+                    site_id               : z.site_id || site.id,
+                    zone_name             : z.zone_name,
+                    name                  : z.zone_name,
+                    tower_device_name     : z.tower_device_name     || z.zone_name,
+                    generator_device_name : z.generator_device_name || '-',
+                    tower_status          : z.tower_status          || 'down',
+                    generator_status      : z.generator_status      || 'down',
+                    zone_status           : z.zone_status           || 'down',
+                    status                : z.zone_status           || 'down',
+                    sensor_issue          : !!z.sensor_issue,
+                    lat : parseZoneCoord(z.latitude,  site.latitude),
+                    lng : parseZoneCoord(z.longitude, site.longitude),
+                }));
+
+                mapPayload.zones = selectedZones;
+                renderZones(selectedZones);
+                if (!silent) setStatsFromZones(selectedZones);
+            }
+
+            if (!silent) {
+                document.dispatchEvent(new CustomEvent('site-focus',    { detail: mapPayload }));
+                document.dispatchEvent(new CustomEvent('site-selected', { detail: { site } }));
+            }
+        } catch (error) {
+            console.error('Error fetching site zones:', error);
+        }
+    }
+
+    window.selectSite = selectSite;
+
+    window.handleZoneClick = function (element, zone, isSilent) {
+        var silentMode = isSilent === true;
+        selectedZoneId = zone && zone.zone_id ? zone.zone_id : null;
+
+        document.querySelectorAll('#siteContent .site-item').forEach(el => el.classList.remove('selected'));
+        if (element) element.classList.add('selected');
+
+        setStatsFromZone(zone);
+
+        if (!silentMode) {
+            document.dispatchEvent(new CustomEvent('zone-selected', {
+                detail: {
+                    zone_id               : zone.zone_id,
+                    site_id               : zone.site_id || (selectedSite ? selectedSite.id : null),
+                    zone_name             : zone.zone_name || zone.name,
+                    tower_device_name     : zone.tower_device_name     || null,
+                    generator_device_name : zone.generator_device_name || null,
+                    tower_status          : zone.tower_status          || null,
+                    generator_status      : zone.generator_status      || null,
+                    lat : zone.lat,
+                    lng : zone.lng,
+                }
+            }));
+        }
+    };
+
+    window.focusSelectedSiteZones = function () {
+        if (!selectedSite || !Array.isArray(selectedZones) || selectedZones.length === 0) return;
+        selectedZoneId = null;
+
+        document.querySelectorAll('#siteContent .site-item').forEach(function (el) {
+            el.classList.remove('selected');
+        });
+
+        setStatsFromZones(selectedZones);
+
+        document.dispatchEvent(new CustomEvent('site-focus', {
+            detail: {
+                lat: parseFloat(selectedSite.latitude),
+                lng: parseFloat(selectedSite.longitude),
+                zones: selectedZones
+            }
+        }));
+    };
+
+    window.focusAllSitesMap = function () {
+        if (!Array.isArray(siteData) || siteData.length === 0) return;
+        selectedSite = null;
+        selectedZones = [];
+        selectedZoneId = null;
+
+        document.querySelectorAll('#siteContent .site-item').forEach(function (el) {
+            el.classList.remove('selected');
+        });
+
+        const title = document.getElementById('selectedAreaName');
+        if (title) title.textContent = 'Select Site';
+
+        const locations = siteData
+            .map(site => ({
+                id: site.id,
+                code: site.code,
+                name: site.name,
+                has_sensor_issue: !!site.has_sensor_issue,
+                sensor_issue_count: parseInt(site.sensor_issue_count, 10) || 0,
+                latitude: parseFloat(site.latitude),
+                longitude: parseFloat(site.longitude)
+            }))
+            .filter(site => !isNaN(site.latitude) && !isNaN(site.longitude) && site.latitude !== 0 && site.longitude !== 0);
+
+        if (locations.length === 0) return;
+
+        setStatsFromAllSites();
+
+        document.dispatchEvent(new CustomEvent('region-selected', {
+            detail: {
+                locations: locations
+            }
+        }));
+    };
+
+    async function loadSidebarData() {
+        
+        try {
+            const response = await fetch('/api/monitoring/sidebar-sites', {
+                credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+            });
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                siteData = Array.isArray(result.data) ? result.data : [];
+                renderDropdownMenu();
+                setStatsFromAllSites();
+
+                const urlParams    = new URLSearchParams(window.location.search);
+                const urlZoneId    = urlParams.get('zone_id');
+                const urlSiteId    = urlParams.get('site_id');
+                const hasUrlTarget = !!(urlZoneId || urlSiteId);
+
+                if (siteData.length === 1) {
+                    // Sembunyikan dropdown arrow
+                    const dropdownHeader = document.querySelector('.site-dropdown-header');
+                    if (dropdownHeader) dropdownHeader.style.cursor = 'default';
+                    const icon = document.getElementById('dropdownIcon');
+                    if (icon) icon.style.display = 'none';
+                }
+
+                if (hasUrlTarget) {
+                    if (urlZoneId) {
+                        await window.highlightSidebarZone(urlZoneId);
+                    } else if (urlSiteId) {
+                        await selectSite(urlSiteId);
+                    }
+                } else if (siteData.length === 1) {
+                    await selectSite(siteData[0].id);
+                    console.log('[Sidebar] Single-site, auto-selected:', siteData[0].code);
+                } else {
+                    // Sinkronkan marker site dari data sidebar terbaru agar badge alert tampil sejak awal.
+                    syncMapAndStatsAfterRefresh();
+
+                    if (pendingHighlight) {
+                        window.highlightSidebarZone(pendingHighlight.id, pendingHighlight.name);
+                        pendingHighlight = null;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Gagal memuat sidebar:', error);
+        }
+    }
+
+    async function refreshMonitoringSidebarState() {
+        if (sidebarRefreshInFlight) return;
+
+        
+        
+
+        const activeMapViewLevel = (typeof window.getMonitoringMapViewLevel === 'function')
+            ? window.getMonitoringMapViewLevel()
+            : null;
+
+        let previousSiteId = selectedSite ? String(selectedSite.id) : null;
+        let previousZoneId = selectedZoneId ? String(selectedZoneId) : null;
+
+        if (activeMapViewLevel === 'all-sites') {
+            previousSiteId = null;
+            previousZoneId = null;
+        }
+
+        sidebarRefreshInFlight = true;
+
+        try {
+            const response = await fetch('/api/monitoring/sidebar-sites', {
+                credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (result.status !== 'success') return;
+
+            siteData = Array.isArray(result.data) ? result.data : [];
+            renderDropdownMenu();
+
+            if (!previousSiteId) {
+                selectedSite = null;
+                selectedZones = [];
+                selectedZoneId = null;
+                syncMapAndStatsAfterRefresh();
+                return;
+            }
+
+            const stillSelectedSite = siteData.find(s => String(s.id) === previousSiteId);
+            if (!stillSelectedSite) {
+                selectedSite = null;
+                selectedZones = [];
+                selectedZoneId = null;
+
+                const title = document.getElementById('selectedAreaName');
+                if (title) title.textContent = 'Select Site';
+
+                syncMapAndStatsAfterRefresh();
+                return;
+            }
+
+            selectedZoneId = previousZoneId;
+            await selectSite(stillSelectedSite.id, { silent: true, preserveZoneSelection: true });
+
+            if (previousZoneId) {
+                selectedZoneId = previousZoneId;
+            }
+
+            syncMapAndStatsAfterRefresh();
+        } catch (error) {
+            console.error('[Sidebar] refreshMonitoringSidebarState error:', error);
+        } finally {
+            sidebarRefreshInFlight = false;
+        }
+    }
+
+    window.refreshMonitoringSidebarState = refreshMonitoringSidebarState;
+
+    function renderDropdownMenu() {
+        const menu = document.getElementById('siteDropdownMenu');
+        if (!menu) return;
+        let html = `
+            <div class="search-container p-2">
+                <input type="text" id="areaSearchInput" class="form-control form-control-sm"
+                       placeholder="Search Site..." onkeyup="filterDropdown()">
+            </div>
+            <div id="dropdownListContainer">
+        `;
+        html += siteData.map(site => `
+              <div class="site-dropdown-item ${site.has_sensor_issue ? 'has-sensor-issue' : ''}"
+                 data-site-code="${site.code || ''}"
+                 data-site-name="${site.name || ''}"
+                 onclick="selectSite('${site.id}')">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>${site.code || '-'} - ${site.name || '-'}</span>
+                    ${site.has_sensor_issue ? `<span class="site-issue-badge" title="Ada sensor null/mati di site ini">!</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+        html += '</div>';
+        menu.innerHTML = html;
+    }
+
+    window.highlightSidebarZone = async function (targetId, zoneName) {
+        if (!targetId) return;
+
+        if (_isHighlighting) {
+            console.warn('[Sidebar] highlightSidebarZone skipped (already running)');
+            return;
+        }
+        _isHighlighting = true;
+        // ─────────────────────────────────────────────────────────────
+
+        try {
+            if (!Array.isArray(siteData) || siteData.length === 0) {
+                pendingHighlight = { id: targetId, name: zoneName };
+                return;
+            }
+
+            let site             = siteData.find(s => String(s.id) === String(targetId));
+            let resolvedZoneId   = null;
+            let resolvedZoneName = zoneName || null;
+
+            if (!site) {
+                // targetId adalah zone_id → resolve ke site
+                try {
+                    
+                    const res   = await fetch(`/api/monitoring/zone-info?zone_id=${targetId}`, {
+                        credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+                    });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.status === 'success' && json.data) {
+                            site             = siteData.find(s => String(s.id) === String(json.data.site_id));
+                            resolvedZoneId   = targetId;
+                            resolvedZoneName = json.data.zone_name || resolvedZoneName;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[Sidebar] zone-info fetch failed:', e);
+                }
+            }
+
+            if (!site) {
+                console.warn('[Sidebar] site tidak ditemukan untuk', targetId);
+                return;
+            }
+
+            // selectSite silent → render zones tanpa dispatch site-focus/site-selected
+            await selectSite(site.id, { silent: true });
+
+            const title = document.getElementById('selectedAreaName');
+            if (title) title.textContent = `${site.code} - ${site.name}`;
+
+            // ── Cari elemen zona di sidebar ──────────────────────────
+            const wantedZoneId   = resolvedZoneId;
+            const wantedZoneName = resolvedZoneName ? resolvedZoneName.toLowerCase() : null;
+
+            const zoneEl = Array.from(document.querySelectorAll('#siteContent .site-item'))
+                .find(el => {
+                    if (wantedZoneId && el.dataset.zoneId) {
+                        return String(el.dataset.zoneId) === String(wantedZoneId);
+                    }
+                    if (wantedZoneName) {
+                        return String(el.textContent || '').toLowerCase().includes(wantedZoneName);
+                    }
+                    return false;
+                });
+
+            if (zoneEl) {
+                zoneEl.classList.add('selected');
+                zoneEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // Temukan data zona
+            const zoneData = selectedZones.find(z =>
+                (wantedZoneId   && String(z.zone_id) === String(wantedZoneId)) ||
+                (wantedZoneName && String(z.zone_name || '').toLowerCase().includes(wantedZoneName))
+            );
+
+            if (zoneData) {
+                selectedZoneId = zoneData.zone_id || null;
+                setStatsFromZone(zoneData);
+
+                document.dispatchEvent(new CustomEvent('zone-redirect', {
+                    detail: {
+                        zone_id               : zoneData.zone_id,
+                        site_id               : zoneData.site_id || site.id,
+                        zone_name             : zoneData.zone_name || zoneData.name,
+                        tower_device_name     : zoneData.tower_device_name     || null,
+                        generator_device_name : zoneData.generator_device_name || null,
+                        tower_status          : zoneData.tower_status          || null,
+                        generator_status      : zoneData.generator_status      || null,
+                        lat : zoneData.lat,
+                        lng : zoneData.lng,
+                    }
+                }));
+            } else {
+                // Tidak ada zona spesifik → tampilkan semua zona di peta
+                setStatsFromZones(selectedZones);
+                document.dispatchEvent(new CustomEvent('site-focus', {
+                    detail: {
+                        lat   : parseFloat(site.latitude),
+                        lng   : parseFloat(site.longitude),
+                        zones : selectedZones,
+                    }
+                }));
+            }
+
+        } finally {
+            _isHighlighting = false;
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', loadSidebarData);
+
+    document.addEventListener('monitoring-refresh', function () {
+        refreshMonitoringSidebarState();
+    });
+
+    document.addEventListener('click', function (event) {
+        const card = document.getElementById('siteCard');
+        const menu = document.getElementById('siteDropdownMenu');
+        if (card && !card.contains(event.target) && menu && menu.style.display === 'block') {
+            toggleSiteDropdown();
+        }
+    });
+</script>
+
+
+
+
+

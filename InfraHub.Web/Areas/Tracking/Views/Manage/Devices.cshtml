@@ -1,0 +1,807 @@
+@{ Layout = "_Layout";
+   ViewData["Title"] = "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="~/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-tower-cell fa-2x me-3" style="color: #D4952B;"></i>
+        <h2 class="mb-0 fw-bold" style="color: #D4952B;">Manage Devices &amp; Assets</h2>
+    </div>
+    
+    <div class="manage-card">
+        <ul class="nav nav-tabs custom-tabs mb-4" id="manageTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-registered" type="button"><i class="fa-solid fa-list-check"></i> Registered Devices</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-unregistered" type="button">
+                    <i class="fa-solid fa-satellite-dish pulse-icon"></i> Unregistered Devices
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-registered">
+                <div class="table-responsive">
+                    <table id="deviceTable" class="table table-premium w-100">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>S/N</th>
+                                <th>Device Name</th>
+                                <th>Connectivity</th>
+                                <th>Site</th>
+                                <th>Asset Type</th>
+                                <th>Fleet Type</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="tab-unregistered">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning-emphasis d-flex align-items-center mb-0 py-2 px-3">
+                        <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                        <div>
+                            <strong>Auto-Discovery Aktif!</strong> SN CPE Berikut belum terdaftar di Asset manapun.
+                        </div>
+                    </div>
+                    <div>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="d-none">
+                        <button type="button" class="btn btn-outline-success shadow-sm rounded-pill px-3 py-2 fw-medium" id="btnUploadExcelVerify" title="Upload Excel master data untuk verifikasi otomatis">
+                            <i class="fa-solid fa-file-excel me-2"></i> Verifikasi Data via Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="unregTable" class="table table-premium w-100">
+                        <thead><tr><th>No</th><th>Serial Number</th><th>Last Seen</th><th>Action</th></tr></thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Register Modal *@
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-success"><i class="fa-solid fa-satellite-dish"></i> Register New Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="registerForm">
+                <input type="hidden" id="unregistered_id" name="unregistered_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Serial Number <span class="badge bg-secondary ms-1">Auto</span></label>
+                            <input type="text" id="reg_serial_number" name="SerialNumber" class="form-control bg-light fw-bold" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">IMEI (4G Device)</label>
+                            <input type="text" id="reg_imei" name="Imei" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">GSM Number</label>
+                        <input type="text" id="reg_phone_number" name="PhoneNumber" class="form-control" placeholder="ex: 0812xxxx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Device Name <span class="text-danger">*</span></label>
+                        <input type="text" id="reg_device_name" name="DeviceName" class="form-control" placeholder="ex: HD-01 Pit Utama" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Asset Type <span class="text-danger">*</span></label>
+                        <select id="reg_asset_type_id" name="AssetTypeId" class="form-select" required>
+                            <option value="">-- Tracking --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fleet Type <span class="text-danger">*</span></label>
+                        <select id="reg_fleet_type" name="FleetType" class="form-select" required>
+                            <option value="">-- Choose Fleet Type --</option>
+                            <option value="Light Vehicle">Light Vehicle</option>
+                            <option value="Heavy Duty Truck">Heavy Duty Truck</option>
+                            <option value="Dump Trailer Truck">Dump Trailer Truck</option>
+                            <option value="Articulated Dump Truck">Articulated Dump Truck</option>
+                            <option value="Excavator">Excavator</option>
+                            <option value="Fuel Truck">Fuel Truck</option>
+                            <option value="Water Truck">Water Truck</option>
+                            <option value="Roller">Roller</option>
+                            <option value="Grader">Grader</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Site <span class="text-danger">*</span></label>
+                        <select id="reg_site_id" name="SiteId" class="form-select" required>
+                            <option value="">-- Choose Site --</option>
+                            @foreach(var site in ViewBag.AllSites) {
+                                <option value="@site.id">@site.site_code - @site.site_name</option>
+                            }
+                        </select>
+                    </div>
+                    <input type="hidden" name="IsActive" value="true">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check me-2"></i>Register Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Edit Modal *@
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-primary"><i class="fa-solid fa-pen-to-square"></i> Edit Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editForm">
+                <input type="hidden" name="_method" value="PUT" />
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Serial Number <span class="text-danger">*</span></label>
+                            <input type="text" id="edit_serial_number" name="SerialNumber" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">IMEI (4G Device)</label>
+                            <input type="text" id="edit_imei" name="Imei" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">GSM Number</label>
+                        <input type="text" id="edit_phone_number" name="PhoneNumber" class="form-control" placeholder="ex: 0812xxxx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Device Name <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_device_name" name="DeviceName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Asset Type <span class="text-danger">*</span></label>
+                        <select id="edit_asset_type_id" name="AssetTypeId" class="form-select" required>
+                            <option value="">-- Tracking --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fleet Type <span class="text-danger">*</span></label>
+                        <select id="edit_fleet_type" name="FleetType" class="form-select" required>
+                            <option value="">-- Choose Fleet Type --</option>
+                            <option value="Light Vehicle">Light Vehicle</option>
+                            <option value="Heavy Duty Truck">Heavy Duty Truck</option>
+                            <option value="Dump Trailer Truck">Dump Trailer Truck</option>
+                            <option value="Articulated Dump Truck">Articulated Dump Truck</option>
+                            <option value="Excavator">Excavator</option>
+                            <option value="Fuel Truck">Fuel Truck</option>
+                            <option value="Water Truck">Water Truck</option>
+                            <option value="Roller">Roller</option>
+                            <option value="Grader">Grader</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Site <span class="text-danger">*</span></label>
+                        <select id="edit_site_id" name="SiteId" class="form-select" required>
+                            <option value="">-- Choose Site --</option>
+                            @foreach(var site in ViewBag.AllSites) {
+                                <option value="@site.id">@site.site_code - @site.site_name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status <span class="text-danger">*</span></label>
+                        <select id="edit_is_active" name="IsActive" class="form-select" required>
+                            <option value="true">Active</option>
+                            <option value="false">Down</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-2"></i>Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Excel Verification Preview Modal *@
+<div class="modal fade" id="excelVerifyModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <div>
+                    <h5 class="modal-title fw-bold text-success mb-0">
+                        <i class="fa-solid fa-file-circle-check me-2"></i> Hasil Verifikasi Excel dengan Unregistered Devices
+                    </h5>
+                    <small class="text-muted" id="excelVerifyFileName">File Excel: -</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="d-flex gap-3 p-3 bg-light border-bottom flex-wrap">
+                    <div class="badge bg-primary-subtle text-primary border px-3 py-2 fs-6 rounded-3">
+                        <i class="fa-solid fa-list me-1"></i> Total Excel Rows: <span id="kpiTotalExcel">0</span>
+                    </div>
+                    <div class="badge bg-success-subtle text-success border px-3 py-2 fs-6 rounded-3">
+                        <i class="fa-solid fa-circle-check me-1"></i> S/N Matched: <span id="kpiMatched">0</span>
+                    </div>
+                    <div class="badge bg-warning-subtle text-warning-emphasis border px-3 py-2 fs-6 rounded-3">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Missing Fields: <span id="kpiMissingInfo">0</span>
+                    </div>
+                    <div class="badge bg-secondary-subtle text-secondary border px-3 py-2 fs-6 rounded-3">
+                        <i class="fa-solid fa-circle-xmark me-1"></i> Unregistered Not in Excel: <span id="kpiUnmatched">0</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive p-3" style="max-height: 480px;">
+                    <table class="table table-hover align-middle" id="verifyPreviewTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th width="40"><input type="checkbox" id="checkAllVerify" class="form-check-input" checked></th>
+                                <th width="120">Status</th>
+                                <th>Serial Number</th>
+                                <th>Device Name <span class="text-danger">*</span></th>
+                                <th>Fleet Type <span class="text-danger">*</span></th>
+                                <th>Site <span class="text-danger">*</span></th>
+                                <th>IMEI</th>
+                                <th>GSM Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody id="verifyPreviewTbody">
+                            <tr><td colspan="8" class="text-center py-4 text-muted">Belum ada data terverifikasi</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success fw-bold px-4" id="btnSubmitBatchRegister">
+                    <i class="fa-solid fa-check-double me-2"></i> Register Validated Devices (<span id="selectedCountText">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="assetTypesData" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.AssetTypes))
+</script>
+<script id="allSitesData" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.AllSites))
+</script>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-tracking');
+        }
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+<script>
+let tDevice, tUnreg;
+const assetTypeMap = JSON.parse(document.getElementById('assetTypesData').textContent);
+
+$(document).ready(function() {
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
+
+    // Populate asset type dropdown with "Tracking" type only
+    const trackingTypes = Object.entries(assetTypeMap)
+        .filter(([id, name]) => name.toLowerCase().includes('tracking'))
+        .map(([id, name]) => ({ id, name }));
+    
+    const assetTypeSelect = $('#reg_asset_type_id');
+    assetTypeSelect.empty();
+    assetTypeSelect.append('<option value="">-- Choose Asset Type --</option>');
+    trackingTypes.forEach(type => {
+        assetTypeSelect.append(`<option value="${type.id}">${type.name}</option>`);
+    });
+
+    tDevice = $('#deviceTable').DataTable({ 
+        serverSide: false, 
+        ajax: { url: "@Url.Action("Index", "ManageDevice", new { area = "Tracking" })", data: function(d) { d.type = 'registered'; } }, 
+        columns: [
+            {data: 'DT_RowIndex', orderable: false, searchable: false}, 
+            {data: 'serial_number'}, 
+            {data: 'device_name'}, 
+            {data: 'connectivity'},
+            {data: 'site_zone'}, 
+            {data: 'asset_type'}, 
+            {data: 'fleet_type'}, 
+            {data: 'status'}, 
+            {data: 'action', orderable: false, searchable: false}
+        ] 
+    });
+
+    tUnreg = $('#unregTable').DataTable({ 
+        serverSide: false, 
+        ajax: { url: "@Url.Action("Index", "ManageDevice", new { area = "Tracking" })", data: function(d) { d.type = 'unregistered'; } }, 
+        columns: [
+            {data: 'DT_RowIndex', orderable: false, searchable: false}, 
+            {data: 'serial_number'}, 
+            {data: 'last_seen'}, 
+            {data: 'action', orderable: false, searchable: false}
+        ] 
+    });
+
+    $('#registerForm').submit(function(e) { 
+        e.preventDefault(); 
+        executeAjax("/Shared/ManageDevices/Register", 'POST', $(this).serialize(), 'registerModal', [tDevice, tUnreg]); 
+    });
+
+    $('body').on('click', '.register-btn', function() { 
+        $('#registerForm')[0].reset();
+        $('#unregistered_id').val($(this).data('id')); 
+        $('#reg_serial_number').val($(this).data('sn'));
+        $('#reg_site_id').val('');
+        $('#registerModal').modal('show'); 
+    });
+
+    // EDIT DEVICE
+    let editDeviceId = null;
+    $('body').on('click', '.edit-device-btn', function() {
+        editDeviceId = $(this).data('id');
+        $.get(`/Shared/ManageDevices/Device/${editDeviceId}`, function(data) {
+            $('#editForm')[0].reset();
+            
+            // Populate asset type dropdown first
+            const editAssetTypeSelect = $('#edit_asset_type_id');
+            editAssetTypeSelect.empty();
+            trackingTypes.forEach(type => {
+                editAssetTypeSelect.append(`<option value="${type.id}">${type.name}</option>`);
+            });
+
+            $('#edit_serial_number').val(data.serialNumber);
+            $('#edit_imei').val(data.imei);
+            $('#edit_phone_number').val(data.phoneNumber);
+            $('#edit_device_name').val(data.deviceName);
+            $('#edit_asset_type_id').val(data.assetTypeId);
+            $('#edit_fleet_type').val(data.fleetType);
+            $('#edit_site_id').val(data.siteId);
+            $('#edit_is_active').val(data.isActive ? "true" : "false");
+            
+            $('#editModal').modal('show');
+        }).fail(function() {
+            Swal.fire('Error', 'Failed to fetch device data', 'error');
+        });
+    });
+
+    $('#editForm').submit(function(e) {
+        e.preventDefault();
+        const url = `/Shared/ManageDevices/Device/${editDeviceId}`;
+        executeAjax(url, 'PUT', $(this).serialize(), 'editModal', [tDevice]);
+    });
+
+    // DELETE REGISTERED DEVICE
+    $('body').on('click', '.delete-device-btn', function() { 
+        deleteData(`/Shared/ManageDevices/Device/${$(this).data('id')}`, tDevice); 
+    });
+
+    $('body').on('click', '.delete-unreg-btn', function() { 
+        deleteData(`/Shared/ManageDevices/Unregistered/${$(this).data('id')}`, tUnreg); 
+    });
+
+    // ====================================================
+    // SMART EXCEL VERIFICATION & AUTO-MAPPING FOR UNREG DEVICES
+    // ====================================================
+    const allSitesMap = JSON.parse(document.getElementById('allSitesData').textContent);
+
+    $('#btnUploadExcelVerify').click(function() {
+        $('#excelFileInput').click();
+    });
+
+    function normalizeHeader(str) {
+        if (!str) return '';
+        return str.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function findColumnMapping(headers) {
+        const map = { sn: -1, deviceName: -1, imei: -1, phone: -1, site: -1, fleet: -1 };
+        
+        headers.forEach((h, idx) => {
+            const normH = normalizeHeader(h);
+            
+            // Serial Number
+            if (map.sn === -1 && ['serialnumber', 'serial_number', 'sn', 'snnumber', 'noseri', 'cpesn', 'cpe', 'serial'].includes(normH)) {
+                map.sn = idx;
+            }
+            // Device Name / Unit Name / EQ No. / EQ Class
+            else if (map.deviceName === -1 && ['devicename', 'device_name', 'unit', 'unitname', 'namaunit', 'codename', 'eqno', 'eqclass', 'eqno.', 'device'].includes(normH)) {
+                map.deviceName = idx;
+            }
+            // IMEI
+            else if (map.imei === -1 && ['imei', 'noimei', 'imeinumber'].includes(normH)) {
+                map.imei = idx;
+            }
+            // GSM / Phone Number / Simcard / CPE
+            else if (map.phone === -1 && ['phone', 'phonenumber', 'gsm', 'nogsm', 'nohp', 'simcard', 'simcardcpe', 'sim', 'cpephone', 'cpe'].includes(normH)) {
+                map.phone = idx;
+            }
+            // Site / Label
+            else if (map.site === -1 && ['site', 'sitename', 'sitecode', 'lokasi', 'label', 'site_code', 'site_name'].includes(normH)) {
+                map.site = idx;
+            }
+            // Fleet Type
+            else if (map.fleet === -1 && ['fleet', 'fleettype', 'fleet_type', 'tipeunit', 'jenisunit', 'tipe'].includes(normH)) {
+                map.fleet = idx;
+            }
+        });
+
+        return map;
+    }
+
+    function autoDetectFleetType(deviceName, excelFleet) {
+        if (excelFleet && excelFleet.toString().trim() !== '') {
+            const ef = excelFleet.toString().trim();
+            const validFleets = [
+                "Light Vehicle", "Heavy Duty Truck", "Dump Trailer Truck",
+                "Articulated Dump Truck", "Excavator", "Fuel Truck",
+                "Water Truck", "Roller", "Grader"
+            ];
+            const matched = validFleets.find(f => f.toLowerCase() === ef.toLowerCase());
+            if (matched) return matched;
+        }
+
+        if (!deviceName) return '';
+        const dn = deviceName.toString().trim().toUpperCase();
+
+        if (dn.startsWith('DT') || dn.startsWith('HD')) return 'Heavy Duty Truck';
+        if (dn.startsWith('ADT')) return 'Articulated Dump Truck';
+        if (dn.startsWith('LV')) return 'Light Vehicle';
+        if (dn.startsWith('DZ')) return 'Roller';
+        if (dn.startsWith('EX')) return 'Excavator';
+        if (dn.startsWith('GR')) return 'Grader';
+        if (dn.startsWith('TF')) return 'Fuel Truck';
+        if (dn.startsWith('WT')) return 'Water Truck';
+
+        return '';
+    }
+
+    function autoDetectSiteId(excelSiteText, sitesList) {
+        if (!excelSiteText) return '';
+        const cleanText = excelSiteText.toString().trim().toUpperCase();
+        if (!cleanText) return '';
+
+        let match = sitesList.find(s => 
+            (s.site_code && s.site_code.toUpperCase() === cleanText) ||
+            (s.site_name && s.site_name.toUpperCase() === cleanText)
+        );
+        if (match) return match.id;
+
+        const first4 = cleanText.substring(0, 4);
+        match = sitesList.find(s => 
+            (s.site_code && s.site_code.toUpperCase().startsWith(first4)) ||
+            (s.site_name && s.site_name.toUpperCase().startsWith(first4))
+        );
+        if (match) return match.id;
+
+        return '';
+    }
+
+    let currentVerifiedItems = [];
+
+    $('#excelFileInput').change(function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                if (rows.length < 2) {
+                    Swal.fire('Warning', 'File Excel kosong atau tidak memiliki baris data.', 'warning');
+                    return;
+                }
+
+                const headers = rows[0].map(h => (h || '').toString().trim());
+                const colMap = findColumnMapping(headers);
+
+                if (colMap.sn === -1) {
+                    Swal.fire('Header Not Detected', 'Kolom Serial Number (S/N) tidak terdeteksi di Excel. Pastikan header memuat Serial Number, S/N, atau SN.', 'error');
+                    return;
+                }
+
+                const unregData = tUnreg.rows().data().toArray();
+                const trackingAssetTypeId = $('#reg_asset_type_id option:nth-child(2)').val() || (trackingTypes[0] ? trackingTypes[0].id : '');
+
+                // Build array of Excel items for smart back-to-front suffix matching
+                const excelItems = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || !row[colMap.sn]) continue;
+
+                    const snRaw = row[colMap.sn].toString().trim();
+                    const cleanSn = snRaw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+                    if (cleanSn) {
+                        excelItems.push({
+                            sn: snRaw,
+                            cleanSn: cleanSn,
+                            deviceName: colMap.deviceName !== -1 ? (row[colMap.deviceName] || '').toString().trim() : '',
+                            imei: colMap.imei !== -1 ? (row[colMap.imei] || '').toString().trim() : '',
+                            phone: colMap.phone !== -1 ? (row[colMap.phone] || '').toString().trim() : '',
+                            siteText: colMap.site !== -1 ? (row[colMap.site] || '').toString().trim() : '',
+                            fleetText: colMap.fleet !== -1 ? (row[colMap.fleet] || '').toString().trim() : ''
+                        });
+                    }
+                }
+
+                function matchSerialNumber(uSn, excelList) {
+                    if (!uSn) return null;
+                    const cleanUSn = uSn.toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    if (!cleanUSn) return null;
+
+                    // 1. Priority 1: Exact Match (ignoring symbols/spaces)
+                    let match = excelList.find(item => item.cleanSn === cleanUSn);
+                    if (match) return match;
+
+                    // 2. Priority 2: Back-to-front Suffix Match (endsWith) - min 4 characters
+                    match = excelList.find(item => {
+                        if (item.cleanSn.length < 4) return false;
+                        return cleanUSn.endsWith(item.cleanSn) || item.cleanSn.endsWith(cleanUSn);
+                    });
+                    if (match) return match;
+
+                    // 3. Priority 3: Substring Inclusion Fallback - min 5 characters
+                    match = excelList.find(item => {
+                        if (item.cleanSn.length < 5) return false;
+                        return cleanUSn.includes(item.cleanSn) || item.cleanSn.includes(cleanUSn);
+                    });
+                    return match;
+                }
+
+                let matchedCount = 0;
+                let missingInfoCount = 0;
+                currentVerifiedItems = [];
+
+                unregData.forEach(uRow => {
+                    const uSn = (uRow.serial_number || '').toString().trim();
+                    const excelData = matchSerialNumber(uSn, excelItems);
+
+                    if (excelData) {
+                        matchedCount++;
+                        const detectedFleet = autoDetectFleetType(excelData.deviceName, excelData.fleetText);
+                        const detectedSiteId = autoDetectSiteId(excelData.siteText, allSitesMap);
+
+                        const isComplete = excelData.deviceName !== '' && detectedFleet !== '' && detectedSiteId !== '';
+                        if (!isComplete) missingInfoCount++;
+
+                        currentVerifiedItems.push({
+                            unregisteredId: uRow.action ? $(uRow.action).data('id') : null,
+                            sn: uSn,
+                            deviceName: excelData.deviceName,
+                            imei: excelData.imei,
+                            phone: excelData.phone,
+                            siteId: detectedSiteId,
+                            assetTypeId: trackingAssetTypeId,
+                            fleetType: detectedFleet,
+                            isComplete: isComplete
+                        });
+                    }
+                });
+
+                renderVerificationPreviewTable(rows.length - 1, matchedCount, missingInfoCount, unregData.length - matchedCount);
+                $('#excelVerifyFileName').text(`File Excel: ${file.name}`);
+                $('#excelVerifyModal').modal('show');
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Gagal memproses file Excel: ' + err.message, 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        $(this).val('');
+    });
+
+    function renderVerificationPreviewTable(totalExcel, matchedCount, missingInfoCount, unmatchedCount) {
+        $('#kpiTotalExcel').text(totalExcel);
+        $('#kpiMatched').text(matchedCount);
+        $('#kpiMissingInfo').text(missingInfoCount);
+        $('#kpiUnmatched').text(unmatchedCount);
+
+        const tbody = $('#verifyPreviewTbody');
+        tbody.empty();
+
+        if (currentVerifiedItems.length === 0) {
+            tbody.append(`<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fa-solid fa-circle-exclamation me-2"></i>Tidak ada Serial Number di Excel yang cocok dengan Unregistered Devices saat ini.</td></tr>`);
+            updateSelectedCount();
+            return;
+        }
+
+        const fleetOptions = [
+            "Light Vehicle", "Heavy Duty Truck", "Dump Trailer Truck",
+            "Articulated Dump Truck", "Excavator", "Fuel Truck",
+            "Water Truck", "Roller", "Grader"
+        ];
+
+        currentVerifiedItems.forEach((item, idx) => {
+            const badgeClass = item.isComplete ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis';
+            const statusLabel = item.isComplete ? '<i class="fa-solid fa-circle-check me-1"></i> Ready' : '<i class="fa-solid fa-triangle-exclamation me-1"></i> Check Info';
+
+            let fleetOpts = '<option value="">-- Choose Fleet --</option>';
+            fleetOptions.forEach(f => {
+                const sel = f === item.fleetType ? 'selected' : '';
+                fleetOpts += `<option value="${f}" ${sel}>${f}</option>`;
+            });
+
+            let siteOpts = '<option value="">-- Choose Site --</option>';
+            allSitesMap.forEach(s => {
+                const sel = s.id === item.siteId ? 'selected' : '';
+                siteOpts += `<option value="${s.id}" ${sel}>${s.site_code} - ${s.site_name}</option>`;
+            });
+
+            const tr = `
+                <tr data-idx="${idx}">
+                    <td><input type="checkbox" class="form-check-input row-verify-check" ${item.isComplete ? 'checked' : ''}></td>
+                    <td><span class="badge ${badgeClass} px-2 py-1 rounded-pill">${statusLabel}</span></td>
+                    <td class="fw-bold text-dark">${item.sn}</td>
+                    <td><input type="text" class="form-control form-control-sm input-devname" value="${item.deviceName || ''}" placeholder="Nama Device/Unit *"></td>
+                    <td><select class="form-select form-select-sm select-fleet">${fleetOpts}</select></td>
+                    <td><select class="form-select form-select-sm select-site">${siteOpts}</select></td>
+                    <td><input type="text" class="form-control form-control-sm input-imei" value="${item.imei || ''}" placeholder="IMEI"></td>
+                    <td><input type="text" class="form-control form-control-sm input-phone" value="${item.phone || ''}" placeholder="GSM Phone"></td>
+                </tr>
+            `;
+            tbody.append(tr);
+        });
+
+        updateSelectedCount();
+    }
+
+    $('#checkAllVerify').change(function() {
+        $('.row-verify-check').prop('checked', $(this).is(':checked'));
+        updateSelectedCount();
+    });
+
+    $('body').on('change', '.row-verify-check', function() {
+        updateSelectedCount();
+    });
+
+    function updateSelectedCount() {
+        const count = $('.row-verify-check:checked').length;
+        $('#selectedCountText').text(count);
+    }
+
+    // Submit Batch Register
+    $('#btnSubmitBatchRegister').click(function() {
+        const selectedItems = [];
+        let validationError = null;
+
+        $('.row-verify-check:checked').each(function() {
+            const tr = $(this).closest('tr');
+            const idx = tr.data('idx');
+            const item = currentVerifiedItems[idx];
+
+            const devName = tr.find('.input-devname').val().trim();
+            const fleet = tr.find('.select-fleet').val();
+            const siteId = tr.find('.select-site').val();
+            const imei = tr.find('.input-imei').val().trim();
+            const phone = tr.find('.input-phone').val().trim();
+
+            if (!devName || !fleet || !siteId) {
+                validationError = `Perangkat S/N ${item.sn} belum melengkapi Device Name, Fleet Type, atau Site.`;
+                return false;
+            }
+
+            selectedItems.push({
+                UnregisteredId: item.unregisteredId,
+                SerialNumber: item.sn,
+                DeviceName: devName,
+                Imei: imei,
+                PhoneNumber: phone,
+                SiteId: siteId,
+                AssetTypeId: item.assetTypeId,
+                FleetType: fleet
+            });
+        });
+
+        if (validationError) {
+            Swal.fire('Validasi Incomplete', validationError, 'warning');
+            return;
+        }
+
+        if (selectedItems.length === 0) {
+            Swal.fire('Peringatan', 'Pilih minimal 1 perangkat yang akan didaftarkan.', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Konfirmasi Registrasi Masal',
+            text: `Apakah Anda yakin ingin mendaftarkan ${selectedItems.length} perangkat terverifikasi?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Daftarkan Sekarang!',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#198754'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/Shared/ManageDevices/BatchRegister',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(selectedItems),
+                    success: function(res) {
+                        $('#excelVerifyModal').modal('hide');
+                        tDevice.ajax.reload(null, false);
+                        tUnreg.ajax.reload(null, false);
+                        Swal.fire('Berhasil!', res.success, 'success');
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Gagal', xhr.responseJSON?.message || 'Gagal mendaftarkan perangkat masal', 'error');
+                    }
+                });
+            }
+        });
+    });
+});
+
+function executeAjax(url, method, data, modalId, tables) { 
+    $.ajax({ 
+        url: url, 
+        type: method, 
+        data: data, 
+        success: function(res) { 
+            $(`#${modalId}`).modal('hide'); 
+            if (tables) tables.forEach(t => t.ajax.reload(null, false)); 
+            Swal.fire('Success!', res.success, 'success'); 
+        }, 
+        error: function(xhr) { 
+            Swal.fire('Error', xhr.responseJSON?.message || 'Check your input', 'error'); 
+        } 
+    }); 
+}
+
+function deleteData(url, table) { 
+    Swal.fire({ 
+        title: 'Delete data?', 
+        text: 'Data will be permanently deleted!', 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#d33', 
+        cancelButtonColor: '#3085d6', 
+        confirmButtonText: 'Yes, Delete!' 
+    }).then((result) => { 
+        if (result.isConfirmed) { 
+            $.ajax({ 
+                url: url, 
+                type: 'DELETE', 
+                success: function(res) { 
+                    if (table) table.ajax.reload(null, false); 
+                    Swal.fire('Deleted', res.success, 'success'); 
+                }, 
+                error: function(xhr) { 
+                    Swal.fire('Error', xhr.responseJSON?.error || 'Error', 'error'); 
+                } 
+            }); 
+        } 
+    }); 
+}
+</script>
+}

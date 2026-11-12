@@ -1,0 +1,1081 @@
+@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+@{ ViewData["Title"] = "Dashboard"; }
+
+@section styles {
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <style>
+    .db-anm-menu { position: relative; flex-shrink: 0; }
+    .db-anm-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; position: relative; }
+    .db-anm-actions--has-menu .db-badge { transition: transform 0.16s ease; }
+    .db-anm-actions--has-menu .db-anm-menu { width: 0; position: relative; }
+
+    .db-anm-menu__trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 0.78rem;
+        cursor: pointer;
+        opacity: 0;
+        pointer-events: none !important;
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%) scale(0.96);
+        transition: opacity 0.16s, background 0.16s, color 0.16s, transform 0.12s;
+        z-index: 10;
+    }
+
+    .db-anomaly-card:hover .db-anm-menu__trigger,
+    .db-anm-menu:focus-within .db-anm-menu__trigger {
+        opacity: 1;
+        pointer-events: auto !important;
+        transform: translateY(-50%) scale(1);
+    }
+
+    .db-anomaly-card:hover .db-anm-actions--has-menu .db-badge,
+    .db-anm-actions--has-menu:focus-within .db-badge {
+        transform: translateX(-18px);
+    }
+
+    .db-anm-menu__trigger:hover {
+        background: rgba(148, 163, 184, 0.14);
+        color: #475569;
+        transform: translateY(-50%) scale(1.04);
+    }
+
+    .db-anm-menu__trigger:focus-visible {
+        opacity: 1;
+        outline: 1px solid #cbd5e1;
+        outline-offset: 1px;
+    }
+
+    .db-anm-menu__dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 150px;
+        padding: 6px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        z-index: 30;
+        pointer-events: auto;
+    }
+
+    .db-anm-menu__dropdown.is-hidden { display: none; }
+
+    .db-ack-action {
+        width: 100%;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: #334155;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: left;
+        padding: 7px 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .db-ack-action:hover:not(:disabled) { background: #f1f5f9; }
+    .db-ack-action--done { color: #16a34a; cursor: default; }
+    @@keyframes db-ack-spin { to { transform: rotate(360deg); } }
+    .db-ack-action--loading i { animation: db-ack-spin 0.7s linear infinite; }
+    .db-ack-action--loading { opacity: 0.6; pointer-events: none !important; }
+    .db-ack-action--error { color: #ef4444 !important; }
+    .db-anomaly-card--acked {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .db-anomaly-card--acked .db-anomaly-card__header,
+    .db-anomaly-card--acked .db-anomaly-card__body {
+        opacity: 0.56;
+        filter: grayscale(0.35);
+        transition: opacity 0.4s, filter 0.4s;
+        position: relative;
+        z-index: 1;
+    }
+
+    .db-ack-ribbon {
+        position: absolute;
+        top: 52%;
+        right: -78%;
+        width: 260%;
+        height: 18px;
+        transform: translateY(-50%) rotate(-33deg);
+        transform-origin: center;
+        pointer-events: none;
+        z-index: 140;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+        overflow: hidden;
+        background: linear-gradient(90deg, rgba(245, 158, 11, 0.46), rgba(234, 88, 12, 0.46));
+    }
+
+    .db-anomaly-card--panel-generator .db-ack-ribbon {
+        top: 54%;
+        right: -160%;
+        width: 430%;
+        transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .db-ack-ribbon--critical {
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.46), rgba(185, 28, 28, 0.46));
+    }
+
+    .db-ack-ribbon__track {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        animation: db-ack-ribbon-scroll 7.2s linear infinite;
+        will-change: transform;
+        animation-play-state: running;
+    }
+
+    .db-ack-ribbon__text {
+        color: #ffffff;
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.64;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+        padding-right: 16px;
+        flex-shrink: 0;
+    }
+
+    @@keyframes db-ack-ribbon-scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+
+    @@media (hover: none) {
+        .db-anm-actions--has-menu { padding-right: 24px; }
+        .db-anm-actions--has-menu .db-badge { transform: none !important; }
+        .db-anm-menu__trigger {
+            opacity: 0.85;
+            pointer-events: auto !important;
+            top: 50%;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .db-ack-ribbon {
+            top: 52%;
+            right: -95%;
+            width: 300%;
+            height: 16px;
+        }
+
+        .db-anomaly-card--panel-generator .db-ack-ribbon {
+            top: 55%;
+            right: -142%;
+            width: 470%;
+            transform: translateY(-50%) rotate(-39deg);
+        }
+
+        .db-ack-ribbon__text {
+            font-size: 0.56rem;
+            letter-spacing: 0.07em;
+        }
+    }
+    </style>
+}
+
+
+<div class="db-page">
+
+    <div class="db-page-header">
+        @await Html.PartialAsync("Components/_SiteFilter")
+        <h1>Dashboard</h1>
+    </div>
+
+    @* STAT CARDS ROW *@
+    @* STAT CARDS ROW *@
+    <div class="db-stat-grid">
+
+        @{
+            var vdStat1 = new ViewDataDictionary(ViewData);
+            vdStat1["label"] = "BTS TOWER UP";
+            vdStat1["count"] = ViewBag.stats?.tower_up ?? 0;
+            vdStat1["total"] = ViewBag.stats?.tower_total ?? 0;
+            vdStat1["id"] = "count-tower-up";
+            vdStat1["totalId"] = "count-tower-total";
+            vdStat1["iconClass"] = "fa-solid fa-tower-broadcast";
+            vdStat1["borderColor"] = "#3b82f6";
+            vdStat1["iconBg"] = "rgba(59,130,246,0.12)";
+            vdStat1["clickable"] = false;
+        }
+        @await Html.PartialAsync("Components/_StatCard", vdStat1)
+
+        @* Tower Down *@
+        @{
+            var vdStat2 = new ViewDataDictionary(ViewData);
+            vdStat2["label"] = "TOWER DOWN";
+            vdStat2["count"] = ViewBag.stats?.tower_down ?? 0;
+            vdStat2["id"] = "count-tower-down";
+            vdStat2["iconClass"] = "fa-solid fa-tower-broadcast";
+            vdStat2["borderColor"] = "#f59e0b";
+            vdStat2["iconBg"] = "rgba(245,158,11,0.12)";
+            vdStat2["clickable"] = true;
+            vdStat2["detailTarget"] = "tower-down";
+        }
+        @await Html.PartialAsync("Components/_StatCard", vdStat2)
+
+        @* Generator Down *@
+        @{
+            var vdStat3 = new ViewDataDictionary(ViewData);
+            vdStat3["label"] = "GENERATOR DOWN";
+            vdStat3["count"] = ViewBag.stats?.generator_down ?? 0;
+            vdStat3["id"] = "count-generator-down";
+            vdStat3["iconClass"] = "fa-solid fa-bolt";
+            vdStat3["borderColor"] = "#f59e0b";
+            vdStat3["iconBg"] = "rgba(245,158,11,0.12)";
+            vdStat3["clickable"] = true;
+            vdStat3["detailTarget"] = "generator-down";
+        }
+        @await Html.PartialAsync("Components/_StatCard", vdStat3)
+
+        @* BTS Tower Down *@
+        @{
+            var vdStat4 = new ViewDataDictionary(ViewData);
+            vdStat4["label"] = "BTS TOWER DOWN";
+            vdStat4["count"] = ViewBag.stats?.bts_tower_down ?? 0;
+            vdStat4["id"] = "count-bts-down";
+            vdStat4["iconClass"] = "fa-solid fa-tower-cell";
+            vdStat4["borderColor"] = "#ef4444";
+            vdStat4["iconBg"] = "rgba(239,68,68,0.12)";
+            vdStat4["clickable"] = true;
+            vdStat4["detailTarget"] = "bts-tower-down";
+        }
+        @await Html.PartialAsync("Components/_StatCard", vdStat4)
+    </div>
+
+    @* MONITORING PANELS GRID *@
+    <div class="db-monitor-grid">
+
+        <div class="db-monitor-grid__left" id="monitorGridLeft">
+
+            @{
+                var vdDetail = new ViewDataDictionary(ViewData);
+                vdDetail["towerDownItems"] = ViewBag.towerDownItems ?? new List<dynamic>();
+                vdDetail["generatorDownItems"] = ViewBag.generatorDownItems ?? new List<dynamic>();
+                vdDetail["btsDownItems"] = ViewBag.btsDownItems ?? new List<dynamic>();
+            }
+            @await Html.PartialAsync("Components/_DetailPanel", vdDetail)
+
+            @{
+                var vdGen = new ViewDataDictionary(ViewData);
+                vdGen["allGeneratorNormal"] = ViewBag.generator?.all_normal ?? true;
+                vdGen["fuelLevel"] = ViewBag.generator?.avg_fuel ?? 70;
+                vdGen["generatorCount"] = ViewBag.generator?.total ?? 0;
+                vdGen["readyCount"] = ViewBag.generator?.ready_count ?? 0;
+                vdGen["readyPercent"] = ViewBag.generator?.ready_percent ?? 0;
+                vdGen["electricityStatus"] = ViewBag.generator?.electricity ?? "Normal";
+                vdGen["lightningStatus"] = ViewBag.generator?.lightning_status ?? "Normal";
+                vdGen["status"] = ViewBag.generator?.status ?? "normal";
+                vdGen["anomalies"] = ViewBag.generator?.anomalies ?? new List<dynamic>();
+                vdGen["canAcknowledge"] = ViewBag.is_admin ?? false;
+            }
+            @await Html.PartialAsync("Components/_GeneratorPanel", vdGen)
+        </div>
+
+        <div class="db-monitor-grid__right-top db-monitor-grid__right-panel">
+            @{
+                var vdTwr = new ViewDataDictionary(ViewData);
+                vdTwr["allTowerNormal"] = ViewBag.tower?.all_normal ?? true;
+                vdTwr["avgTilt"] = ViewBag.tower?.avg_tilt ?? 0.0;
+                vdTwr["tiltStatus"] = ViewBag.tower?.tilt_status ?? "Safe";
+                vdTwr["spdHealth"] = ViewBag.tower?.spd_health ?? "Good";
+                vdTwr["earthResistance"] = ViewBag.tower?.earth_resistance ?? "Normal";
+                vdTwr["lightingActivity"] = ViewBag.tower?.lighting_activity ?? "Normal";
+                vdTwr["status"] = ViewBag.tower?.status ?? "normal";
+                vdTwr["anomalies"] = ViewBag.tower?.anomalies ?? new List<dynamic>();
+                vdTwr["canAcknowledge"] = ViewBag.is_admin ?? false;
+            }
+            @await Html.PartialAsync("Components/_TowerStability", vdTwr)
+        </div>
+
+        <div class="db-monitor-grid__right-bottom db-monitor-grid__right-panel">
+            @{
+                var vdEnv = new ViewDataDictionary(ViewData);
+                vdEnv["windSpeedStatus"] = ViewBag.environmental?.wind_status ?? "Normal";
+                vdEnv["avgWindSpeed"] = ViewBag.environmental?.avg_wind ?? 0;
+                vdEnv["avgTemperature"] = ViewBag.environmental?.avg_temp ?? 0;
+                vdEnv["dustStatus"] = ViewBag.environmental?.dust_status ?? "Normal";
+                vdEnv["avgDustLevel"] = ViewBag.environmental?.avg_dust ?? "Good";
+                vdEnv["status"] = ViewBag.environmental?.status ?? "normal";
+                vdEnv["anomalies"] = ViewBag.environmental?.anomalies ?? new List<dynamic>();
+                vdEnv["canAcknowledge"] = ViewBag.is_admin ?? false;
+            }
+            @await Html.PartialAsync("Components/_Environmental", vdEnv)
+        </div>
+
+    </div>
+
+</div>
+
+@section scripts {
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+<script>
+
+var MONITORING_URL = '/monitoring';
+var DB_CAN_ACKNOWLEDGE = @((ViewBag.IsAdmin == true) ? "true" : "false");
+
+window.dbCloseAnomalyMenus = function () {
+    document.querySelectorAll('.db-anm-menu__dropdown').forEach(function (menu) {
+        menu.classList.add('is-hidden');
+        menu.style.position = '';
+        menu.style.left = '';
+        menu.style.top = '';
+        menu.style.right = '';
+        menu.style.bottom = '';
+        menu.style.zIndex = '';
+    });
+};
+
+window.dbPositionAnomalyMenu = function (menuRoot, menu) {
+    if (!menuRoot || !menu) return;
+
+    var trigger = menuRoot.querySelector('.db-anm-menu__trigger');
+    if (!trigger) return;
+
+    var triggerRect = trigger.getBoundingClientRect();
+    var menuWidth = menu.offsetWidth || 150;
+    var menuHeight = menu.offsetHeight || 42;
+    var gap = 6;
+
+    var left = triggerRect.right - menuWidth;
+    var top = triggerRect.bottom + gap;
+
+    if (left < 8) left = 8;
+    if ((left + menuWidth) > (window.innerWidth - 8)) {
+        left = Math.max(8, window.innerWidth - menuWidth - 8);
+    }
+
+    if ((top + menuHeight) > (window.innerHeight - 8)) {
+        top = triggerRect.top - menuHeight - gap;
+    }
+    if (top < 8) top = 8;
+
+    menu.style.position = 'fixed';
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.right = 'auto';
+    menu.style.bottom = 'auto';
+    menu.style.zIndex = '1200';
+};
+
+document.addEventListener('click', function () {
+    window.dbCloseAnomalyMenus();
+});
+
+window.dbEnsureAckRibbon = function (card, status) {
+    if (!card) return;
+    if (card.querySelector('.db-ack-ribbon')) return;
+
+    var severity = String(status || '').toLowerCase() === 'critical'
+        ? 'db-ack-ribbon--critical'
+        : 'db-ack-ribbon--warning';
+
+    var ribbon = document.createElement('div');
+    ribbon.className = 'db-ack-ribbon ' + severity;
+    ribbon.innerHTML =
+        '<div class="db-ack-ribbon__track">'
+        + '<span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span>'
+        + '<span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span>'
+        + '</div>';
+
+    card.appendChild(ribbon);
+};
+
+window.dbToggleAnomalyMenu = function (e, menuId) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    var menuRoot = document.getElementById(menuId);
+    if (!menuRoot) return;
+
+    var menu = menuRoot.querySelector('.db-anm-menu__dropdown');
+    if (!menu) return;
+
+    var isOpening = menu.classList.contains('is-hidden');
+    window.dbCloseAnomalyMenus();
+    if (isOpening) {
+        menu.classList.remove('is-hidden');
+        window.dbPositionAnomalyMenu(menuRoot, menu);
+    }
+};
+
+window.addEventListener('scroll', function () {
+    window.dbCloseAnomalyMenus();
+}, true);
+
+window.addEventListener('resize', function () {
+    window.dbCloseAnomalyMenus();
+});
+
+window.dbPromptAcknowledge = function (e, anomalyId, actionId, menuId, zoneId, panel, anomalyType) {
+    e.stopPropagation();
+    e.preventDefault();
+    window.dbCloseAnomalyMenus();
+
+    var runConfirm = function () {
+        window.dbAcknowledgeAnomaly(anomalyId, actionId, menuId, zoneId, panel, anomalyType);
+    };
+
+    if (typeof Swal === 'undefined') {
+        if (window.confirm('Acknowledge anomaly ini?')) runConfirm();
+        return;
+    }
+
+    Swal.fire({
+        title: 'Acknowledge anomaly?',
+        text: 'Viewer tetap bisa melihat card ini sebagai acknowledged.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, acknowledge',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (result.isConfirmed) runConfirm();
+    });
+};
+
+window.dbAcknowledgeAnomaly = function (anomalyId, actionId, menuId, zoneId, panel, anomalyType) {
+    var action = document.getElementById(actionId);
+    var menuRoot = document.getElementById(menuId);
+    var card = menuRoot ? menuRoot.closest('.db-anomaly-card') : null;
+    if (!action || action.dataset.ackDone === '1') return;
+
+    action.classList.add('db-ack-action--loading');
+    action.innerHTML = '<i class="fa-solid fa-spinner"></i> Processing...';
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    fetch('/dashboard/anomaly/' + encodeURIComponent(anomalyId) + '/acknowledge', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ zone_id: zoneId, panel: panel, type: anomalyType }),
+    })
+    .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    })
+    .then(function () {
+        action.classList.remove('db-ack-action--loading');
+        action.classList.add('db-ack-action--done');
+        action.innerHTML = '<i class="fa-solid fa-circle-check"></i> Acknowledged';
+        action.dataset.ackDone = '1';
+        action.disabled = true;
+        if (card) {
+            card.classList.add('db-anomaly-card--acked');
+            var statusText = card.querySelector('.db-badge') ? card.querySelector('.db-badge').textContent : '';
+            window.dbEnsureAckRibbon(card, statusText);
+            var parentGrid = card.parentElement;
+            if (parentGrid) parentGrid.appendChild(card);
+        }
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Berhasil',
+                text: 'Anomaly berhasil di-acknowledge.',
+                icon: 'success',
+                timer: 1400,
+                showConfirmButton: false,
+            });
+        }
+    })
+    .catch(function () {
+        action.classList.remove('db-ack-action--loading');
+        action.classList.add('db-ack-action--error');
+        action.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Coba lagi';
+        setTimeout(function () {
+            action.classList.remove('db-ack-action--error');
+            action.innerHTML = '<i class="fa-regular fa-circle-check"></i> Acknowledge';
+        }, 2000);
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Gagal', 'Acknowledge gagal diproses.', 'error');
+        }
+    });
+};
+
+// ============================================================
+// DETAIL PANEL TOGGLE
+// ============================================================
+window._activeDetailTarget = null;
+
+function toggleDetailPanel(target) {
+    if (window._activeDetailTarget === target) { closeDetailPanel(); return; }
+    closeDetailPanel(false);
+    var panel = document.getElementById('detailPanel-' + target);
+    if (panel) {
+        panel.style.display = '';
+        requestAnimationFrame(function () { panel.classList.add('db-detail-panel--visible'); });
+    }
+    var card = document.getElementById('statCard-' + target);
+    if (card) {
+        card.style.setProperty('--card-accent', card.style.borderTopColor || '#64748b');
+        card.classList.add('db-stat-card--active');
+    }
+    var left = document.getElementById('monitorGridLeft');
+    if (left) left.classList.add('db-monitor-grid__left--detail-active');
+    window._activeDetailTarget = target;
+}
+
+function closeDetailPanel(resetTarget) {
+    if (resetTarget === undefined) resetTarget = true;
+    document.querySelectorAll('.db-detail-panel').forEach(function (p) {
+        p.classList.remove('db-detail-panel--visible');
+        setTimeout(function () {
+            if (!p.classList.contains('db-detail-panel--visible')) p.style.display = 'none';
+        }, 250);
+    });
+    document.querySelectorAll('.db-stat-card--active').forEach(function (c) {
+        c.classList.remove('db-stat-card--active');
+    });
+    var left = document.getElementById('monitorGridLeft');
+    if (left) left.classList.remove('db-monitor-grid__left--detail-active');
+    if (resetTarget) window._activeDetailTarget = null;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function () {
+    window._dashboardSiteId = document.getElementById('siteFilter') ?
+        document.getElementById('siteFilter').value : 'all';
+
+    
+    
+
+    var filterEl = document.getElementById('siteFilter');
+    if (filterEl) {
+        filterEl.addEventListener('change', function () { triggerRefresh(this.value); });
+    }
+    document.addEventListener('dashboard-site-changed', function (e) {
+        var siteId = e.detail.siteId || 'all'; // BUG 4 FIX: hapus areaId (tbl_r_areas sudah dihapus)
+        if (filterEl) filterEl.value = siteId;
+        triggerRefresh(siteId);
+    });
+
+    setInterval(function () { refreshDashboard(window._dashboardSiteId || 'all'); }, 60000);
+
+    // Initial shrink for server-side rendered cards
+    applyAutoShrink();
+
+    // Observe changes in anomaly grids to apply shrink to new cards
+    var observer = new MutationObserver(function (mutations) {
+        applyAutoShrink();
+    });
+    document.querySelectorAll('.db-anomaly-grid').forEach(function (grid) {
+        observer.observe(grid, { childList: true, subtree: true });
+    });
+
+    // Re-apply on resize
+    window.addEventListener('resize', applyAutoShrink);
+});
+
+function applyAutoShrink() {
+    document.querySelectorAll('[data-auto-shrink="true"]').forEach(function (el) {
+        shrinkText(el);
+    });
+}
+
+function shrinkText(el) {
+    var parent = el.parentElement;
+    if (!parent) return;
+
+    // Reset to CSS-computed font-size before measuring (handles re-renders)
+    el.style.fontSize = '';
+
+    var maxWidth = parent.offsetWidth;
+    if (!maxWidth) return;
+
+    // Force nowrap to measure natural single-line width
+    var oldWS = el.style.whiteSpace;
+    el.style.whiteSpace = 'nowrap';
+
+    var iterations = 0;
+    while (el.scrollWidth > maxWidth && iterations < 20) {
+        var currentSize = parseFloat(window.getComputedStyle(el).fontSize);
+        if (currentSize <= 8) break; // Don't go below 8px
+        el.style.fontSize = (currentSize - 0.5) + 'px';
+        iterations++;
+    }
+
+    // Restore white-space so word-break / wrap works normally
+    el.style.whiteSpace = oldWS;
+}
+
+function triggerRefresh(siteId) {
+    window._dashboardSiteId = siteId;
+    refreshDashboard(siteId);
+}
+
+// ============================================================
+// MAIN FETCHER
+// ============================================================
+function refreshDashboard(siteId) {
+    
+    var url   = '/api/dashboard/summary' + '?site_id=' + siteId + '&_t=' + Date.now();
+
+    document.querySelector('.db-page').style.opacity = '0.7';
+    fetch(url, {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (result) {
+        if (result.status === 'success') {
+            updateNumbers(result.data);
+            updateDetailPanels(result.data);
+        }
+    })
+    .catch(function (err) { console.error('[Dashboard Error]:', err); })
+    .finally(function () { document.querySelector('.db-page').style.opacity = '1'; });
+}
+
+// ============================================================
+// DATA DISTRIBUTOR
+// ============================================================
+function updateNumbers(data) {
+    var stats         = data.stats         || {};
+    var generator     = data.generator     || {};
+    var tower         = data.tower         || {};
+    var environmental = data.environmental || {};
+
+    setText('count-tower-up',    stats.tower_up       ?? 0);
+    setText('count-tower-total', stats.tower_total    ?? 0);  // ← Fix: ID yang benar
+    setText('count-tower-down',     stats.tower_down     ?? 0);
+    setText('count-generator-down', stats.generator_down ?? 0);
+    setText('count-bts-down',       stats.bts_tower_down ?? 0); // ← Fix: sesuai stat-card id
+
+    setText('avgTiltValue',         (parseFloat(tower.avg_tilt) || 0).toFixed(1) + '\u00b0');
+    setText('tiltStatusText',       '(' + (tower.tilt_status       || 'Safe') + ')');
+    setText('spdHealthText',        tower.spd_health        || 'Good');
+    setText('earthResistanceText',  tower.earth_resistance  || 'Normal');
+    setText('lightingActivityText', tower.lighting_activity || 'Normal');
+
+    // ✅ PERBAIKAN 1: Tambahkan update untuk Tower agar dinamis
+    updatePanelUI('generator',    generator);
+    updatePanelUI('tower',        tower); 
+    updatePanelUI('environmental',environmental);
+}
+
+// ============================================================
+// DETAIL PANEL REALTIME UPDATE
+// Render ulang daftar item dengan link ke monitoring jika ada zone_id
+// ============================================================
+function updateDetailPanels(data) {
+    var map = [
+        { key:'towerDownItems',     body:'detailBody-tower-down',     count:'detailCount-tower-down',     suffix:'Tower',     icon:'fa-tower-cell',      status:'warning'  },
+        { key:'generatorDownItems', body:'detailBody-generator-down', count:'detailCount-generator-down', suffix:'Generator', icon:'fa-bolt',             status:'warning'  },
+        { key:'btsDownItems',       body:'detailBody-bts-tower-down', count:'detailCount-bts-tower-down', suffix:'BTS',       icon:'fa-tower-broadcast',  status:'critical' }
+    ];
+
+    map.forEach(function (cfg) {
+        var items   = data[cfg.key] || [];
+        var bodyEl  = document.getElementById(cfg.body);
+        var countEl = document.getElementById(cfg.count);
+
+        if (countEl) countEl.textContent = items.length + ' ' + cfg.suffix;
+        if (!bodyEl) return;
+
+        if (items.length === 0) {
+            bodyEl.innerHTML =
+                '<div class="db-detail-panel__empty">' +
+                    '<i class="fa-solid fa-circle-check" style="color:#22c55e;"></i>' +
+                    '<span>Semua ' + cfg.suffix.toLowerCase() + ' normal</span>' +
+                '</div>';
+            return;
+        }
+
+        bodyEl.innerHTML = items.map(function (item) {
+            var hasZone     = item.zone_id ? true : false;
+            var statusClass = 'db-detail-item--' + (item.status || cfg.status);
+            var clickClass  = hasZone ? ' db-detail-item--clickable' : '';
+            var tag         = hasZone ? 'a' : 'div';
+            
+            var aStyle = hasZone
+                ? ' style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;cursor:pointer;width:100%;"'
+                : '';
+
+            var timeHtml = item.last_seen ? '<span class="db-detail-item__time">' + item.last_seen + '</span>' : '';
+            var hrefAttr = hasZone ? ' href="' + MONITORING_URL + '?zone_id=' + item.zone_id + '"' : '';
+
+            // ✅ PERBAIKAN 2: aStyle dimasukkan ke dalam elemen
+            return '<' + tag + ' class="db-detail-item ' + statusClass + clickClass + '"' + hrefAttr + aStyle + '>' +
+                       '<div class="db-detail-item__left">' +
+                           '<i class="fa-solid ' + cfg.icon + ' db-detail-item__icon"></i>' +
+                           '<div class="db-detail-item__info">' +
+                               '<span class="db-detail-item__name">' + (item.name || '-') + '</span>' +
+                               '<span class="db-detail-item__site">' + (item.site || '-') + '</span>' +
+                           '</div>' +
+                       '</div>' +
+                       '<div class="db-detail-item__right">' + timeHtml + '</div>' +
+                   '</' + tag + '>';
+        }).join('');
+    });
+}
+
+// ============================================================
+// PANEL MODE: NORMAL vs ANOMALI
+// ============================================================
+function updatePanelUI(type, data) {
+    var panel          = document.getElementById(type + 'PanelContainer');
+    var normalView     = document.getElementById(type + 'NormalView');
+    var anomalyGrid    = document.getElementById(type + 'AnomalyGrid');
+    var badgeContainer = document.getElementById(type + 'BadgeContainer');
+    var anomalies      = data.anomalies || [];
+
+    if (!panel) return;
+
+    panel.className = 'db-panel db-panel--' + type;
+    if (data.status && data.status !== 'normal' && anomalies.length > 0) {
+        panel.classList.add('db-panel--' + data.status);
+    }
+
+    if (anomalies.length > 0) {
+        if (normalView)  normalView.style.display  = 'none';
+        if (anomalyGrid) {
+            anomalyGrid.style.display = '';
+            renderAnomalyCards(anomalyGrid, anomalies, type);
+        }
+        if (badgeContainer) {
+            badgeContainer.innerHTML =
+                '<span class="db-badge db-badge--critical db-badge--xs">' +
+                '<i class="fa-solid fa-triangle-exclamation"></i> ' + anomalies.length + ' Issues</span>';
+        }
+    } else {
+        if (normalView)  normalView.style.display  = '';
+        if (anomalyGrid) anomalyGrid.style.display = 'none';
+        if (badgeContainer) {
+            var label = type.charAt(0).toUpperCase() + type.slice(1);
+            badgeContainer.innerHTML =
+                '<span class="db-badge db-badge--normal db-badge--xs">' +
+                '<i class="fa-solid fa-circle-check"></i> All ' + label + ' Normal</span>';
+        }
+        if (type === 'generator') {
+            updateFuelGauge(data.avg_fuel || 0);
+            setText('generatorTotalCount',   data.total          || 0);
+            setText('generatorTotalCount2',  data.total          || 0);
+            setText('generatorReadyPercent', data.ready_percent  || 0);
+            setText('generatorReadyCount',   data.ready_count    || 0);
+            setText('electricityStatusText', data.electricity      || 'Normal');
+            setText('lightningStatusText',   data.lightning_status || 'Normal');
+            updateStatusCard('electricityStatusCard', data.electricity      || 'Normal');
+            updateStatusCard('lightningStatusCard',   data.lightning_status || 'Normal');
+        } else if (type === 'environmental') {
+            setText('avgWindSpeedText',  data.avg_wind || 0);
+            setText('avgTemperatureText',data.avg_temp || 0);
+            setText('avgDustLevelText',  data.avg_dust || 'Good');
+        }
+    }
+}
+// ANOMALY CARD RENDERER
+// Card dengan zone_id → render sebagai <a> link ke monitoring
+function renderAnomalyCards(container, anomalies) {
+    var sorted = sortAnomaliesByPriority(anomalies || []);
+
+    container.innerHTML = sorted.map(function (anm) {
+        var type       = normalizeAnomalyType(anm.type || '');
+        var panelKey   = String(anm.panel || '').toLowerCase();
+        var status     = (anm.status || 'warning').toLowerCase();
+        var isCritical = status === 'critical';
+        var cardClass  = isCritical ? 'db-anomaly-card--critical' : 'db-anomaly-card--warning';
+        var panelClass = panelKey ? (' db-anomaly-card--panel-' + panelKey) : '';
+        var badgeClass = isCritical ? 'db-badge--critical' : 'db-badge--warning';
+        var textClass  = isCritical ? 'text-red' : 'text-orange';
+        var bgClass    = isCritical ? 'bg-red'   : 'bg-orange';
+
+        // 2. Logika Link & Tag
+        var hasZone    = anm.zone_id ? true : false;
+        var tag        = hasZone ? 'a' : 'div';
+        var clickClass = hasZone ? ' db-anomaly-card--clickable' : '';
+        var isAcked    = anm.acknowledged ? true : false;
+        var ackedClass = isAcked ? ' db-anomaly-card--acked' : '';
+        var ackRibbonClass = isCritical ? 'db-ack-ribbon--critical' : 'db-ack-ribbon--warning';
+        var ackRibbonHtml = isAcked
+            ? '<div class="db-ack-ribbon ' + ackRibbonClass + '"><div class="db-ack-ribbon__track"><span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span><span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span></div></div>'
+            : '';
+        
+        var hrefAttr = hasZone 
+            ? ' href="/monitoring?zone_id=' + anm.zone_id + '" style="text-decoration:none;color:inherit;cursor:pointer;pointer-events:auto;position:relative;"' 
+            : '';
+
+        var ackHtml = '';
+        if (DB_CAN_ACKNOWLEDGE && anm.anomaly_id) {
+            var menuId   = 'ack-menu-' + anm.anomaly_id;
+            var actionId = 'ack-action-' + anm.anomaly_id;
+            var zoneId   = anm.zone_id || '';
+            var panel    = anm.panel || '';
+
+            var actionBtn = isAcked
+                ? '<button type="button" id="' + actionId + '" class="db-ack-action db-ack-action--done" '
+                    + 'data-ack-done="1" disabled onclick="event.stopPropagation();event.preventDefault();" '
+                    + 'title="Already acknowledged"><i class="fa-solid fa-circle-check"></i> Acknowledged</button>'
+                : '<button type="button" id="' + actionId + '" class="db-ack-action" '
+                    + 'onclick="dbPromptAcknowledge(event,\'' + anm.anomaly_id + '\',\'' + actionId + '\',\'' + menuId + '\',\'' + zoneId + '\',\'' + panel + '\',\'' + type + '\')" '
+                    + 'title="Acknowledge anomaly"><i class="fa-regular fa-circle-check"></i> Acknowledge</button>';
+
+            ackHtml = '<div class="db-anm-menu" id="' + menuId + '">' 
+                + '<button type="button" class="db-anm-menu__trigger" onclick="dbToggleAnomalyMenu(event,\'' + menuId + '\')" title="Actions">'
+                + '<i class="fa-solid fa-ellipsis-vertical"></i></button>'
+                + '<div class="db-anm-menu__dropdown is-hidden">' + actionBtn + '</div>'
+                + '</div>';
+        }
+
+        var bodyHtml = '';
+        if (type === 'fuel_gauge') {
+            var deg = (anm.value || 0) * 1.8;
+            var color = isCritical ? '#ef4444' : '#f59e0b';
+            bodyHtml = '<div class="db-anm-gauge">' +
+                '<div class="db-anm-gauge__circle" style="background:conic-gradient(from 270deg at 50% 100%,' + color + ' ' + deg + 'deg,#e2e8f0 ' + deg + 'deg 180deg,transparent 180deg);">' +
+                '<div class="db-anm-gauge__mask"></div><span class="db-anm-gauge__val">' + (anm.value || 0) + '%</span></div>' +
+                '<span class="db-anm-gauge__label">Fuel Level</span></div>';
+        } else if (type === 'fuel_bar') {
+            bodyHtml = '<div class="db-anm-bar-wrap"><div class="db-anm-bar-bg"><div class="db-anm-bar-fill ' + bgClass + '" style="width:' + (anm.value || 0) + '%;"></div></div>' +
+                '<div class="db-anm-bar__text">Fuel Level : ' + (anm.value || 0) + '%</div></div>';
+        } else if (type === 'electrical') {
+            var meta = anm.meta || {};
+            var vCls = (meta.voltage_status === 'warning' || meta.voltage_status === 'critical') ? 'text-red' : '';
+            var fCls = (meta.freq_status    === 'warning' || meta.freq_status    === 'critical') ? 'text-red' : '';
+            var vWgt = vCls ? 'font-weight:700;' : '';
+            var fWgt = fCls ? 'font-weight:700;' : '';
+            bodyHtml = '<div class="db-anm-elec" style="display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:8px;">' +
+                '<i class="fa-solid fa-bolt db-anm-icon ' + textClass + '" style="font-size:1.6rem;flex-shrink:0;"></i>' +
+                '<div class="db-anm-elec__details">' +
+                '<div class="db-anm-elec__row ' + vCls + '" style="' + vWgt + '" data-auto-shrink="true">Tegangan: ' + (meta.voltage || 0) + 'V</div>' +
+                '<div class="db-anm-elec__row ' + fCls + '" style="' + fWgt + '" data-auto-shrink="true">Frekuensi: ' + (meta.frequency || 50) + 'Hz</div>' +
+                '</div></div>';
+        } else if (type === 'weather') {
+            var valLow = String(anm.value || '').toLowerCase();
+            var icon = (valLow.indexOf('wind') !== -1 || valLow.indexOf('temperature') !== -1)
+                ? 'fa-wind' : (valLow.indexOf('dust') !== -1 ? 'fa-smog' : 'fa-cloud-bolt');
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid ' + icon + ' db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-text-lg" data-auto-shrink="true">' + (anm.value || 'Bad Weather') + '</div></div>';
+        } else if (type === 'tower') {
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid fa-tower-broadcast db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-val-lg" data-auto-shrink="true">' + (anm.value || 0) + '&deg;</div></div>';
+        } else if (type === 'spd') {
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid fa-shield-halved db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-text-lg" data-auto-shrink="true">SPD ' + (anm.value || 'Unknown') + '</div></div>';
+        } else if (type === 'earth') {
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid fa-layer-group db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-val-lg" data-auto-shrink="true">' + (anm.value || 0) + ' <span style="font-size:0.8em;font-weight:normal;">Ohm</span></div></div>';
+        } else if (type === 'lightning') {
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid fa-bolt db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-text-lg" data-auto-shrink="true">Lightning ' + (anm.value || 'Active') + '</div></div>';
+        } else if (type === 'sensor_dead') {
+            bodyHtml = '<div class="db-anm-center">'
+                + '<div class="db-anm-sensor-icon-box">'
+                + '<i class="fa-solid fa-satellite-dish text-red db-anm-sensor-icon-dish"></i>'
+                + '<i class="fa-solid fa-slash text-red db-anm-sensor-icon-slash"></i>'
+                + '</div>'
+                + '<div class="db-anm-text-lg text-red" style="font-weight:700;" data-auto-shrink="true">SENSOR MATI</div>'
+                + '<div class="db-anm-sensor-sources">' + formatSensorDeadDetails(anm.value) + '</div>'
+                + '</div>';
+        } else {
+            bodyHtml = '<div class="db-anm-center"><i class="fa-solid fa-triangle-exclamation db-anm-icon-lg ' + textClass + '"></i>' +
+                '<div class="db-anm-val-lg" data-auto-shrink="true">' + (anm.value || '') + '</div></div>';
+        }
+
+        return '<' + tag + ' class="db-anomaly-card ' + cardClass + panelClass + clickClass + ackedClass + '"' + hrefAttr + '>' +
+                   '<div class="db-anomaly-card__header">' +
+                       '<div class="db-anomaly-card__site-info">' +
+                           '<span class="db-anm-site" data-auto-shrink="true">' + (anm.site || 'SITE') + '</span>' +
+                           '<span class="db-anm-name" data-auto-shrink="true">' + (anm.name || 'ID')   + '</span>' +
+                       '</div>' +
+                       '<div class="db-anm-actions' + (ackHtml ? ' db-anm-actions--has-menu' : '') + '">' +
+                           '<div class="db-badge ' + badgeClass + ' db-badge--xs">' + status.charAt(0).toUpperCase() + status.slice(1) + '</div>' +
+                           ackHtml +
+                       '</div>' +
+                   '</div>' +
+                   '<div class="db-anomaly-card__body">' + bodyHtml + '</div>' +
+                   ackRibbonHtml +
+               '</' + tag + '>';
+    }).join('');
+}
+
+function normalizeAnomalyType(type) {
+    var normalized = String(type || '').trim().toLowerCase();
+    if (normalized === 'sensor' || normalized === 'sensor_mati' || normalized === 'sensor_issue') {
+        return 'sensor_dead';
+    }
+    return normalized;
+}
+
+function formatSensorDeadDetails(rawValue) {
+    var MAX_SHOW = 2;
+    var items = [];
+
+    if (Array.isArray(rawValue)) {
+        items = rawValue
+            .map(function (item) { return String(item || '').trim(); })
+            .filter(function (item) { return item !== ''; });
+    } else {
+        var text = String(rawValue || '').trim();
+        if (text !== '') {
+            items = text
+                .split(/[,;]/)
+                .map(function (item) { return item.trim(); })
+                .filter(function (item) { return item !== ''; });
+        }
+    }
+
+    if (items.length === 0) return 'No Data';
+
+    var remaining = items.length - MAX_SHOW;
+    if (remaining <= 0) {
+        return items.join(', ');
+    }
+
+    var shown = items.slice(0, MAX_SHOW);
+    return shown.join(', ') + ', dan ' + remaining + '+ lainnya';
+}
+
+function sortAnomaliesByPriority(anomalies) {
+    return anomalies.slice().sort(function (a, b) {
+        var aAckRank = isAcknowledgedAnomaly(a) ? 1 : 0;
+        var bAckRank = isAcknowledgedAnomaly(b) ? 1 : 0;
+        if (aAckRank !== bAckRank) return aAckRank - bAckRank;
+
+        var aSeverity = getSeverityRank(a.status);
+        var bSeverity = getSeverityRank(b.status);
+        if (aSeverity !== bSeverity) return aSeverity - bSeverity;
+
+        var aTypeRank = getAnomalyTypeRank(a.type);
+        var bTypeRank = getAnomalyTypeRank(b.type);
+        if (aTypeRank !== bTypeRank) return aTypeRank - bTypeRank;
+
+        var aUrgency = getAnomalyUrgencyScore(a);
+        var bUrgency = getAnomalyUrgencyScore(b);
+        if (aUrgency !== bUrgency) return bUrgency - aUrgency;
+
+        var aSite = String(a.site || '').toLowerCase();
+        var bSite = String(b.site || '').toLowerCase();
+        if (aSite !== bSite) return aSite.localeCompare(bSite);
+
+        var aName = String(a.name || '').toLowerCase();
+        var bName = String(b.name || '').toLowerCase();
+        return aName.localeCompare(bName);
+    });
+}
+
+function isAcknowledgedAnomaly(anm) {
+    if (!anm) return false;
+    if (anm.acknowledged === true) return true;
+    if (anm.acknowledged === 1) return true;
+    return String(anm.acknowledged || '').toLowerCase() === 'true';
+}
+
+function getSeverityRank(status) {
+    var normalized = String(status || '').toLowerCase();
+    if (normalized === 'critical') return 0;
+    if (normalized === 'warning') return 1;
+    return 2;
+}
+
+function getAnomalyTypeRank(type) {
+    var normalized = normalizeAnomalyType(type);
+    if (normalized === 'sensor_dead') return 0;
+    return 1;
+}
+
+function getAnomalyUrgencyScore(anm) {
+    var panel = String((anm && anm.panel) || '').toLowerCase();
+    var type = String((anm && anm.type) || '').toLowerCase();
+    var valueNum = toNumber(anm ? anm.value : null);
+
+    if (panel === 'generator') {
+        if (type === 'electrical') {
+            var voltage = toNumber(anm && anm.meta ? anm.meta.voltage : null);
+            var frequency = toNumber(anm && anm.meta ? anm.meta.frequency : null);
+
+            var voltageDeviation = distanceOutsideRange(voltage, 198, 242);
+            var frequencyDeviation = distanceOutsideRange(frequency, 47, 53);
+
+            var electricalDeviation = Math.max(voltageDeviation, frequencyDeviation);
+            if (electricalDeviation > 0) return electricalDeviation;
+
+            var voltageSeverity = getSeverityRank(anm && anm.meta ? anm.meta.voltage_status : null);
+            var freqSeverity = getSeverityRank(anm && anm.meta ? anm.meta.freq_status : null);
+            var electricalPenalty = Math.max(0, (2 - voltageSeverity)) + Math.max(0, (2 - freqSeverity));
+            return electricalPenalty;
+        }
+
+        if ((type === 'fuel_gauge' || type === 'fuel_bar') && valueNum !== null) {
+            return 100 - valueNum;
+        }
+    }
+
+    if ((panel === 'tower' || panel === 'environmental') && valueNum !== null) {
+        return Math.abs(valueNum);
+    }
+
+    if (valueNum !== null) return Math.abs(valueNum);
+    return 0;
+}
+
+function toNumber(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number' && !isNaN(value)) return value;
+
+    var parsed = parseFloat(String(value).replace(/[^0-9+\-.]/g, ''));
+    return isNaN(parsed) ? null : parsed;
+}
+
+function distanceOutsideRange(value, lower, upper) {
+    if (value === null || value === undefined || isNaN(value)) return 0;
+    if (value < lower) return lower - value;
+    if (value > upper) return value - upper;
+    return 0;
+}
+
+function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+function updateFuelGauge(percent) {
+    var arc = document.getElementById('fuelArcFill');
+    var txt = document.getElementById('fuelLevelText');
+    if (arc) arc.setAttribute('stroke-dashoffset', 251.2 - (251.2 * percent / 100));
+    if (txt) txt.textContent = Math.round(percent) + '%';
+}
+function updateStatusCard(id, status) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('db-gen-status-item--warning', 'db-gen-status-item--critical');
+    var s = (status || '').toLowerCase();
+    if (s === 'warning' || s === 'critical') el.classList.add('db-gen-status-item--' + s);
+}
+
+</script>
+}
+
+
+
+
+

@@ -1,0 +1,411 @@
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    Layout = null;
+    ViewData["Title"] = "Login - ITAssetTrack";
+    string? returnUrl = ViewData["ReturnUrl"] as string;
+    string? errorMsg = ViewBag.ErrorMessage as string;
+}
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - InfraHub ITAssetTrack Team</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --infrahub-blue: #0f2c59;
+            --infrahub-yellow: #f8c301;
+            --body-bg: #090e1a;
+            --card-bg: #ffffff;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--body-bg);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(217, 76%, 15%, 1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(45, 98%, 20%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, hsla(215, 60%, 10%, 1) 0px, transparent 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 24px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background glow behind the card */
+        .bg-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(15, 44, 89, 0.4) 0%, rgba(15, 44, 89, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 520px; /* Widened from 450px */
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Top colored bar representing InfraHub brand */
+        .brand-bar {
+            height: 6px;
+            background: linear-gradient(90deg, var(--infrahub-blue) 0%, var(--infrahub-yellow) 100%);
+            width: 100%;
+        }
+
+        .login-header {
+            padding: 2.25rem 2.25rem 1.25rem; /* Reduced top padding */
+            text-align: center;
+        }
+
+        .brand-logo-wrapper {
+            background: #ffffff;
+            padding: 8px 12px;
+            border-radius: 14px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            margin-bottom: 1rem;
+            border: 1px solid #f1f5f9;
+        }
+
+        .brand-logo {
+            max-height: 48px; /* Slightly more compact */
+            object-fit: contain;
+            display: block;
+        }
+
+        .login-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--infrahub-blue);
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+
+        .login-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .login-body {
+            padding: 0 2.25rem 2.25rem; /* Reduced bottom padding */
+        }
+
+        /* Modern text inputs with clean embedded icons */
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 1rem; /* Compact margin */
+        }
+
+        .input-wrapper .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .input-wrapper .form-control {
+            border-radius: 14px;
+            padding: 0.75rem 1rem 0.75rem 2.75rem; /* Balanced padding */
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1.5px solid #cbd5e1;
+            background-color: #f8fafc;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper .form-control:focus {
+            background-color: #ffffff;
+            border-color: var(--infrahub-blue);
+            box-shadow: 0 0 0 4px rgba(15, 44, 89, 0.1);
+        }
+
+        .input-wrapper .form-control:focus + .input-icon {
+            color: var(--infrahub-blue);
+        }
+
+        /* Password toggle button integrated cleanly */
+        .password-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            border-radius: 8px;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--infrahub-blue);
+        }
+
+        .input-wrapper .form-control-password {
+            padding-right: 2.75rem !important;
+        }
+
+        /* Remember Me checkbox styling */
+        .form-check-input:checked {
+            background-color: var(--infrahub-blue);
+            border-color: var(--infrahub-blue);
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, var(--infrahub-blue) 0%, #1e40af 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 0.8rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+            box-shadow: 0 4px 15px rgba(15, 44, 89, 0.2);
+            transition: all 0.25s ease;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #172554 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(15, 44, 89, 0.35);
+        }
+
+        .btn-login:active {
+            transform: translateY(1px);
+        }
+
+        /* Custom Demo Accounts Selector Container */
+        .demo-section {
+            border-top: 1.5px dashed #f1f5f9;
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+        }
+
+        .demo-title-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.65rem;
+        }
+
+        .demo-label {
+            font-size: 0.725rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .demo-password-badge {
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Single horizontal row layout for 4 items */
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        /* Sleek role selector badges */
+        .demo-badge-btn {
+            border: 1.5px solid #e2e8f0;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 8px 4px;
+            font-size: 0.725rem;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            text-align: center;
+            width: 100%;
+        }
+
+        .demo-badge-btn:hover {
+            border-color: var(--infrahub-blue);
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .demo-badge-btn .role-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .dot-admin { background-color: #e11d48; }
+        .dot-coord { background-color: #2563eb; }
+        .dot-tech { background-color: #0d9488; }
+        .dot-view { background-color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <div class="login-card">
+        <!-- Brand line -->
+        <div class="brand-bar"></div>
+
+        <!-- Header -->
+        <div class="login-header">
+            <div class="brand-logo-wrapper">
+                <img src="~/images/LogooPama.png" alt="InfraHub Logo" class="brand-logo" />
+            </div>
+            <h1 class="login-title">InfraHub EEN'DSO Team</h1>
+            <p class="login-subtitle">Sistem Manajemen Aset &amp; Preventive Maintenance (PM)</p>
+        </div>
+
+        <!-- Body -->
+        <div class="login-body">
+            @if (TempData["LogoutSuccess"] != null)
+            {
+                <div class="alert alert-success border-0 rounded-3 small py-2 px-3 mb-3 d-flex align-items-center gap-2" style="background-color: #ecfdf5; color: #065f46;">
+                    <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+                    <div class="fw-semibold">@TempData["LogoutSuccess"]</div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(errorMsg))
+            {
+                <div class="alert alert-danger border-0 rounded-3 small py-2 px-3 mb-3 d-flex align-items-center gap-2" style="background-color: #fef2f2; color: #991b1b;">
+                    <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                    <div class="fw-semibold">@errorMsg</div>
+                </div>
+            }
+
+            <form asp-action="Login" method="post" id="loginForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+                <!-- Username Input -->
+                <div class="input-wrapper">
+                    <input type="text" name="username" id="usernameInput" class="form-control" placeholder="Username atau NRP..." required autofocus />
+                    <i class="bi bi-person input-icon"></i>
+                </div>
+
+                <!-- Password Input -->
+                <div class="input-wrapper">
+                    <input type="password" name="password" id="passwordInput" class="form-control form-control-password" placeholder="Password..." required />
+                    <i class="bi bi-lock input-icon"></i>
+                    <button type="button" class="password-toggle-btn" id="togglePasswordBtn">
+                        <i class="bi bi-eye" id="passwordIcon"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="rememberMe" id="rememberMe" value="true">
+                        <label class="form-check-label small text-secondary fw-medium" for="rememberMe">Ingat Saya</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login w-100 py-2.5 shadow">
+                    Masuk ke Sistem <i class="bi bi-arrow-right-short ms-1 fs-5 align-middle"></i>
+                </button>
+            </form>
+
+            @if (Env.IsDevelopment())
+            {
+                <!-- Quick Demo Accounts Switcher -->
+                <div class="demo-section">
+                    <div class="demo-title-bar">
+                        <span class="demo-label">Pilih Akun Demo</span>
+                        <span class="demo-password-badge">Default Pass: Password123!</span>
+                    </div>
+                    <div class="demo-grid" style="grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                        <button type="button" class="demo-badge-btn" onclick="fillCredentials('elyas', 'Password123!')" title="Teknisi 1: Elyas">
+                            <span class="role-dot dot-tech"></span> Teknisi 1
+                        </button>
+                        <button type="button" class="demo-badge-btn" onclick="fillCredentials('putra', 'Password123!')" title="Teknisi 2: Putra">
+                            <span class="role-dot dot-tech"></span> Teknisi 2
+                        </button>
+                        <button type="button" class="demo-badge-btn" onclick="fillCredentials('franz', 'Password123!')" title="PIC TEAM">
+                            <span class="role-dot dot-coord"></span> PIC TEAM
+                        </button>
+                        <button type="button" class="demo-badge-btn" onclick="fillCredentials('eddi', 'Password123!')" title="Section Head">
+                            <span class="role-dot dot-coord"></span> Sec Head
+                        </button>
+                        <button type="button" class="demo-badge-btn" onclick="fillCredentials('admin', 'Password123!')" title="System Admin">
+                            <span class="role-dot dot-admin"></span> Admin
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        function fillCredentials(user, pass) {
+            document.getElementById('usernameInput').value = user;
+            document.getElementById('passwordInput').value = pass;
+        }
+
+        document.getElementById('togglePasswordBtn').addEventListener('click', function () {
+            const passInput = document.getElementById('passwordInput');
+            const icon = document.getElementById('passwordIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                passInput.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        });
+    </script>
+</body>
+</html>

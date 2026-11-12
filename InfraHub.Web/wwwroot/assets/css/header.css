@@ -1,0 +1,154 @@
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.user-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Dropdown Content User Profile */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background-color: #ffffff;
+    min-width: 240px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 8px 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dropdown-content.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dropdown-header {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+}
+
+.dropdown-header strong {
+    display: block;
+    color: #1e293b;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.dropdown-header span {
+    display: block;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.dropdown-content hr {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 8px 0;
+}
+
+.dropdown-content a {
+    color: #475569;
+    padding: 10px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-content a i {
+    width: 20px;
+    margin-right: 10px;
+    font-size: 0.95rem;
+}
+
+.dropdown-content a:hover {
+    background-color: #f8fafc;
+    color: #1e293b;
+}
+
+.logout-item {
+    color: #dc2626 !important;
+}
+
+.logout-item:hover {
+    background-color: #fef2f2 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .main-header {
+        padding: 12px 20px;
+    }
+
+    .logo-text {
+        font-size: 1.25rem;
+    }
+
+    .nav-menu {
+        gap: 4px;
+    }
+
+    .nav-item {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-header {
+        flex-wrap: wrap;
+        padding: 12px 16px;
+    }
+
+    .logo-container {
+        order: 1;
+    }
+
+    .header-right {
+        order: 2;
+    }
+
+    .nav-menu {
+        order: 3;
+        width: 100%;
+        margin-top: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-item {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
+
+    .nav-icon i {
+        margin-right: 6px;
+    }
+
+    .dropdown-content {
+        right: 0;
+        min-width: 220px;
+    }
+}

@@ -1,0 +1,68 @@
+@*
+    Component: panel-battery.blade.php
+    Props: $report (stats)
+    Charts: chartBatVoltage, chartBatPercent
+*@
+<div class="ups-rpt-panel" id="panelBattery">
+
+    <div class="ups-rpt-panel__header">
+        <div class="ups-rpt-panel__title-group">
+            <div class="ups-rpt-panel__icon-wrap ups-rpt-panel__icon-wrap--yellow">
+                <i class="fa-solid fa-battery-three-quarters"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-panel__title">Baterai</div>
+                <div class="ups-rpt-panel__sub">Tegangan & persentase kapasitas baterai</div>
+                @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_period-badge.cshtml")
+            </div>
+        </div>
+
+        <div class="ups-rpt-stat-bar">
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG Voltage</span>
+                <span class="ups-rpt-stat-chip__value" id="statBatV">
+                    —
+                </span>
+            </div>
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG Capacity</span>
+                <span class="ups-rpt-stat-chip__value" id="statBatPct">
+                    —
+                </span>
+            </div>
+            <div class="ups-rpt-stat-chip" id="chipBatPctMin">
+                <span class="ups-rpt-stat-chip__label">MIN Capacity</span>
+                <span class="ups-rpt-stat-chip__value" id="statBatPctMin">
+                    —
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ups-rpt-charts-grid ups-rpt-charts-grid--2col">
+        @* Battery Voltage *@
+        <div class="ups-rpt-chart-section">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-bolt" style="color:var(--ups-icon-yellow-color);margin-right:5px;"></i>
+                <code>Battery Voltage</code>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartBatVoltage"></canvas>
+            </div>
+        </div>
+
+        @* Battery Percentage *@
+        <div class="ups-rpt-chart-section">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-battery-half" style="color:var(--ups-icon-yellow-color);margin-right:5px;"></i>
+                <code>Battery Percentage</code>
+                <span class="ups-rpt-trend-limits">Warn &lt;50% · Crit &lt;20%</span>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartBatPercent"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+

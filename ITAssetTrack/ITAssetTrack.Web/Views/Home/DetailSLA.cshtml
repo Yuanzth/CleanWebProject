@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "Detail SLA Compliance Rate";
+    ViewData["PageLabel"] = "Detail SLA";
+
+    double slaOverall = ViewBag.SlaOverall ?? 100.0;
+    int currentYear = ViewBag.CurrentYear ?? DateTime.Today.Year;
+    var monthlyData = ViewBag.MonthlyData as System.Collections.IEnumerable;
+}
+
+<!-- Page Header Bar -->
+<div class="detail-header-bar">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <a href="@Url.Action("MaintenanceDashboard","Home")" class="btn btn-sm btn-outline" style="font-size:12px; white-space:nowrap;">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--text-primary);">
+                <i class="bi bi-patch-check-fill me-2" style="color:#34d399;"></i>Detail SLA Compliance Rate — @currentYear
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px;">Unscheduled &lt; 24 Jam · Scheduled sesuai PlanMonth</div>
+        </div>
+    </div>
+    <!-- Stat pills (horizontal swipe on mobile) -->
+    <div class="detail-stat-pills">
+        <span style="background:#064e3b; color:#a7f3d0; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+            <i class="bi bi-shield-check me-1"></i>SLA: @slaOverall.ToString("G", System.Globalization.CultureInfo.InvariantCulture)%
+        </span>
+        <span style="background:#f1f5f9; color:#475569; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+            Periode @currentYear · 12 Bulan
+        </span>
+    </div>
+</div>
+
+<!-- Mobile Table Scroll Hint -->
+<div class="d-block d-sm-none mb-1 px-1 text-end" style="font-size:10px; color:#64748b;">
+    <i class="bi bi-arrow-left-right me-1 text-primary"></i>Geser tabel ke samping <i class="bi bi-chevron-right ms-0.5"></i>
+</div>
+
+<!-- Monthly Breakdown Table -->
+<div class="card">
+
+    <div class="card-header">
+        <h3 style="margin:0; font-size:14px;"><i class="bi bi-table me-2 text-success"></i>Breakdown SLA Per Bulan — @currentYear</h3>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Bulan</th>
+                    <th class="text-center">Target Scheduled</th>
+                    <th class="text-center">Realisasi Scheduled</th>
+                    <th class="text-center">Unscheduled Selesai</th>
+                    <th class="text-center">Total On-Time</th>
+                    <th class="text-center">% SLA</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (monthlyData != null)
+                {
+                    foreach (dynamic row in monthlyData)
+                    {
+                        double pct = row.PctSLA;
+                        bool hasData = row.Realisasi > 0 || row.UnscheduledSelesai > 0;
+                        string badgeStyle = !hasData
+                            ? "background:#f1f5f9; color:#94a3b8;"
+                            : pct >= 90
+                                ? "background:#dcfce7; color:#166534;"
+                                : pct >= 70
+                                    ? "background:#fef9c3; color:#854d0e;"
+                                    : "background:#fee2e2; color:#991b1b;";
+                        string badgeText = !hasData ? "Tidak Ada Data" : pct >= 90 ? "Baik" : pct >= 70 ? "Cukup" : "Perlu Perhatian";
+                        <tr>
+                            <td><strong style="font-size:12px;">@row.Bulan</strong></td>
+                            <td class="text-center" style="font-family:'Courier New',monospace;">@row.TargetScheduled</td>
+                            <td class="text-center" style="font-family:'Courier New',monospace;">@row.Realisasi</td>
+                            <td class="text-center" style="font-family:'Courier New',monospace;">@row.UnscheduledSelesai</td>
+                            <td class="text-center" style="font-family:'Courier New',monospace; font-weight:700;">@row.OnTime</td>
+                            <td class="text-center">
+                                <span style="font-weight:700; font-family:'Courier New',monospace; font-size:13px; color:@(pct >= 90 ? "var(--success)" : pct >= 70 ? "#f59e0b" : "#ef4444");">
+                                    @(hasData ? pct + "%" : "—")
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span style="@badgeStyle padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600;">
+                                    @badgeText
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

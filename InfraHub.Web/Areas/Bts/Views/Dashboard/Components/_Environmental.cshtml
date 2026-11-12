@@ -1,0 +1,119 @@
+@{
+    var status = ViewData["status"] as string ?? "normal";
+    var anomalies = ViewData["anomalies"] as IEnumerable<dynamic>;
+    var hasAnomalies = anomalies != null && anomalies.Any();
+    var windSpeedStatus = ViewData["windSpeedStatus"] as string ?? "Normal";
+    var avgWindSpeed = ViewData["avgWindSpeed"] as double? ?? 0;
+    var avgTemperature = ViewData["avgTemperature"] as double? ?? 0;
+    var dustStatus = ViewData["dustStatus"] as string ?? "Normal";
+    var avgDustLevel = ViewData["avgDustLevel"] as string ?? "Good";
+    var canAcknowledge = ViewData["canAcknowledge"] as bool? ?? false;
+}
+
+<div class="db-panel db-panel--environmental @((status != "normal" && hasAnomalies) ? "db-panel--" + status : "")" id="environmentalPanelContainer">
+
+    @* Panel Header *@
+    <div class="db-panel__header">
+        <div class="db-panel__title-group">
+            <div class="db-panel__icon-wrap">
+                <i class="fa-solid fa-cloud"></i>
+            </div>
+            <span class="db-panel__title">Environmental</span>
+        </div>
+
+        <div id="environmentalBadgeContainer">
+            @if(hasAnomalies)
+            {
+                <span class="db-badge db-badge--critical db-badge--xs">
+                    <i class="fa-solid fa-triangle-exclamation"></i> @anomalies.Count() Issues
+                </span>
+            }
+            else
+            {
+                <span class="db-badge db-badge--normal db-badge--xs">
+                    <i class="fa-solid fa-circle-check"></i> All Normal
+                </span>
+            }
+        </div>
+    </div>
+
+    @* Anomaly Grid *@
+    @if(hasAnomalies)
+    {
+        <div class="db-anomaly-grid" id="environmentalAnomalyGrid">
+            @foreach(var anm in anomalies)
+            {
+                var anmDict = anm as IDictionary<string, object>;
+                var cardVd = new ViewDataDictionary(ViewData);
+                cardVd["zone_id"] = anmDict != null && anmDict.ContainsKey("zone_id") ? anmDict["zone_id"] : (anm.GetType().GetProperty("zone_id") != null ? anm.zone_id : null);
+                cardVd["site"] = anmDict != null && anmDict.ContainsKey("site") ? anmDict["site"] : (anm.GetType().GetProperty("site") != null ? anm.site : "SITE");
+                cardVd["name"] = anmDict != null && anmDict.ContainsKey("name") ? anmDict["name"] : (anm.GetType().GetProperty("name") != null ? anm.name : "ID");
+                cardVd["status"] = anmDict != null && anmDict.ContainsKey("status") ? anmDict["status"] : (anm.GetType().GetProperty("status") != null ? anm.status : "warning");
+                cardVd["type"] = anmDict != null && anmDict.ContainsKey("type") ? anmDict["type"] : (anm.GetType().GetProperty("type") != null ? anm.type : "weather");
+                cardVd["value"] = anmDict != null && anmDict.ContainsKey("value") ? anmDict["value"] : (anm.GetType().GetProperty("value") != null ? anm.value : 0);
+                cardVd["meta"] = anmDict != null && anmDict.ContainsKey("meta") ? anmDict["meta"] : (anm.GetType().GetProperty("meta") != null ? anm.meta : new object[] {});
+                cardVd["panel"] = anmDict != null && anmDict.ContainsKey("panel") ? anmDict["panel"] : (anm.GetType().GetProperty("panel") != null ? anm.panel : "environmental");
+                cardVd["canAcknowledge"] = canAcknowledge;
+                cardVd["anomaly_id"] = anmDict != null && anmDict.ContainsKey("anomaly_id") ? anmDict["anomaly_id"] : (anm.GetType().GetProperty("anomaly_id") != null ? anm.anomaly_id : null);
+                cardVd["acknowledged"] = anmDict != null && anmDict.ContainsKey("acknowledged") ? anmDict["acknowledged"] : (anm.GetType().GetProperty("acknowledged") != null ? anm.acknowledged : false);
+                @await Html.PartialAsync("Components/_AnomalyCard", cardVd)
+            }
+        </div>
+    }
+    else
+    {
+        <div class="db-anomaly-grid" id="environmentalAnomalyGrid" style="display:none;"></div>
+    }
+
+    @* Normal View *@
+    <div class="db-env-grid" id="environmentalNormalView" @if(hasAnomalies){ <text>style="display:none;"</text> }>
+
+        @* Wind Speed Card *@
+        <div class="db-env-card" id="windCard">
+            <div class="db-env-card__header">
+                <i class="fa-solid fa-wind db-env-card__icon"></i>
+                <span class="db-badge db-badge--@(windSpeedStatus.ToLower()) db-badge--xs" id="windStatusBadge">
+                    @if(windSpeedStatus.ToLower() == "normal")
+                    {
+                        <i class="fa-solid fa-circle-check fa-xs"></i>
+                    }
+                    @windSpeedStatus
+                </span>
+            </div>
+            <div class="db-env-card__body">
+                <div class="db-env-card__row">
+                    <span class="db-env-card__key">Avg Wind Speed</span>
+                    <span class="db-env-card__val"> : <span id="avgWindSpeedText">@avgWindSpeed</span> km/h</span>
+                </div>
+                <div class="db-env-card__row">
+                    <span class="db-env-card__key">Avg Temperature</span>
+                    <span class="db-env-card__val">: <span id="avgTemperatureText">@avgTemperature</span> &deg;C</span>
+                </div>
+            </div>
+        </div>
+
+        @* Dust Level Card *@
+        <div class="db-env-card" id="dustCard">
+            <div class="db-env-card__header">
+                <i class="fa-solid fa-cloud db-env-card__icon"></i>
+                <span class="db-badge db-badge--@(dustStatus.ToLower()) db-badge--xs" id="dustStatusBadge">
+                    @if(dustStatus.ToLower() == "normal")
+                    {
+                        <i class="fa-solid fa-circle-check fa-xs"></i>
+                    }
+                    @dustStatus
+                </span>
+            </div>
+            <div class="db-env-card__body">
+                <div class="db-env-card__row">
+                    <span class="db-env-card__key">Avg Dust Level</span>
+                    <span class="db-env-card__val">: <span id="avgDustLevelText">@avgDustLevel</span></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+

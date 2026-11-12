@@ -1,0 +1,43 @@
+@{
+    var clickable = ViewData["clickable"] as bool? ?? false;
+    var detailTarget = ViewData["detailTarget"] as string ?? "";
+    var borderColor = ViewData["borderColor"] as string ?? "#3b82f6";
+    var label = ViewData["label"] as string ?? "BTS Tower UP";
+    var count = ViewData["count"] as int? ?? 0;
+    var total = ViewData["total"] as int?;
+    var id = ViewData["id"] as string ?? "stat-count";
+    var totalId = ViewData["totalId"] as string ?? "stat-total";
+    var iconBg = ViewData["iconBg"] as string ?? "rgba(59,130,246,0.12)";
+    var iconClass = ViewData["iconClass"] as string ?? "fa-solid fa-tower-broadcast";
+}
+
+<div class="db-stat-card @(clickable ? "db-stat-card--clickable" : "")"
+    style="border-top-color: @borderColor;" @if(clickable)
+    {
+        <text>id="statCard-@detailTarget" data-detail-target="@detailTarget" onclick="toggleDetailPanel('@detailTarget')"</text>
+    }>
+    <div class="db-stat-card__body">
+        <div class="db-stat-card__info">
+            <span class="db-stat-card__label">@label</span>
+
+            @if(total.HasValue)
+            {
+                <div class="db-stat-card__count-wrap">
+                    <span class="db-stat-card__count" id="@id">@count</span>
+                    <span class="db-stat-card__count-sep">/</span>
+                    <span class="db-stat-card__count db-stat-card__count--total" id="@totalId">@total</span>
+                </div>
+            }
+            else
+            {
+                <span class="db-stat-card__count" id="@id">@count</span>
+            }
+        </div>
+        <div class="db-stat-card__icon-wrap" style="background: @iconBg;">
+            <i class="@iconClass" style="color: @borderColor;"></i>
+        </div>
+    </div>
+</div>
+
+
+

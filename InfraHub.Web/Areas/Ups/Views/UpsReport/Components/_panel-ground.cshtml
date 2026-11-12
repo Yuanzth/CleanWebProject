@@ -1,0 +1,54 @@
+@*
+    Component: panel-ground.blade.php
+    Props: $report (stats)
+    Charts: chartGround
+*@
+<div class="ups-rpt-panel" id="panelGround">
+
+    <div class="ups-rpt-panel__header">
+        <div class="ups-rpt-panel__title-group">
+            <div class="ups-rpt-panel__icon-wrap ups-rpt-panel__icon-wrap--earth">
+                <i class="fa-solid fa-earth-americas"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-panel__title">Sistem Grounding</div>
+                <div class="ups-rpt-panel__sub">Resistansi grounding per device</div>
+                @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_period-badge.cshtml")
+            </div>
+        </div>
+
+        <div class="ups-rpt-stat-bar">
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG</span>
+                <span class="ups-rpt-stat-chip__value" id="statGroundAvg">
+                    —
+                </span>
+            </div>
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">MIN</span>
+                <span class="ups-rpt-stat-chip__value" id="statGroundMin">
+                    —
+                </span>
+            </div>
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">MAX</span>
+                <span class="ups-rpt-stat-chip__value" id="statGroundMax">
+                    —
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ups-rpt-chart-section">
+        <div class="ups-rpt-chart-title">
+            <i class="fa-solid fa-earth-americas" style="color:var(--ups-icon-earth-color);margin-right:5px;"></i>
+            <code>Grounding Resistance</code>
+            <span class="ups-rpt-trend-limits">Warn ≥3 Ω · Crit ≥5 Ω</span>
+        </div>
+        <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+            <canvas id="chartGround"></canvas>
+        </div>
+    </div>
+
+</div>
+

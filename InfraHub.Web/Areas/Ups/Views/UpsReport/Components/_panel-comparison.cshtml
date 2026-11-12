@@ -1,0 +1,29 @@
+@*
+    Component: panel-comparison.blade.php
+    Bar chart perbandingan avg input vs output voltage per device
+*@
+<div class="ups-rpt-panel" id="panelComparison">
+    <div class="ups-rpt-panel__header">
+        <div class="ups-rpt-panel__title-group">
+            <div class="ups-rpt-panel__icon-wrap ups-rpt-panel__icon-wrap--neutral">
+                <i class="fa-solid fa-chart-column"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-panel__title">Perbandingan Input vs Output</div>
+                <div class="ups-rpt-panel__sub">Rata-rata tegangan per device</div>
+                @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_period-badge.cshtml")
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Stat cards per device -->
+    <div id="comparisonDeviceCards" class="ups-rpt-comp-cards"></div>
+
+    <div class="ups-rpt-chart-section">
+        <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--200">
+            <canvas id="chartComparison"></canvas>
+        </div>
+    </div>
+</div>
+

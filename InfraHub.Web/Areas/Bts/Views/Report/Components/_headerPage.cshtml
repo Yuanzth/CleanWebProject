@@ -1,0 +1,324 @@
+<div class="rpt-control-bar" id="rptControlBar">
+
+    @*  Branding  *@
+    <div class="rpt-control-bar__brand">
+        <i class="fa-solid fa-tower-cell"></i>
+        <div>
+            <div class="rpt-control-bar__title">Report &amp; Analytics</div>
+            <div class="rpt-control-bar__sub">
+                <span class="rpt-live-dot"></span>
+                <span id="rptTotalSites">@(ViewBag.Report?["meta"]?["total_sites"])</span> Sites &bull;
+                <span id="rptTotalDevices">@(ViewBag.Report?["meta"]?["total_devices"])</span> Devices
+                @if((bool?)ViewBag.Report?["meta"]?["is_dummy"] == true) {
+                    <span class="rpt-dummy-badge"><i class="fa-solid fa-flask"></i> DUMMY DATA</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    @*  Global Filters  *@
+    <div class="rpt-filter-bar">
+        @*  Site Filter  *@
+        <div class="rpt-filter-group">
+            <label class="rpt-filter-label" for="rptAreaFilter">Site</label>
+            <select id="rptAreaFilter" class="rpt-filter-select" onchange="reportFilterChange()">
+                <option value="" disabled @(string.IsNullOrEmpty(ViewBag.AreaId) ? "selected" : "")>Pilih Site</option>
+                @if(ViewBag.Areas != null) {
+                    foreach(var area in ViewBag.Areas) {
+                        <option value="@area.Id" @((string)ViewBag.AreaId == area.Id.ToString() ? "selected" : "")>
+                            @area.SiteCode - @area.SiteName
+                        </option>
+                    }
+                }
+            </select>
+        </div>
+
+        @*  Date From  *@
+        <div class="rpt-filter-group">
+            <label class="rpt-filter-label" for="rptDateFrom">Dari Tanggal</label>
+            <input type="date" id="rptDateFrom" class="rpt-filter-select"
+                   value="@ViewBag.DateFrom" onchange="reportFilterChange()">
+        </div>
+
+        @*  Date To  *@
+        <div class="rpt-filter-group">
+            <label class="rpt-filter-label" for="rptDateTo">Sampai Tanggal</label>
+            <input type="date" id="rptDateTo" class="rpt-filter-select"
+                   value="@ViewBag.DateTo" onchange="reportFilterChange()">
+        </div>
+
+        @*  Apply button  *@
+        <button class="rpt-btn-apply" onclick="reportFilterChange()" style="margin-top: 18px">
+            <i class="fa-solid fa-rotate"></i> Terapkan
+        </button>
+
+        @*  EXPORT DROPDOWN (UPDATED)  *@
+        <div class="rpt-export-group" style="margin-top: 18px; position: relative;">
+            <button class="rpt-btn-export" onclick="toggleExportMenu()" id="exportBtnMain">
+                <i class="fa-solid fa-download"></i> Export 
+                <i class="fa-solid fa-chevron-down" style="margin-left: 5px; font-size: 0.8em;"></i>
+            </button>
+            
+            <div class="rpt-export-menu" id="exportMenu" style="display: none;">
+                <!-- Raw Data Section -->
+                <div class="rpt-export-menu-section">
+                    <div class="rpt-export-menu-label">
+                        <i class="fa-solid fa-table"></i> Raw Data
+                    </div>
+                    <button class="rpt-export-menu-item" onclick="handleExport('log-all')">
+                        <i class="fa-solid fa-file-excel"></i> Export Raw Data (1 Sheet)
+                        <span class="rpt-export-hint">Semua data dalam 1 sheet</span>
+                    </button>
+                    <button class="rpt-export-menu-item" onclick="handleExport('log-separated')">
+                        <i class="fa-solid fa-files"></i> Export Raw Data (Terpisah)
+                        <span class="rpt-export-hint">Genset & Tower di sheet berbeda</span>
+                    </button>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="rpt-export-menu-divider"></div>
+                <div class="rpt-export-menu-section">
+                    <div class="rpt-export-menu-label">
+                        <i class="fa-solid fa-chart-bar"></i> Summary
+                    </div>
+                    <button class="rpt-export-menu-item" onclick="handleExport('summary')">
+                        <i class="fa-solid fa-file-pdf"></i> Export Summary
+                        <span class="rpt-export-hint">Ringkasan data & KPI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rpt-export-group {
+    display: inline-block;
+    position: relative;
+}
+
+.rpt-btn-export {
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rpt-btn-export:hover {
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.rpt-btn-export:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.rpt-export-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 280px;
+    margin-top: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.rpt-export-menu-section {
+    padding: 8px 0;
+}
+
+.rpt-export-menu-label {
+    padding: 8px 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rpt-export-menu-label i {
+    opacity: 0.6;
+}
+
+.rpt-export-menu-item {
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: #333;
+    transition: all 0.2s;
+    white-space: normal;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+.rpt-export-menu-item:hover {
+    background-color: #f8f9fa;
+    padding-left: 16px;
+}
+
+.rpt-export-menu-item i {
+    margin-right: 0;
+    width: 14px;
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+.rpt-export-menu-item > *:first-child {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rpt-export-hint {
+    font-size: 0.75em;
+    color: #999;
+    font-weight: 400;
+    margin-left: 20px;
+}
+
+.rpt-export-menu-divider {
+    height: 1px;
+    background-color: #e9ecef;
+    margin: 4px 0;
+}
+
+/* Loading state */
+.rpt-btn-export.loading {
+    pointer-events: none;
+}
+
+.rpt-btn-export.loading svg {
+    animation: spin 1s linear infinite;
+}
+
+@@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+</style>
+
+<script>
+function toggleExportMenu() {
+    const menu = document.getElementById('exportMenu');
+    const isVisible = menu.style.display !== 'none';
+    menu.style.display = isVisible ? 'none' : 'flex';
+}
+
+// Close menu ketika click di luar
+document.addEventListener('click', function(event) {
+    const exportGroup = document.querySelector('.rpt-export-group');
+    if (exportGroup && !exportGroup.contains(event.target)) {
+        document.getElementById('exportMenu').style.display = 'none';
+    }
+});
+
+// Close menu ketika press ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const m = document.getElementById('exportMenu');
+        if (m) m.style.display = 'none';
+    }
+});
+
+function handleExport(type) {
+    const siteId = document.getElementById('rptAreaFilter').value || '';
+    const dateFrom = document.getElementById('rptDateFrom').value;
+    const dateTo = document.getElementById('rptDateTo').value;
+
+    if (!siteId) {
+        alert('Pilih site terlebih dahulu sebelum export report');
+        return;
+    }
+
+    // Validation
+    if (!dateFrom || !dateTo) {
+        alert('Silakan pilih rentang tanggal terlebih dahulu');
+        return;
+    }
+
+    if (new Date(dateFrom) > new Date(dateTo)) {
+        alert('Tanggal mulai harus lebih kecil dari tanggal selesai');
+        return;
+    }
+
+    // Determine endpoint
+    let endpoint = '';
+    let fileName = '';
+    
+    switch(type) {
+        case 'log-all':
+            endpoint = `/api/report/export-log?site_id=${siteId}&date_from=${dateFrom}&date_to=${dateTo}`;
+            fileName = 'GensetTowerLogs_All';
+            break;
+        case 'log-separated':
+            endpoint = `/api/report/export-log-separated?site_id=${siteId}&date_from=${dateFrom}&date_to=${dateTo}`;
+            fileName = 'GensetTowerLogs_Separated';
+            break;
+        case 'summary':
+            endpoint = `/api/report/export-summary?site_id=${siteId}&date_from=${dateFrom}&date_to=${dateTo}`;
+            fileName = 'GensetTowerSummary';
+            break;
+    }
+
+    // Show loading indicator
+    const btn = document.getElementById('exportBtnMain');
+    const originalText = btn.innerHTML;
+    btn.classList.add('loading');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang membuat file...';
+    btn.disabled = true;
+
+    // Trigger download
+    try {
+        window.location.href = endpoint;
+        
+        // Reset button state setelah 4 detik
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            document.getElementById('exportMenu').style.display = 'none';
+        }, 4000);
+    } catch (error) {
+        alert('Terjadi kesalahan saat mengunduh file: ' + error.message);
+        btn.innerHTML = originalText;
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }
+}
+</script>
+
+
+
+
+
+

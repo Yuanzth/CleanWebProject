@@ -1,0 +1,1569 @@
+.rpt-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.rpt-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* ============================================================
+   KPI STATUS BAR
+   ============================================================ */
+.rpt-kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+.rpt-kpi-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    border-left: 4px solid transparent;
+    transition: box-shadow 0.2s;
+    overflow: hidden;
+}
+
+.rpt-kpi-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.rpt-kpi-card--ok {
+    border-left-color: #22c55e;
+}
+
+.rpt-kpi-card--warn {
+    border-left-color: #f59e0b;
+}
+
+.rpt-kpi-card--crit {
+    border-left-color: #ef4444;
+}
+
+.rpt-kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.rpt-kpi-icon--ok {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+
+.rpt-kpi-icon--warn {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.rpt-kpi-icon--crit {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.rpt-kpi-icon--blue {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.rpt-kpi-icon--slate {
+    background: rgba(100, 116, 139, 0.12);
+    color: #475569;
+}
+
+.rpt-kpi-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.rpt-kpi-label {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+}
+
+.rpt-kpi-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+.rpt-kpi-sub {
+    font-size: 0.67rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+.rpt-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.rpt-badge--ok {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.rpt-badge--warn {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.rpt-badge--crit {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* ============================================================
+   PANEL (mirrors .db-panel from dashboard.css)
+   ============================================================ */
+.rpt-panel {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-bottom: 3px solid #e2e8f0;
+}
+
+.rpt-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.rpt-panel__title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rpt-panel__icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.rpt-panel__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.rpt-panel__meta {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+/* ============================================================
+   TWO-COLUMN PANEL BODY
+   ============================================================ */
+.rpt-split {
+    display: grid;
+    gap: 20px;
+}
+
+.rpt-split--60-40 {
+    grid-template-columns: 60fr 40fr;
+}
+
+.rpt-split--50-50 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.rpt-split--70-30 {
+    grid-template-columns: 70fr 30fr;
+}
+
+/* ============================================================
+   CHART WRAPPERS
+   ============================================================ */
+.rpt-chart-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.rpt-chart-wrap canvas {
+    width: 100% !important;
+}
+
+.rpt-chart-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   METRIC TILES
+   ============================================================ */
+.rpt-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.rpt-metric-tile {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rpt-metric-tile__label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.rpt-metric-tile__value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.1;
+}
+
+.rpt-metric-tile__value span {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.rpt-metric-tile__status {
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.rpt-metric-tile__status--ok {
+    color: #16a34a;
+}
+
+.rpt-metric-tile__status--warn {
+    color: #d97706;
+}
+
+.rpt-metric-tile__status--crit {
+    color: #dc2626;
+}
+
+/* colored left border variant */
+.rpt-metric-tile--ok {
+    border-left: 3px solid #22c55e;
+}
+
+.rpt-metric-tile--warn {
+    border-left: 3px solid #f59e0b;
+}
+
+.rpt-metric-tile--crit {
+    border-left: 3px solid #ef4444;
+}
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.rpt-divider {
+    width: 1px;
+    background: #e2e8f0;
+    align-self: stretch;
+}
+
+/* ============================================================
+   REFRESH BADGE
+   ============================================================ */
+.rpt-refresh {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rpt-refresh__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    animation: rpt-pulse 2s infinite;
+}
+
+@keyframes rpt-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1280px) {
+    .rpt-kpi-bar {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .rpt-split--60-40,
+    .rpt-split--70-30 {
+        grid-template-columns: 1fr;
+    }
+
+    .rpt-insights-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .rpt-kpi-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .rpt-split--50-50 {
+        grid-template-columns: 1fr;
+    }
+
+    .rpt-metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .rpt-struct-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rpt-insights-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rpt-page-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.rpt-page-subtitle {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin: 2px 0 0;
+}
+
+.rpt-page-subtitle__icon {
+    margin-right: 5px;
+    color: #94a3b8;
+}
+
+.rpt-dummy-badge {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+}
+
+.rpt-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rpt-filter-select,
+.rpt-filter-date {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #334155;
+    background: #fff;
+}
+
+.rpt-filter-select {
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.rpt-filter-date {
+    padding: 7px 10px;
+}
+
+.rpt-filter-arrow {
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+
+.rpt-kpi-unit {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.rpt-panel--power {
+    border-bottom-color: #16a34a;
+}
+
+.rpt-panel__icon-wrap--power {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.rpt-icon--power {
+    margin-right: 5px;
+    color: #334155;
+}
+
+.rpt-trend-limits {
+    float: right;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 400;
+}
+
+.rpt-panel--incident {
+    border-bottom-color: #ef4444;
+}
+
+.rpt-panel__icon-wrap--incident {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.rpt-icon--red {
+    margin-right: 5px;
+    color: #ef4444;
+}
+
+.rpt-panel-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rpt-resolution-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rpt-resolution-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rpt-resolution-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rpt-resolution-label {
+    font-size: 0.78rem;
+    color: #334155;
+    min-width: 90px;
+}
+
+.rpt-resolution-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rpt-resolution-bar {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.rpt-resolution-count {
+    font-size: 0.72rem;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.rpt-resolution-col {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rpt-chart-title--mb {
+    margin-bottom: 10px;
+}
+
+.rpt-incident-title-hint {
+    color: #94a3b8;
+    font-weight: 400;
+    font-size: 0.68rem;
+    margin-left: 8px;
+}
+
+.rpt-incident-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.rpt-incident-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.rpt-incident-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.rpt-incident-table td {
+    padding: 10px 14px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.rpt-incident-table tr:last-child td {
+    border-bottom: none;
+}
+
+.rpt-incident-table tr:hover td {
+    background: #f8fafc;
+}
+
+.rpt-sev {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+
+.rpt-sev--crit {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.rpt-sev--warn {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.rpt-sev--info {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.rpt-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.rpt-status-dot--open {
+    background: #ef4444;
+}
+
+.rpt-status-dot--progress {
+    background: #f59e0b;
+}
+
+.rpt-status-dot--closed {
+    background: #22c55e;
+}
+
+.rpt-env-gauges {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    justify-content: center;
+}
+
+.rpt-gauge-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rpt-gauge-circle {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+}
+
+.rpt-gauge-circle svg {
+    width: 72px;
+    height: 72px;
+    transform: rotate(-90deg);
+}
+
+.rpt-gauge-circle__track {
+    fill: none;
+    stroke: #e2e8f0;
+    stroke-width: 8;
+}
+
+.rpt-gauge-circle__fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease;
+}
+
+.rpt-gauge-circle__fill--temp {
+    stroke: #ef4444;
+}
+
+.rpt-gauge-circle__fill--hum {
+    stroke: #3b82f6;
+}
+
+.rpt-gauge-circle__fill--wind {
+    stroke: #a855f7;
+}
+
+.rpt-gauge-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.rpt-gauge-info {
+    flex: 1;
+}
+
+.rpt-gauge-info__name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: 0.04em;
+}
+
+.rpt-gauge-info__val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.1;
+}
+
+.rpt-gauge-info__val span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.rpt-gauge-info__sub {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* ============================================================
+   TOWER HEALTH
+   ============================================================ */
+.rpt-tilt-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.rpt-tilt-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.rpt-tilt-unit {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #64748b;
+    vertical-align: super;
+}
+
+.rpt-tilt-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.rpt-tilt-status {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 4px;
+}
+
+.rpt-tilt-status--ok {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.rpt-tilt-status--warn {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.rpt-struct-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.rpt-chart-wrap--200 {
+    height: 200px;
+}
+
+.rpt-chart-wrap--160 {
+    height: 160px;
+}
+
+.rpt-icon--slate {
+    margin-right: 5px;
+    color: #334155;
+}
+
+.rpt-icon--amber {
+    margin-right: 5px;
+    color: #f59e0b;
+}
+
+.rpt-icon--mr {
+    margin-right: 3px;
+}
+
+.rpt-panel--tower {
+    border-bottom-color: #64748b;
+}
+
+.rpt-panel__icon-wrap--tower {
+    background: #f8fafc;
+    color: #475569;
+}
+
+.rpt-split--align-start {
+    align-items: start;
+}
+
+.rpt-metric-tile--lg {
+    padding: 16px;
+}
+
+.rpt-metric-tile__value--lg {
+    font-size: 2rem;
+}
+
+.rpt-attention-list {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+.rpt-attention-list__heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.rpt-attention-list__heading-icon {
+    color: #f59e0b;
+    margin-right: 4px;
+}
+
+.rpt-attention-item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.rpt-attention-item__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rpt-attention-item__code {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.85rem;
+}
+
+.rpt-attention-item__tilt {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #d97706;
+}
+
+.rpt-attention-item__note {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.rpt-attention-empty {
+    font-size: 0.8rem;
+    color: #22c55e;
+    text-align: center;
+    padding: 10px;
+}
+
+.rpt-incident-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ============================================================
+   CONTROL BAR (sticky header — replaces headerPage)
+   ============================================================ */
+.rpt-control-bar {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 22px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.rpt-control-bar__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.4rem;
+    color: #64748b;
+}
+
+.rpt-control-bar__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.rpt-control-bar__sub {
+    font-size: 0.73rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+/* Pulsing "live" dot */
+.rpt-live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: rpt-pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   FILTER BAR — groups with labels
+   ============================================================ */
+.rpt-filter-bar__scope-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.rpt-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.rpt-filter-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.rpt-btn-apply {
+    background: #334155;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.rpt-btn-apply:hover {
+    background: #1e293b;
+}
+
+/* ============================================================
+   INCIDENT PANEL — horizontal bar chart
+   ============================================================ */
+.rpt-incident-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rpt-inc-bar-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 60px;
+    align-items: center;
+    gap: 8px;
+}
+
+.rpt-inc-bar-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rpt-inc-bar-track {
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.rpt-inc-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.6s ease;
+    min-width: 4px;
+}
+
+.rpt-inc-bar-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.rpt-inc-bar-open {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #ef4444;
+    margin-left: 3px;
+}
+
+/* ============================================================
+   INCIDENT TABLE — rpt-table (replaces rpt-incident-table)
+   ============================================================ */
+.rpt-table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.rpt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.rpt-table thead th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.67rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+.rpt-table tbody td {
+    padding: 9px 12px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.rpt-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.rpt-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.rpt-td-site {
+    font-weight: 700;
+    color: #1e293b !important;
+    white-space: nowrap;
+}
+
+.rpt-td-device {
+    color: #475569 !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap;
+}
+
+.rpt-td-desc {
+    max-width: 240px;
+    color: #64748b !important;
+    font-size: 0.76rem !important;
+}
+
+.rpt-td-time {
+    color: #94a3b8 !important;
+    font-size: 0.73rem !important;
+    white-space: nowrap;
+}
+
+/* Inline filter inside chart title */
+.rpt-filter-inline {
+    float: right;
+    margin-left: auto;
+}
+
+.rpt-filter-select--sm {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    border-radius: 6px;
+}
+
+/* Incident row status badges */
+.rpt-status {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.rpt-status--open {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.rpt-status--progress {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.rpt-status--ok {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+/* ============================================================
+   WEATHER PANEL
+   ============================================================ */
+.rpt-panel--env {
+    border-bottom-color: #0ea5e9;
+}
+
+.rpt-panel__icon-wrap--env {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.rpt-metric-grid--3col {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.rpt-metric-tile__sub {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.rpt-env-chart-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ============================================================
+   INLINE CODE STYLE (DB field references in panel UI)
+   ============================================================ */
+.rpt-code-inline {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.7em;
+    background: #f1f5f9;
+    color: #334155;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 3px;
+}
+
+/* ============================================================
+   ICON COLOUR HELPERS
+   ============================================================ */
+.rpt-icon--blue {
+    margin-right: 5px;
+    color: #0ea5e9;
+}
+
+/* ============================================================
+   RESPONSIVE — control bar wraps on narrow screens
+   ============================================================ */
+@media (max-width: 1100px) {
+    .rpt-control-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .rpt-filter-bar {
+        width: 100%;
+    }
+
+    .rpt-metric-grid--3col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+    .rpt-metric-grid--3col {
+        grid-template-columns: 1fr;
+    }
+
+    .rpt-inc-bar-row {
+        grid-template-columns: 80px 1fr 44px;
+    }
+}
+
+/* ============================================================
+   INCIDENT BAR CHART — stacked fills & hover
+   ============================================================ */
+
+/* Bar track berisi dua fill yang berdampingan (critical + warning) */
+.rpt-inc-bar-track {
+    display: flex;
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.rpt-inc-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    min-width: 0;
+}
+
+.rpt-inc-bar-fill--crit {
+    background: #ef4444;
+    border-radius: 5px 0 0 5px;
+}
+
+.rpt-inc-bar-fill--warn {
+    background: #f59e0b;
+    border-radius: 0 5px 5px 0;
+}
+
+.rpt-inc-bar-row {
+    cursor: default;
+}
+
+.rpt-inc-bar-row:hover .rpt-inc-bar-label {
+    color: #1e293b;
+}
+
+.rpt-inc-bar-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ============================================================
+   INCIDENT HOVER TOOLTIP
+   ============================================================ */
+.rpt-inc-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: #1e293b;
+    color: #f1f5f9;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    display: none;
+    min-width: 170px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    border: 1px solid #334155;
+}
+
+.rpt-inc-tooltip__category {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 6px;
+}
+
+.rpt-inc-tooltip__row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 4px;
+    color: #cbd5e1;
+}
+
+.rpt-inc-tooltip__row strong {
+    color: #f1f5f9;
+    margin-left: auto;
+    font-size: 0.85rem;
+}
+
+.rpt-inc-tooltip__dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rpt-inc-tooltip__dot--crit {
+    background: #ef4444;
+}
+
+.rpt-inc-tooltip__dot--warn {
+    background: #f59e0b;
+}
+
+.rpt-inc-tooltip__dot--ok {
+    background: #22c55e;
+}
+
+/* ============================================================
+   PANEL CONTROLS — flex row: resolution toggle + badge
+   Digunakan di Power Analytics dan Weather Conditions
+   ============================================================ */
+.rpt-panel-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ============================================================
+   RESOLUTION TOGGLE — Jam / Hari / Bulan
+   ============================================================ */
+.rpt-resolution-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.rpt-res-btn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.rpt-res-btn:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.rpt-res-btn--active {
+    background: #334155;
+    color: #fff;
+}
+
+.rpt-res-btn--active:hover {
+    background: #1e293b;
+    color: #fff;
+}
+
+/* ============================================================
+   TOWER CHART GRID — 2×2 layout (3 charts + attention list)
+   ============================================================ */
+.rpt-tower-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* ============================================================
+   ENVIRONMENTAL CHART GRID — 3 columns for weather charts
+   ============================================================ */
+.rpt-env-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* ============================================================
+   TALLER CHART WRAP for parameter charts
+   ============================================================ */
+.rpt-chart-wrap--220 {
+    height: 220px;
+}
+
+/* ============================================================
+   CHART LEGEND — scrollable when many tower names
+   ============================================================ */
+.rpt-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 6px;
+    max-height: 52px;
+    overflow-y: auto;
+}
+
+.rpt-chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.rpt-chart-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   RESPONSIVE — chart grids collapse on small screens
+   ============================================================ */
+@media (max-width: 1100px) {
+    .rpt-tower-chart-grid {
+        grid-template-columns: 1fr;
+    }
+    .rpt-env-chart-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .rpt-env-chart-grid {
+        grid-template-columns: 1fr;
+    }
+    .rpt-tower-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   STAT BAR — Compact KPI strip inside each panel
+   Replaces the old rpt-metric-grid / rpt-struct-grid tiles
+   ============================================================ */
+.rpt-stat-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.rpt-stat-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 9px 16px;
+    flex: 1;
+    min-width: 110px;
+    transition: box-shadow 0.15s;
+}
+
+.rpt-stat-chip:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.rpt-stat-chip--ok   { border-left-color: #22c55e; }
+.rpt-stat-chip--warn { border-left-color: #f59e0b; }
+.rpt-stat-chip--crit { border-left-color: #ef4444; }
+.rpt-stat-chip--blue { border-left-color: #3b82f6; }
+
+.rpt-stat-chip__label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rpt-stat-chip__value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.rpt-stat-chip__value small {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #64748b;
+    margin-left: 2px;
+}
+
+/* ============================================================
+   CHART SECTION — Full-width chart with spacing between sections
+   ============================================================ */
+.rpt-chart-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rpt-chart-wrap--240 {
+    height: 240px;
+}
+
+/* ============================================================
+   RESPONSIVE — stat bar chips wrap on small screens
+   ============================================================ */
+@media (max-width: 900px) {
+    .rpt-stat-chip {
+        min-width: 90px;
+        flex: 0 1 calc(33% - 8px);
+    }
+}
+
+@media (max-width: 600px) {
+    .rpt-stat-chip {
+        flex: 0 1 calc(50% - 8px);
+    }
+}

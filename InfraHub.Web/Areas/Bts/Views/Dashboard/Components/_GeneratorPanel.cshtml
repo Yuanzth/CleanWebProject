@@ -1,0 +1,148 @@
+@{
+    var status = ViewData["status"] as string ?? "normal";
+    var anomalies = ViewData["anomalies"] as IEnumerable<dynamic>;
+    var hasAnomalies = anomalies != null && anomalies.Any();
+    var allGeneratorNormal = ViewData["allGeneratorNormal"] as bool? ?? true;
+    var fuelLevel = ViewData["fuelLevel"] as double? ?? 70;
+    var generatorCount = ViewData["generatorCount"] as int? ?? 0;
+    var readyCount = ViewData["readyCount"] as int? ?? 0;
+    var readyPercent = ViewData["readyPercent"] as double? ?? 0;
+    var electricityStatus = ViewData["electricityStatus"] as string ?? "Normal";
+    var lightningStatus = ViewData["lightningStatus"] as string ?? "Normal";
+    var canAcknowledge = ViewData["canAcknowledge"] as bool? ?? false;
+}
+
+<div class="db-panel db-panel--generator @((status != "normal" && hasAnomalies) ? "db-panel--" + status : "")" id="generatorPanelContainer">
+
+    @* Panel Header *@
+    <div class="db-panel__header">
+        <div class="db-panel__title-group">
+            <div class="db-panel__icon-wrap">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="db-panel__title">Generator Panel</span>
+        </div>
+
+        <div id="generatorBadgeContainer">
+            @if(hasAnomalies)
+            {
+                <span class="db-badge db-badge--critical" id="generatorAnomalyCount">
+                    <i class="fa-solid fa-triangle-exclamation"></i> @anomalies.Count() Issues
+                </span>
+            }
+            else if(allGeneratorNormal)
+            {
+                <span class="db-badge db-badge--normal" id="generatorStatusBadge">
+                    <i class="fa-solid fa-circle-check"></i> All Generator Normal
+                </span>
+            }
+            else
+            {
+                <span class="db-badge db-badge--warning" id="generatorStatusBadge">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Generator Anomaly
+                </span>
+            }
+        </div>
+    </div>
+
+    @* Anomaly Grid *@
+    @if(hasAnomalies)
+    {
+        <div class="db-anomaly-grid" id="generatorAnomalyGrid">
+            @foreach(var anm in anomalies)
+            {
+                var anmDict = anm as IDictionary<string, object>;
+                var cardVd = new ViewDataDictionary(ViewData);
+                cardVd["zone_id"] = anmDict != null && anmDict.ContainsKey("zone_id") ? anmDict["zone_id"] : (anm.GetType().GetProperty("zone_id") != null ? anm.zone_id : null);
+                cardVd["site"] = anmDict != null && anmDict.ContainsKey("site") ? anmDict["site"] : (anm.GetType().GetProperty("site") != null ? anm.site : "SITE");
+                cardVd["name"] = anmDict != null && anmDict.ContainsKey("name") ? anmDict["name"] : (anm.GetType().GetProperty("name") != null ? anm.name : "ID");
+                cardVd["status"] = anmDict != null && anmDict.ContainsKey("status") ? anmDict["status"] : (anm.GetType().GetProperty("status") != null ? anm.status : "warning");
+                cardVd["type"] = anmDict != null && anmDict.ContainsKey("type") ? anmDict["type"] : (anm.GetType().GetProperty("type") != null ? anm.type : "fuel_gauge");
+                cardVd["value"] = anmDict != null && anmDict.ContainsKey("value") ? anmDict["value"] : (anm.GetType().GetProperty("value") != null ? anm.value : 0);
+                cardVd["meta"] = anmDict != null && anmDict.ContainsKey("meta") ? anmDict["meta"] : (anm.GetType().GetProperty("meta") != null ? anm.meta : new object[] {});
+                cardVd["panel"] = anmDict != null && anmDict.ContainsKey("panel") ? anmDict["panel"] : (anm.GetType().GetProperty("panel") != null ? anm.panel : "generator");
+                cardVd["canAcknowledge"] = canAcknowledge;
+                cardVd["anomaly_id"] = anmDict != null && anmDict.ContainsKey("anomaly_id") ? anmDict["anomaly_id"] : (anm.GetType().GetProperty("anomaly_id") != null ? anm.anomaly_id : null);
+                cardVd["acknowledged"] = anmDict != null && anmDict.ContainsKey("acknowledged") ? anmDict["acknowledged"] : (anm.GetType().GetProperty("acknowledged") != null ? anm.acknowledged : false);
+                @await Html.PartialAsync("Components/_AnomalyCard", cardVd)
+            }
+        </div>
+    }
+    else
+    {
+        <div class="db-anomaly-grid" id="generatorAnomalyGrid" style="display:none;"></div>
+    }
+
+    @* Normal View *@
+    <div class="db-gen-normal-view" id="generatorNormalView" @if(hasAnomalies){ <text>style="display:none;"</text> }>
+
+        @* Fuel Level *@
+        <div class="db-gen-fuel">
+            <div class="db-gen-fuel__gauge-wrap">
+                <div class="db-gen-fuel__label">FUEL LEVEL</div>
+                <div class="db-gen-fuel__gauge" id="fuelGauge">
+                    <svg viewBox="0 0 200 110" class="db-fuel-svg">
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e5e7eb" stroke-width="18" stroke-linecap="round" pathLength="251.2"/>
+                        <path id="fuelArcFill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#fuelGradient)" stroke-width="18" stroke-linecap="round" pathLength="251.2" stroke-dasharray="251.2" stroke-dashoffset="@(251.2 - (251.2 * fuelLevel / 100.0))"/>
+                        <defs>
+                            <linearGradient id="fuelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#22c55e"/>
+                                <stop offset="100%" style="stop-color:#16a34a"/>
+                            </linearGradient>
+                            <linearGradient id="fuelGradientWarn" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#f59e0b"/>
+                                <stop offset="100%" style="stop-color:#d97706"/>
+                            </linearGradient>
+                            <linearGradient id="fuelGradientCrit" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#ef4444"/>
+                                <stop offset="100%" style="stop-color:#dc2626"/>
+                            </linearGradient>
+                        </defs>
+                        <text x="100" y="100" text-anchor="middle" class="db-fuel-svg__value" id="fuelLevelText">@fuelLevel%</text>
+                    </svg>
+                    <div class="db-gen-fuel__avg-label">
+                        Average of <span id="generatorTotalCount">@generatorCount</span> Generator
+                    </div>
+                </div>
+            </div>
+
+            @* Generator Ready *@
+            <div class="db-gen-ready">
+                <div class="db-gen-ready__text">
+                    <strong id="generatorReadyText">
+                        Generator Ready<br>
+                        <span id="generatorReadyPercent">@readyPercent</span>%
+                        Sites (<span id="generatorReadyCount">@readyCount</span>/<span id="generatorTotalCount2">@generatorCount</span>)
+                    </strong>
+                </div>
+                <div class="db-gen-ready__icon" id="generatorReadyIcon">
+                    @if(readyPercent >= 90)
+                    {
+                        <i class="fa-solid fa-circle-check" style="color:#22c55e; font-size:2rem;"></i>
+                    }
+                    else
+                    {
+                        <i class="fa-solid fa-circle-exclamation" style="color:#f59e0b; font-size:2rem;"></i>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Status Footer *@
+        <div class="db-gen-status-row">
+            <div class="db-gen-status-item" id="electricityStatusCard">
+                <i class="fa-solid fa-bolt-lightning db-gen-status-item__icon"></i>
+                <span>Electricity : <strong id="electricityStatusText">@electricityStatus</strong></span>
+            </div>
+            <div class="db-gen-status-item" id="lightningStatusCard">
+                <i class="fa-solid fa-sun db-gen-status-item__icon"></i>
+                <span>Lightning Status : <strong id="lightningStatusText">@lightningStatus</strong></span>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+

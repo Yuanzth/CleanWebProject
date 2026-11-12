@@ -1,0 +1,39 @@
+<div class="ups-glass-card" id="ups-card-battery">
+    <div class="ups-card-header">
+        <div class="ups-card-icon ups-card-icon--battery">
+            <i class="fa-solid fa-battery-three-quarters"></i>
+        </div>
+        <span class="ups-card-title">Battery</span>
+        <div class="ups-ground-status" style="margin-left: auto;">
+            <span class="ups-status-dot ups-status-dot--normal" id="ups-battery-status-dot"></span>
+            <span class="ups-status-badge ups-status-badge--normal" id="ups-battery-status-badge">Good</span>
+        </div>
+    </div>
+
+    <div class="ups-battery-body">
+        <div class="ups-battery-gauge">
+            <svg viewBox="0 0 120 120" class="ups-battery-ring">
+                <circle cx="60" cy="60" r="52" class="ups-battery-ring-bg" />
+                <circle cx="60" cy="60" r="52" class="ups-battery-ring-fill" id="ups-battery-ring-fill" stroke-dasharray="326.7" stroke-dashoffset="49" />
+            </svg>
+            <div class="ups-battery-percent">
+                <span class="ups-battery-value" id="ups-battery-percent">85</span>
+                <span class="ups-battery-unit">%</span>
+            </div>
+        </div>
+        <div class="ups-battery-info">
+            <div class="ups-battery-info-row">
+                <span class="ups-battery-info-label">Voltage</span>
+                <span class="ups-battery-info-value" id="ups-battery-voltage">54.2 V</span>
+            </div>
+            <div class="ups-battery-info-row">
+                <span class="ups-battery-info-label">Runtime</span>
+                <span class="ups-battery-info-value" id="ups-battery-runtime">45 min</span>
+            </div>
+            <div class="ups-battery-info-row">
+                <span class="ups-battery-info-label">Status</span>
+                <span class="ups-battery-info-value" style="color: var(--ups-good);" id="ups-battery-charge-status">On</span>
+            </div>
+        </div>
+    </div>
+</div>

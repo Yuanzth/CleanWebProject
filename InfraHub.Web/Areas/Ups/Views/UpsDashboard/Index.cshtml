@@ -1,0 +1,2735 @@
+@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+@{ ViewData["Title"] = "UPS Dashboard"; }
+
+@section styles {
+    <link rel="stylesheet" href="/assets/css/ups-dashboard.css">
+    <style>
+        body { 
+            background: var(--ups-bg-page, #070b16) !important; 
+            min-height: 100% !important; 
+        }
+        .main-container { 
+            min-height: auto !important; 
+            padding-bottom: 20px !important; 
+        }
+        .ups-dashboard-page { 
+            padding-bottom: 0 !important; 
+            min-height: auto !important;
+        }
+        
+        .ups-cat-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .ups-cat-tab-btn {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .ups-cat-tab-btn:hover { background: rgba(45, 60, 85, 0.9); color: #e2e8f0; }
+        .ups-cat-tab-btn.active { background: #2563eb; color: white; border-color: #3b82f6; box-shadow: 0 0 10px rgba(37, 99, 235, 0.4); }
+        
+        /* Card Site Modern List Redesign Styles */
+        .ups-wireframe-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(51, 65, 85, 0.8);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .ups-wireframe-card.has-critical {
+            border-color: rgba(239, 68, 68, 0.7);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.25), inset 0 0 15px rgba(239, 68, 68, 0.05);
+        }
+        .ups-wireframe-card.has-warning {
+            border-color: rgba(245, 158, 11, 0.7);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2), inset 0 0 15px rgba(245, 158, 11, 0.05);
+        }
+        .ups-wireframe-card.has-acknowledged {
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.18), inset 0 0 15px rgba(56, 189, 248, 0.05);
+        }
+        .ups-wireframe-card.is-normal {
+            border-color: rgba(34, 197, 94, 0.4);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.08);
+        }
+        .ups-wireframe-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+        }
+
+        /* Card Header */
+        .ups-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 10px;
+        }
+        .ups-card-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+        .ups-card-site-code {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+        .ups-card-site-name {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            font-weight: 500;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ups-card-site-status-badge {
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .ups-card-site-status-badge.normal { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .ups-card-site-status-badge.warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .ups-card-site-status-badge.critical { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .ups-card-site-status-badge.acknowledged { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+        .ups-card-site-status-badge.no-data { background: rgba(71, 85, 105, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+
+        /* Parameter List & Item Styles */
+        .ups-param-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .ups-param-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            background: rgba(30, 41, 59, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .ups-param-item:hover {
+            background: rgba(45, 60, 85, 0.85);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateX(2px);
+        }
+        .ups-param-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .ups-param-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+        }
+        .ups-param-item:hover .ups-param-icon {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .ups-param-name {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ups-param-badge {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .ups-param-badge--normal { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .ups-param-badge--warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .ups-param-badge--critical { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .ups-param-badge--acknowledged { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+        .ups-param-badge--no-data { background: rgba(51, 65, 85, 0.4); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.2); }
+
+        .dcpi-overall-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        .dcpi-overall-badge:hover {
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+        .dcpi-overall-badge .dcpi-label {
+            color: #94a3b8;
+            font-size: 0.64rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .dcpi-overall-badge .dcpi-val {
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        /* Grid Responsiveness */
+        .main-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        .ups-site-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 20px !important;
+            padding: 30px !important;
+            margin-top: 10px;
+        }
+        @@media (min-width: 1700px) { .ups-site-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; } }
+        @@media (max-width: 1400px) { .ups-site-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+        @@media (max-width: 1024px) { .ups-site-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+        @@media (max-width: 640px) { .ups-site-grid { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; } }
+
+        .ups-wf-code--normal { color: #22c55e; }
+        .ups-wf-code--warning { color: #f59e0b; }
+        .ups-wf-code--critical { color: #ef4444; }
+        .ups-wf-code--acknowledged { color: #38bdf8; }
+        .ups-wf-code--no-data { color: #94a3b8; }
+        .ups-wf-name, .ups-wf-loc { color: #cbd5e1; font-size: 0.85rem; text-transform: uppercase; font-weight: 600; line-height: 1.2; letter-spacing: 0.3px; }
+
+        /* Detail View Styles */
+        .ups-detail-container { padding: 20px; animation: fadeIn 0.4s ease; }
+        .ups-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .ups-detail-title { font-size: 1.8rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 12px; }
+        
+        .ups-device-grid { 
+            display: flex; 
+            gap: 25px; 
+            overflow-x: auto; 
+            scroll-snap-type: x mandatory; 
+            padding-top: 10px;
+            padding-bottom: 25px; 
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            cursor: grab;
+        }
+        .ups-device-grid.is-dragging {
+            scroll-snap-type: none !important;
+            cursor: grabbing !important;
+            user-select: none;
+        }
+        .ups-device-grid.is-dragging .ups-dev-card {
+            pointer-events: none;
+            user-select: none;
+        }
+        .ups-device-grid::-webkit-scrollbar { display: none; }
+        
+        .ups-carousel-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        
+        .ups-carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .ups-carousel-btn:hover { background: #2563eb; border-color: #3b82f6; color: white; transform: translateY(-50%) scale(1.05); }
+        .ups-carousel-btn:active { transform: translateY(-50%) scale(0.95); }
+        .ups-carousel-btn:disabled { opacity: 0; pointer-events: none; }
+        
+        .ups-carousel-btn.prev { left: -24px; }
+        .ups-carousel-btn.next { right: -24px; }
+        
+        .ups-dev-card {
+            flex: 0 0 350px;
+            scroll-snap-align: start;
+            background: rgba(30, 41, 59, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .ups-dev-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .ups-dev-header {
+            padding: 16px 20px;
+            background: rgba(15, 23, 42, 0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 15px;
+            position: relative;
+            z-index: 30;
+        }
+        .ups-dev-header > div:first-child {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .ups-dev-title { 
+            font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 4px; 
+            display: flex; align-items: center; gap: 6px;
+            white-space: nowrap; overflow: hidden;
+        }
+        .ups-dev-title > i { flex-shrink: 0; }
+        
+        /* Smooth Horizontal Marquee for Long Device Names */
+        .ups-marquee-wrap {
+            overflow: hidden;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            flex: 1;
+            min-width: 0;
+            mask-image: linear-gradient(to right, black 88%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 88%, transparent 100%);
+        }
+        .ups-marquee-inner {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            white-space: nowrap;
+            animation: upsSmoothMarquee 14s linear infinite;
+            will-change: transform;
+        }
+        .ups-dev-card:hover .ups-marquee-inner,
+        .ups-marquee-wrap:hover .ups-marquee-inner {
+            animation-play-state: paused;
+        }
+        .ups-marquee-text {
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+        .ups-marquee-separator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+        @@keyframes upsSmoothMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-50% - 8px)); }
+        }
+        .ups-dev-meta { 
+            font-size: 0.85rem; color: #94a3b8; display: flex; gap: 10px; align-items: center; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        
+        .ups-badge { 
+            padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; 
+            text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; 
+        }
+        .ups-badge.normal { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+        .ups-badge.warning { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .ups-badge.critical { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .ups-badge.acknowledged { background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.5); box-shadow: 0 0 10px rgba(56,189,248,0.2); }
+        .ups-badge.ack-pending { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.45); }
+
+        .ack-ribbon-verified {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .ack-ribbon-pending {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .ups-ack-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #94a3b8;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ups-ack-btn:hover {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+        }
+        
+        .ups-dev-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        
+        .ups-metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .ups-metric-row--2 { grid-template-columns: repeat(2, 1fr); }
+        
+        .ups-metric-box {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.03);
+            text-align: center;
+        }
+        .ups-metric-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .ups-metric-val { font-size: 1.1rem; color: #e2e8f0; font-weight: 600; }
+        .ups-metric-unit { font-size: 0.75rem; color: #94a3b8; margin-left: 2px; }
+        
+        .ups-metric-box.is-warning { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); }
+        .ups-metric-box.is-warning .ups-metric-val { color: #fbbf24; }
+        .ups-metric-box.is-critical { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+        .ups-metric-box.is-critical .ups-metric-val { color: #f87171; }
+        
+        .ups-section-title { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+        
+        @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+}
+
+<div class="ups-dashboard-page" id="ups-dashboard-app">
+    <div id="ups-loading" style="display:flex; justify-content:center; padding: 50px; color:#fff;">
+        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+    </div>
+    
+    <div id="ups-empty" class="ups-dashboard-empty" style="display: none;">
+        <div class="ups-dashboard-empty__title">Tidak ada data UPS</div>
+        <div class="ups-dashboard-empty__subtitle">Belum ada data tersedia.</div>
+    </div>
+    
+    <div class="ups-grid-container" id="grid-view" style="display: none;">
+        <div class="ups-site-grid" id="grid-container">
+            <!-- Grid cards injected here -->
+        </div>
+    </div>
+
+    <!-- Detail View -->
+    <div class="ups-detail-container" id="detail-view" style="display: none;">
+        <button class="ups-back-btn" onclick="hideDetail()">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
+        </button>
+        <div class="ups-detail-content" id="detail-content">
+            <!-- Details injected here -->
+        </div>
+    </div>
+</div>
+<!-- Modal Acknowledge -->
+<div class="modal fade" id="ackModal" tabindex="-1" aria-labelledby="ackModalLabel" aria-hidden="true" style="z-index: 9999;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+        <div class="modal-content" style="background: linear-gradient(145deg, rgba(15,23,42,0.97), rgba(8,12,28,0.99)); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.06); color: #e2e8f0; border-radius: 20px; box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03); overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h5 class="modal-title" id="ackModalLabel" style="font-size: 1.4rem; font-weight: 700; color: #f1f5f9; margin: 0; letter-spacing: -0.3px;">Acknowledge Device</h5>
+                    <p style="font-size: 0.9rem; color: #64748b; margin: 6px 0 0; font-weight: 500;">Catat dan dokumentasikan status perangkat</p>
+                </div>
+                <button type="button" data-bs-dismiss="modal" aria-label="Close" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #64748b; font-size: 1rem;" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#e2e8f0'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#64748b'">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="ackForm" onsubmit="submitAcknowledge(event)">
+                <div style="padding: 24px 32px 28px; display: flex; flex-direction: column; gap: 20px;">
+                    <input type="hidden" id="ackDeviceId" name="deviceId">
+                    
+                    <!-- Device Info Card -->
+                    <div id="ackDeviceInfo" style="display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;">
+                        <div id="ackDeviceIcon" style="width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;"></div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div id="ackDeviceName" style="font-size: 0.95rem; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                <span id="ackDeviceType" style="font-size: 0.78rem; color: #64748b; font-weight: 500;"></span>
+                                <span id="ackDeviceStatus" style="padding: 2px 8px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Row -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Waktu Mulai</label>
+                            <input type="datetime-local" id="ackStartTime" name="startTime" required
+                                style="width: 100%; padding: 13px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; font-size: 0.92rem; outline: none; transition: border-color 0.2s;"
+                                onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Waktu Selesai</label>
+                            <input type="datetime-local" id="ackEndTime" name="endTime" required
+                                style="width: 100%; padding: 13px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; font-size: 0.92rem; outline: none; transition: border-color 0.2s;"
+                                onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+                        </div>
+                    </div>
+                    
+                    <!-- Reason -->
+                    <div>
+                        <label style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Alasan</label>
+                        <select id="ackReason" name="reason" required onchange="window.handleReasonChange(this)"
+                            style="width: 100%; padding: 13px 14px; background-color: #0f172a; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none; transition: border-color 0.2s; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22><polyline points=%226 9 12 15 18 9%22/></svg>'); background-repeat: no-repeat; background-position: right 14px center;"
+                            onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div>
+                        <label style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Catatan <span id="ackNotesOptText" style="color:#475569; font-weight:400;">(Opsional)</span></label>
+                        <textarea id="ackNotes" name="notes" rows="3" placeholder="Tambahkan catatan jika perlu..."
+                            style="width: 100%; padding: 13px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; font-size: 0.95rem; outline: none; resize: vertical; min-height: 80px; transition: border-color 0.2s; font-family: inherit;"
+                            onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'"></textarea>
+                    </div>
+                    
+                    <!-- Evidence Upload -->
+                    <div>
+                        <label style="font-size: 0.82rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block;">Evidence Foto</label>
+                        <label for="ackEvidence" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; background: rgba(255,255,255,0.02); border: 1.5px dashed rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; transition: all 0.2s; gap: 8px;" onmouseover="this.style.borderColor='rgba(99,102,241,0.4)';this.style.background='rgba(99,102,241,0.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.02)'">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: #6366f1;"></i>
+                            <span style="font-size: 0.92rem; color: #94a3b8; font-weight: 500;">Klik untuk upload foto</span>
+                            <span style="font-size: 0.78rem; color: #475569;">PNG, JPG — Max 5MB</span>
+                        </label>
+                        <input type="file" id="ackEvidence" name="evidence" accept="image/png, image/jpeg, image/jpg" required style="display: none;" onchange="let n=this.files[0]; let lbl=this.previousElementSibling; if(n){lbl.innerHTML='<i class=\'fa-solid fa-image\' style=\'font-size:1.5rem;color:#6366f1;\'></i><span style=\'font-size:0.95rem;color:#e2e8f0;font-weight:500;\'>'+n.name+'</span><span style=\'font-size:0.78rem;color:#475569;\'>'+(n.size/1024).toFixed(0)+' KB</span>';}">
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div style="padding: 0 32px 28px; display: flex; gap: 12px;">
+                    <button type="button" data-bs-dismiss="modal"
+                        style="flex: 1; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; color: #94a3b8; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#e2e8f0'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'">
+                        Batal
+                    </button>
+                    <button type="submit" id="ackSubmitBtn"
+                        style="flex: 2; padding: 14px; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; border-radius: 12px; color: #fff; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(99,102,241,0.3);"
+                        onmouseover="this.style.boxShadow='0 6px 24px rgba(99,102,241,0.45)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='0 4px 16px rgba(99,102,241,0.3)';this.style.transform='none'">
+                        Kirim Acknowledge
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script>
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-ups');
+        }
+        
+        loadDashboardData(true);
+
+        if (window.UpsRefreshRing) {
+            window.UpsRefreshRing.init(60, function () {
+                return loadDashboardData(false);
+            });
+        }
+    });
+
+    function loadDashboardData(isInitial = false) {
+        if (isInitial) {
+            document.getElementById('ups-loading').style.display = 'flex';
+            document.getElementById('grid-view').style.display = 'none';
+        } else {
+            document.querySelectorAll('.ups-wireframe-card').forEach(card => card.classList.add('ups-shimmering'));
+        }
+        
+        return fetch('/api/ups/dashboard-data', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (isInitial) {
+                document.getElementById('ups-loading').style.display = 'none';
+            }
+            
+            if (!res.data || res.data.length === 0) {
+                document.getElementById('ups-empty').style.display = 'block';
+                document.getElementById('grid-view').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('ups-empty').style.display = 'none';
+            
+            if (document.getElementById('detail-view').style.display === 'none') {
+                document.getElementById('grid-view').style.display = 'block';
+            }
+            renderGrid(res.data);
+            
+            if (document.getElementById('detail-view').style.display === 'block' && window.CURRENT_DETAIL_SITE_ID) {
+                if (window.CURRENT_DETAIL_TAB === 'pac-dc') {
+                    showPacDetail(window.CURRENT_DETAIL_SITE_ID);
+                } else if (window.CURRENT_DETAIL_TAB === 'suhu-ruangan') {
+                    showSensorDetail(window.CURRENT_DETAIL_SITE_ID);
+                } else if (window.CURRENT_DETAIL_TAB === 'cctv') {
+                    showCctvDetail(window.CURRENT_DETAIL_SITE_ID);
+                } else {
+                    showDetail(window.CURRENT_DETAIL_SITE_ID, window.CURRENT_DETAIL_TAB);
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (isInitial) {
+                document.getElementById('ups-loading').style.display = 'none';
+            } else {
+                document.querySelectorAll('.ups-wireframe-card').forEach(card => card.classList.remove('ups-shimmering'));
+            }
+        });
+    }
+
+    function formatDowntime(lastOnlineTimeStr) {
+        if (!lastOnlineTimeStr) return "N/A";
+        
+        let lastTime = new Date(lastOnlineTimeStr).getTime();
+        let now = new Date().getTime();
+        let diffMs = now - lastTime;
+        if (diffMs < 0) return "N/A";
+        
+        let diffMins = Math.floor(diffMs / (1000 * 60));
+        if (diffMins < 60) return `${diffMins}m`;
+        
+        let diffHours = Math.floor(diffMins / 60);
+        let remMins = diffMins % 60;
+        
+        if (diffHours < 24) {
+            return `${diffHours}j${remMins > 0 ? ' ' + remMins + 'm' : ''}`;
+        }
+        
+        let diffDays = Math.floor(diffHours / 24);
+        let remHours = diffHours % 24;
+        return `${diffDays}h${remHours > 0 ? ' ' + remHours + 'j' : ''}`;
+    }
+
+    function renderGrid(sites) {
+        window.UPS_DASHBOARD_DATA = sites; // Store globally for detail view
+        const grid = document.getElementById('grid-container');
+        grid.innerHTML = '';
+        
+        // Sort sites: critical first, then warning, then normal
+        sites.sort((a, b) => {
+            const getPriority = (status) => {
+                if (status === 'critical') return 1;
+                if (status === 'warning') return 2;
+                if (status === 'normal') return 3;
+                return 4;
+            };
+            
+            let priorityDiff = getPriority(a.status) - getPriority(b.status);
+            if (priorityDiff !== 0) return priorityDiff;
+            
+            return (a.site_code || "").localeCompare(b.site_code || "");
+        });
+
+        // Definitions of 6 parameters required on card
+        const PARAM_CONFIGS = [
+            {
+                id: 'ups-dc',
+                label: 'UPS DC',
+                icon: 'fa-solid fa-server',
+                keys: ['UPS DC', 'Ups Dc', 'ups dc']
+            },
+            {
+                id: 'ups-user',
+                label: 'UPS USER',
+                icon: 'fa-solid fa-desktop',
+                keys: ['UPS USER', 'Ups User', 'ups user']
+            },
+            {
+                id: 'suhu-ruangan',
+                label: 'Suhu Ruangan',
+                icon: 'fa-solid fa-temperature-half',
+                keys: ['SENSOR SUHU RUANGAN', 'SENSOR', 'SENSOR SUHU']
+            },
+            {
+                id: 'pac-dc',
+                label: 'Precision Air Conditioning',
+                icon: 'fa-solid fa-fan',
+                keys: ['PAC RUANGAN DC', 'PAC ruangan DC', 'PAC DC']
+            },
+            {
+                id: 'cctv',
+                label: 'CCTV',
+                icon: 'fa-solid fa-video',
+                keys: ['CCTV AVAILBILITY', 'CCTV Availbility', 'CCTV']
+            }
+        ];
+        
+        sites.forEach(site => {
+            let cardClass = 'is-normal';
+            if (site.status === 'critical') cardClass = 'has-critical';
+            else if (site.status === 'warning') cardClass = 'has-warning';
+            else if (site.status === 'acknowledged') cardClass = 'has-acknowledged';
+
+            let siteNameStr = site.site_name || "";
+            let statusText = site.status === 'normal' ? 'NORMAL' : (site.status === 'warning' ? 'WARNING' : (site.status === 'critical' ? 'CRITICAL' : (site.status === 'acknowledged' ? 'ACKNOWLEDGED' : 'NO DATA')));
+            
+            let dcpiVal = (site.dcpi_overall !== null && site.dcpi_overall !== undefined) ? Number(site.dcpi_overall) : null;
+            let dcpiOverallText = dcpiVal !== null ? dcpiVal.toFixed(2) : '-';
+            
+            let dcpiColor = '#38bdf8';
+            if (dcpiVal !== null) {
+                if (dcpiVal >= 4.0) dcpiColor = '#4ade80';
+                else if (dcpiVal >= 3.0) dcpiColor = '#38bdf8';
+                else if (dcpiVal >= 2.0) dcpiColor = '#fbbf24';
+                else dcpiColor = '#f87171';
+            }
+
+            let html = `
+            <div class="ups-wireframe-card ${cardClass}" onmouseenter="if(this.querySelector('.ups-card-site-name')) window.startMarquee(this.querySelector('.ups-card-site-name'))" onmouseleave="if(this.querySelector('.ups-card-site-name')) window.stopMarquee(this.querySelector('.ups-card-site-name'))">
+                <div class="ups-card-header">
+                    <div class="ups-card-title-group">
+                        <div class="ups-card-site-code ups-wf-code--${site.status}">${site.site_code}</div>
+                        <div class="ups-card-site-name" title="${siteNameStr}">${siteNameStr}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <div class="dcpi-overall-badge" title="Klik untuk melihat detail skor DCPI" onclick="window.showDcpiBreakdown('${site.site_id}')" style="cursor: pointer;">
+                            <span class="dcpi-label">DCPI</span>
+                            <span class="dcpi-val" style="color: ${dcpiColor};">${dcpiOverallText}</span>
+                        </div>
+                        <div class="ups-card-site-status-badge ${site.status}">
+                            ${statusText}
+                        </div>
+                    </div>
+                </div>
+                <div class="ups-param-list">`;
+            
+            PARAM_CONFIGS.forEach(config => {
+                html += renderParamItem(config, site);
+            });
+            
+            html += `</div>
+            </div>`;
+            
+            grid.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function renderParamItem(config, site) {
+        let allCatData = [];
+        if (site && site.categories) {
+            for (let k of config.keys) {
+                if (site.categories[k]) {
+                    allCatData.push(site.categories[k]);
+                }
+            }
+        }
+        
+        let status = 'no-data';
+        let badgeText = 'NO DATA';
+
+        if (allCatData.length > 0) {
+            let hasNormal = false;
+            let hasWarning = false;
+            let hasCritical = false;
+            
+            allCatData.forEach(c => {
+                if (c.status === 'critical') hasCritical = true;
+                else if (c.status === 'warning') hasWarning = true;
+                else if (c.status === 'normal' || c.status === 'acknowledged') hasNormal = true;
+            });
+            
+            if (hasCritical) {
+                status = 'critical';
+                badgeText = 'CRITICAL';
+            } else if (hasWarning) {
+                status = 'warning';
+                badgeText = 'WARNING';
+            } else if (hasNormal) {
+                status = 'normal';
+                badgeText = 'NORMAL';
+            }
+        }
+        
+        let clickHandler = '';
+        if (config.id === 'ups-dc') {
+            clickHandler = status === 'no-data'
+                ? `Swal.fire('Informasi', 'Belum ada perangkat UPS DC di site ${site.site_code}.', 'info')`
+                : `showDetail('${site.site_id}', 'ups-dc')`;
+        } else if (config.id === 'ups-user') {
+            clickHandler = status === 'no-data'
+                ? `Swal.fire('Informasi', 'Belum ada perangkat UPS USER di site ${site.site_code}.', 'info')`
+                : `showDetail('${site.site_id}', 'ups-user')`;
+        } else if (config.id === 'suhu-ruangan') {
+            clickHandler = status === 'no-data'
+                ? `Swal.fire('Informasi', 'Belum ada perangkat Sensor Suhu di site ${site.site_code}.', 'info')`
+                : `showSensorDetail('${site.site_id}')`;
+        } else if (config.id === 'pac-dc') {
+            clickHandler = status === 'no-data'
+                ? `Swal.fire('Informasi', 'Belum ada perangkat PAC di site ${site.site_code}.', 'info')`
+                : `showPacDetail('${site.site_id}')`;
+        } else if (config.id === 'cctv') {
+            clickHandler = status === 'no-data'
+                ? `Swal.fire('Informasi', 'Belum ada perangkat CCTV di site ${site.site_code}.', 'info')`
+                : `showCctvDetail('${site.site_id}')`;
+        } else {
+            clickHandler = `showParamInfo('${config.label}', '${site.site_code}', '${status}', '${badgeText}')`;
+        }
+        
+        return `
+        <div class="ups-param-item" onclick="${clickHandler}" title="${config.label}: ${badgeText}" onmouseenter="if(this.querySelector('.ups-param-name')) window.startMarquee(this.querySelector('.ups-param-name'))" onmouseleave="if(this.querySelector('.ups-param-name')) window.stopMarquee(this.querySelector('.ups-param-name'))">
+            <div class="ups-param-item-left">
+                <div class="ups-param-icon">
+                    <i class="${config.icon}"></i>
+                </div>
+                <div class="ups-param-name">${config.label}</div>
+            </div>
+            <div class="ups-param-badge ups-param-badge--${status}">
+                ${badgeText}
+            </div>
+        </div>`;
+    }
+
+
+    function bindCarouselEvents(grid, devices) {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let hasMoved = false;
+
+        grid.addEventListener('mousedown', (e) => {
+            // Don't start drag if clicking inside dropdown
+            if (e.target.closest('.ups-ack-dropdown') || e.target.closest('.ups-ack-menu')) return;
+            isDown = true;
+            hasMoved = false;
+            startX = e.pageX - grid.offsetLeft;
+            scrollLeft = grid.scrollLeft;
+            if (window.upsAutoSlideInterval) clearInterval(window.upsAutoSlideInterval);
+        });
+        grid.addEventListener('mouseleave', () => { isDown = false; hasMoved = false; grid.classList.remove('is-dragging'); });
+        grid.addEventListener('mouseup', () => { isDown = false; hasMoved = false; grid.classList.remove('is-dragging'); });
+        grid.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            const x = e.pageX - grid.offsetLeft;
+            const diff = Math.abs(x - startX);
+            if (diff > 5) {
+                if (!hasMoved) {
+                    hasMoved = true;
+                    grid.classList.add('is-dragging');
+                }
+                e.preventDefault();
+                const walk = (x - startX) * 1.5; 
+                grid.scrollLeft = scrollLeft - walk;
+            }
+        });
+        
+        let wheelTimeout;
+        grid.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0 && grid.scrollWidth > grid.clientWidth) {
+                let scrollParent = document.documentElement;
+                let curr = grid.parentElement;
+                while (curr && curr !== document.body && curr !== document.documentElement) {
+                    let style = window.getComputedStyle(curr);
+                    if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+                        scrollParent = curr; break;
+                    }
+                    curr = curr.parentElement;
+                }
+                
+                let isAtBottom = false;
+                if (scrollParent === document.documentElement) {
+                    isAtBottom = Math.ceil(window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 10;
+                } else {
+                    isAtBottom = Math.ceil(scrollParent.clientHeight + scrollParent.scrollTop) >= scrollParent.scrollHeight - 10;
+                }
+                
+                let atLeftEdge = grid.scrollLeft <= 2;
+                let atRightEdge = Math.ceil(grid.scrollLeft + grid.clientWidth) >= grid.scrollWidth - 2;
+                
+                let shouldScrollHorizontally = false;
+                if (isAtBottom) {
+                    if (e.deltaY > 0 && !atRightEdge) shouldScrollHorizontally = true;
+                    if (e.deltaY < 0 && !atLeftEdge) shouldScrollHorizontally = true;
+                }
+                
+                if (shouldScrollHorizontally) {
+                    e.preventDefault();
+                    grid.classList.add('is-dragging'); 
+                    grid.scrollBy({ left: e.deltaY * 2.5, behavior: 'smooth' });
+                    clearTimeout(wheelTimeout);
+                    wheelTimeout = setTimeout(() => { grid.classList.remove('is-dragging'); }, 200);
+                }
+            }
+        }, { passive: false });
+
+        let hasPriorityCard = devices.some(d => d._sortScore > 0);
+        const startAutoSlide = () => {
+            if (window.upsAutoSlideInterval) clearInterval(window.upsAutoSlideInterval);
+            if (hasPriorityCard) return; 
+            window.upsAutoSlideInterval = setInterval(() => {
+                if (grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 10) {
+                    grid.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    let card = grid.querySelector('.ups-dev-card');
+                    if (card) grid.scrollBy({ left: card.offsetWidth + 25, behavior: 'smooth' });
+                }
+            }, 6000);
+        };
+        const resetInactivity = () => {
+            if (window.upsAutoSlideInterval) clearInterval(window.upsAutoSlideInterval);
+            if (window.upsInactivityTimeout) clearTimeout(window.upsInactivityTimeout);
+            window.upsInactivityTimeout = setTimeout(() => { startAutoSlide(); }, 30000); 
+        };
+        if (window.upsResetInactivity) {
+            document.removeEventListener('mousemove', window.upsResetInactivity);
+            document.removeEventListener('keydown', window.upsResetInactivity);
+            document.removeEventListener('wheel', window.upsResetInactivity);
+        }
+        window.upsResetInactivity = resetInactivity;
+        document.addEventListener('mousemove', window.upsResetInactivity);
+        document.addEventListener('keydown', window.upsResetInactivity);
+        document.addEventListener('wheel', window.upsResetInactivity);
+        startAutoSlide();
+    }
+
+    function renderDevTitleHtml(iconHtml, devName, defaultLabel) {
+        iconHtml = ''; // Disabled icons in detail view as requested
+        let name = devName || defaultLabel || 'Device';
+        if (name.length > 15) {
+            return `
+            <div class="ups-dev-title" title="${name}">
+                ${iconHtml ? iconHtml + ' ' : ''}
+                <div class="ups-marquee-wrap">
+                    <div class="ups-marquee-inner">
+                        <span class="ups-marquee-text">${name}</span>
+                        <span class="ups-marquee-separator"><i class="fa-solid fa-circle" style="font-size: 0.35rem; opacity: 0.5;"></i></span>
+                        <span class="ups-marquee-text">${name}</span>
+                        <span class="ups-marquee-separator"><i class="fa-solid fa-circle" style="font-size: 0.35rem; opacity: 0.5;"></i></span>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            return `
+            <div class="ups-dev-title" title="${name}">
+                ${iconHtml ? iconHtml + ' ' : ''}
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</span>
+            </div>`;
+        }
+    }
+
+    function renderDevAckRibbonHtml(dev) {
+        if (dev.is_acknowledged) {
+            return `
+            <div class="ack-ribbon-verified">
+                <div style="min-width: 0;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-shield-check"></i> <span>Acknowledge Terverifikasi DCO (${escapeHtml(dev.ack_reason || 'Maintenance')})</span>
+                    </div>
+                    <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                        <i class="fa-regular fa-clock"></i> ${dev.ack_start_time || '-'} s/d ${dev.ack_end_time || '-'}
+                        ${dev.ack_verified_by_name ? ` &bull; Verifikator: <strong>${escapeHtml(dev.ack_verified_by_name)}</strong>` : ''}
+                    </div>
+                    ${dev.ack_notes ? `<div style="font-size: 0.74rem; color: #64748b; margin-top: 2px; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">"${escapeHtml(dev.ack_notes)}"</div>` : ''}
+                </div>
+                <span style="font-size: 0.68rem; font-weight: 700; color: #34d399; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); padding: 3px 8px; border-radius: 6px; text-transform: uppercase; white-space: nowrap;"><i class="fa-solid fa-volume-xmark" style="margin-right: 3px;"></i>Alarm Muted</span>
+            </div>`;
+        } else if (dev.ack_status === 'Pending') {
+            return `
+            <div class="ack-ribbon-pending">
+                <div style="min-width: 0;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-clock"></i> <span>Acknowledge Diajukan (${escapeHtml(dev.ack_reason || 'Pending')})</span>
+                    </div>
+                    <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                        <i class="fa-regular fa-clock"></i> ${dev.ack_start_time || '-'} s/d ${dev.ack_end_time || '-'} &bull; Menunggu Verifikasi DCO
+                    </div>
+                </div>
+                <span style="font-size: 0.68rem; font-weight: 700; color: #fbbf24; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35); padding: 3px 8px; border-radius: 6px; text-transform: uppercase; white-space: nowrap;">Pending DCO</span>
+            </div>`;
+        }
+        return '';
+    }
+
+    function renderDevOfflineOverlayHtml(dev, subtitleText, extraDowntimeHtml = '') {
+        if (dev.is_acknowledged) {
+            return `
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.92); backdrop-filter: blur(4px); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px;">
+                <i class="fa-solid fa-shield-check fa-3x" style="color: #38bdf8; margin-bottom: 10px; filter: drop-shadow(0 2px 8px rgba(56,189,248,0.4));"></i>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #38bdf8; letter-spacing: 1px;">DEVICE ACKNOWLEDGED</div>
+                <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px; max-width: 85%;">
+                    Status: <strong>${escapeHtml(dev.ack_reason || 'Maintenance')}</strong> (${dev.ack_start_time || '-'} s/d ${dev.ack_end_time || '-'})
+                </div>
+                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                    Diverifikasi oleh: <strong>${escapeHtml(dev.ack_verified_by_name || 'Tim DCO')}</strong>
+                </div>
+                ${dev.ack_notes ? `<div style="font-size: 0.76rem; color: #64748b; margin-top: 4px; font-style: italic; max-width: 90%;">"${escapeHtml(dev.ack_notes)}"</div>` : ''}
+                <div style="margin-top: 10px; font-size: 0.72rem; color: #34d399; font-weight: 700; text-transform: uppercase; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); padding: 3px 10px; border-radius: 12px;">
+                    <i class="fa-solid fa-bell-slash" style="margin-right: 4px;"></i>Alarm Dinonaktifkan
+                </div>
+            </div>`;
+        } else {
+            return `
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.88); backdrop-filter: blur(4px); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px;">
+                <i class="fa-solid fa-link-slash fa-3x" style="color: #ef4444; margin-bottom: 12px; filter: drop-shadow(0 2px 8px rgba(239,68,68,0.4));"></i>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #f87171; letter-spacing: 1px;">KONEKSI TERPUTUS</div>
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px; max-width: 85%;">${subtitleText}</div>
+                ${extraDowntimeHtml}
+            </div>`;
+        }
+    }
+
+    function showSensorDetail(siteId) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        window.CURRENT_DETAIL_SITE_ID = siteId;
+        window.CURRENT_DETAIL_TAB = 'suhu-ruangan';
+        
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        let keys = ['SENSOR SUHU RUANGAN', 'SENSOR', 'SENSOR SUHU'];
+        let devices = [];
+        if (site && site.categories) {
+            for (let k of Object.keys(site.categories)) {
+                if (keys.some(key => key.toLowerCase() === k.toLowerCase())) {
+                    let catData = site.categories[k];
+                    if (catData && catData.devices) {
+                        catData.devices.forEach(d => {
+                            let at = (d.asset_type_name || '').toUpperCase();
+                            let cat = (d.ups_category || '').toUpperCase();
+                            // Strictly allow only SENSOR asset type / SENSOR category
+                            if ((at === 'SENSOR' || cat.includes('SENSOR')) && !devices.some(existing => existing.device_id === d.device_id)) {
+                                devices.push(d);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        const detailContent = document.getElementById('detail-content');
+        let html = `
+            <div class="ups-detail-header">
+                <h2 class="ups-detail-title">
+                    <i class="fa-solid fa-temperature-half"></i>
+                    ${site.site_code} - ${site.site_name} <span style="font-size: 1rem; color:#64748b; font-weight:400; margin-left: 10px;">(Suhu Ruangan)</span>
+                </h2>
+            </div>
+        `;
+
+        if (devices.length === 0) {
+            html += `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 1.2rem;">Tidak ada perangkat Sensor Suhu tercatat untuk site ini.</div>`;
+        } else {
+            const f = (val) => val == null ? '-' : parseFloat(val).toFixed(1);
+            let sumTemp = 0, countTemp = 0;
+            let sumHumid = 0, countHumid = 0;
+            let devicesOnlineCount = 0;
+            
+            devices.forEach(dev => {
+                let st = (dev.ups_status || "").toLowerCase();
+                let isSensorOnly = (dev.asset_type_name && dev.asset_type_name.toUpperCase() === 'SENSOR') || 
+                                   (dev.ups_category && dev.ups_category.toUpperCase().includes('SENSOR'));
+                let isOffline = dev.is_offline === true || dev.is_stale || (!isSensorOnly && (st === 'offline' || st === 'connection error' || st === 'auth error'));
+                
+                const parseFloatSafe = (val) => {
+                    if (val == null || val === '') return null;
+                    if (typeof val === 'string') val = val.replace(',', '.');
+                    let num = parseFloat(val);
+                    return isNaN(num) ? null : num;
+                };
+                
+                let temp = dev.sl_temp != null ? parseFloatSafe(dev.sl_temp) : (dev.room_temp != null ? parseFloatSafe(dev.room_temp) : parseFloatSafe(dev.ambient_temp));
+                let humid = dev.sl_humid != null ? parseFloatSafe(dev.sl_humid) : parseFloatSafe(dev.room_humid);
+                
+                if (temp === 0) temp = null;
+                if (humid === 0) humid = null;
+                
+                dev._resolvedTemp = temp;
+                dev._resolvedHumid = humid;
+                
+                let tempCritical = temp != null && (temp > 30 || temp < 13);
+                let tempWarning = temp != null && ((temp >= 25.1 && temp <= 30) || (temp >= 13 && temp <= 17.9));
+                
+                let humidCritical = humid != null && (humid > 65 || humid < 35);
+                let humidWarning = humid != null && ((humid >= 60.1 && humid <= 65) || (humid >= 35 && humid <= 39.9));
+                
+                let devHasCritical = tempCritical || humidCritical;
+                let devHasWarning = tempWarning || humidWarning;
+                
+                dev._badgeClass = 'normal';
+                dev._badgeText = 'Normal';
+                dev._sortScore = 0; 
+                
+                if (dev.is_acknowledged) {
+                    let issueText = isOffline ? 'OFFLINE (ACK)' : (devHasCritical ? 'CRITICAL (ACK)' : (devHasWarning ? 'WARNING (ACK)' : 'ACKNOWLEDGED'));
+                    dev._badgeClass = 'acknowledged';
+                    dev._badgeText = issueText;
+                    dev._sortScore = 0.5; // Ranked calm
+                    dev._devHasCritical = false;
+                    dev._devHasWarning = false;
+                } else if (isOffline) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'OFFLINE';
+                    dev._sortScore = 2; 
+                } else if (devHasCritical) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'CRITICAL';
+                    dev._sortScore = 2; 
+                } else if (devHasWarning) {
+                    dev._badgeClass = 'warning';
+                    dev._badgeText = 'WARNING';
+                    dev._sortScore = 1; 
+                }
+                
+                dev._isOffline = isOffline;
+                dev._devHasCritical = devHasCritical && !dev.is_acknowledged;
+                dev._devHasWarning = devHasWarning && !dev.is_acknowledged;
+                dev._tempCritical = tempCritical;
+                dev._tempWarning = tempWarning;
+                dev._humidCritical = humidCritical;
+                dev._humidWarning = humidWarning;
+                
+                if (!isOffline) {
+                    devicesOnlineCount++;
+                    if (!dev.is_acknowledged) {
+                        if (temp > 0) { sumTemp += temp; countTemp++; }
+                        if (humid > 0) { sumHumid += humid; countHumid++; }
+                    }
+                }
+            });
+            
+            // If all online devices are acknowledged, average from all online devices
+            if (countTemp === 0 && devicesOnlineCount > 0) {
+                devices.forEach(dev => {
+                    let temp = dev._resolvedTemp;
+                    let humid = dev._resolvedHumid;
+                    if (!dev._isOffline) {
+                        if (temp > 0) { sumTemp += temp; countTemp++; }
+                        if (humid > 0) { sumHumid += humid; countHumid++; }
+                    }
+                });
+            }
+            
+            let avgTemp = countTemp > 0 ? sumTemp / countTemp : null;
+            let avgHumid = countHumid > 0 ? sumHumid / countHumid : null;
+            
+            // Do not escalate summary card border if all active issues are acknowledged
+            let hasUnackedIssues = devices.some(d => !d.is_acknowledged && (d._devHasCritical || d._devHasWarning || d._isOffline));
+
+            let avgTempCritical = hasUnackedIssues && avgTemp != null && (avgTemp > 30 || avgTemp < 13);
+            let avgTempWarning = hasUnackedIssues && avgTemp != null && ((avgTemp >= 25.1 && avgTemp <= 30) || (avgTemp >= 13 && avgTemp <= 17.9));
+            
+            let avgHumidCritical = hasUnackedIssues && avgHumid != null && (avgHumid >= 70.1 || avgHumid <= 29.9);
+            let avgHumidWarning = hasUnackedIssues && avgHumid != null && ((avgHumid >= 60.1 && avgHumid < 70.1) || (avgHumid > 29.9 && avgHumid <= 39.9));
+            
+            let avgHasCritical = avgTempCritical || avgHumidCritical;
+            let avgHasWarning = avgTempWarning || avgHumidWarning;
+            
+            let avgBorderColor = 'rgba(74, 222, 128, 0.3)';
+            if (avgHasCritical) avgBorderColor = 'rgba(239,68,68,0.8)';
+            else if (avgHasWarning) avgBorderColor = 'rgba(245,158,11,0.8)';
+            
+            const avg = (sum, count) => count > 0 ? (sum / count).toFixed(1) : '-';
+            
+            html += `
+            <div class="ups-avg-summary-card" style="border-color: ${avgBorderColor}; margin-bottom: 25px;">
+                <div class="ups-avg-summary-brand">
+                    <div class="ups-avg-summary-icon" style="color: #4ade80; background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.2);">
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+                    <div class="ups-avg-summary-text">
+                        <div class="ups-avg-summary-title">Ringkasan Rata-Rata (Average)</div>
+                        <div class="ups-avg-summary-sub"><span class="ups-avg-live-dot" style="background:#4ade80; box-shadow:0 0 6px #4ade80;"></span> Dihitung dari <strong>${devicesOnlineCount}</strong> dari <strong>${devices.length}</strong> Sensor Online</div>
+                    </div>
+                </div>
+                <div class="ups-avg-summary-grid">
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Temp</div>
+                        <div class="ups-avg-chip-val">${avg(sumTemp, countTemp)}<small>°C</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Humidity</div>
+                        <div class="ups-avg-chip-val">${avg(sumHumid, countHumid)}<small>%</small></div>
+                    </div>
+                </div>
+            </div>`;
+            
+            devices.sort((a, b) => {
+                if (b._sortScore !== a._sortScore) return b._sortScore - a._sortScore;
+                return (a.device_name || "").localeCompare(b.device_name || "");
+            });
+            
+            html += `<div class="ups-carousel-wrapper">`;
+            html += `<button class="ups-carousel-btn prev" onclick="scrollUpsCarousel(this, -1)" disabled><i class="fa-solid fa-chevron-left"></i></button>`;
+            html += `<div class="ups-device-grid" onscroll="updateUpsCarouselButtons(this)">`;
+            
+            devices.forEach(dev => {
+                let cardBorderStyle = '';
+                if (dev.is_acknowledged) cardBorderStyle = 'border: 1px solid rgba(56,189,248,0.6); box-shadow: 0 0 12px rgba(56,189,248,0.25);';
+                else if (dev._isOffline) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8);';
+                else if (dev._devHasCritical) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8); box-shadow: 0 0 8px rgba(239,68,68,0.3);';
+                else if (dev._badgeClass === 'warning') cardBorderStyle = 'border: 1px solid rgba(245,158,11,0.8); box-shadow: 0 0 8px rgba(245,158,11,0.3);';
+                
+                let lastUpdate = dev.latest_sample_at ? new Date(dev.latest_sample_at).toLocaleString('id-ID') : 'Unknown';
+                let tempStatusColor = '#4ade80';
+                if (!dev.is_acknowledged && dev._devHasCritical && dev._tempCritical) tempStatusColor = '#f87171';
+                else if (!dev.is_acknowledged && dev._devHasWarning && dev._tempWarning) tempStatusColor = '#fbbf24';
+
+                let humidStatusColor = '#4ade80';
+                if (!dev.is_acknowledged && dev._devHasCritical && dev._humidCritical) humidStatusColor = '#f87171';
+                else if (!dev.is_acknowledged && dev._devHasWarning && dev._humidWarning) humidStatusColor = '#fbbf24';
+
+                html += `
+                <div class="ups-dev-card" style="${cardBorderStyle}">
+                    <div class="ups-dev-header">
+                        <div>
+                            ${renderDevTitleHtml('<i class="fa-solid fa-temperature-half" style="color: #4ade80;"></i>', dev.device_name, 'Sensor Suhu')}
+                            <div class="ups-dev-meta">
+                                <span><i class="fa-solid fa-layer-group"></i> ${dev.ups_category || 'Sensor'}</span>
+                            </div>
+                            <div class="ups-dev-meta" style="margin-top: 5px; font-size: 0.75rem;">
+                                <span><i class="fa-regular fa-clock"></i> Update: ${lastUpdate}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ups-badge ${dev._badgeClass}">${dev._badgeText}</div>
+                            <div class="ups-ack-dropdown" style="position: relative; z-index: 20;">
+                                <button class="btn p-0 text-white" type="button" onmousedown="event.stopPropagation()" onclick="window.toggleAckMenu(event, this)" style="border:none; outline:none; box-shadow:none;">
+                                    <i class="fa-solid fa-ellipsis-vertical" style="color:#94a3b8; font-size:1.2rem; padding: 8px 12px; cursor: pointer;"></i>
+                                </button>
+                                <ul class="ups-ack-menu shadow" style="display:none; position:absolute; right:0; top:100%; min-width:150px; margin:0; padding:0.5rem 0; list-style:none; border-radius:8px; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.95); backdrop-filter: blur(8px);">
+                                    <li><a style="color:#e2e8f0; text-decoration:none; padding:0.5rem 1rem; display:flex; align-items:center; gap:8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'" href="javascript:void(0)" onclick="window.openAcknowledgeModal('${dev.id || dev.device_id || ''}', '${(dev.device_name || 'Sensor Suhu').replace(/'/g, "\\'") }', '${dev._badgeClass}', '${dev._badgeText}', 'sensor');">Acknowledge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ups-dev-body" style="position: relative; overflow: hidden; border-radius: 0 0 16px 16px; align-items: center;">
+                        ${dev._isOffline ? renderDevOfflineOverlayHtml(dev, 'Perangkat mati atau komunikasi jaringan terputus') : ''}
+                        ${renderDevAckRibbonHtml(dev)}
+                        
+                        <div style="display: flex; gap: 20px; width: 100%;">
+                            <!-- Temp Card -->
+                            <div style="flex:1; background: rgba(30, 41, 59, 0.5); border: 1px solid ${dev._tempCritical ? 'rgba(248,113,113,0.4)' : (dev._tempWarning ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.05)')}; border-radius: 12px; padding: 20px 15px; text-align: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);">
+                                <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Suhu (Temp)</div>
+                                <div style="font-size: 2.2rem; font-weight: 800; color: ${dev._resolvedTemp != null ? tempStatusColor : '#64748b'}; line-height: 1;">
+                                    ${dev._resolvedTemp != null ? f(dev._resolvedTemp) : '-'}<span style="font-size: 1rem; margin-left: 3px;">${dev._resolvedTemp != null ? 'C' : ''}</span>
+                                </div>
+                            </div>
+
+                            <!-- Humidity Card -->
+                            <div style="flex:1; background: rgba(30, 41, 59, 0.5); border: 1px solid ${dev._humidCritical ? 'rgba(248,113,113,0.4)' : (dev._humidWarning ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.05)')}; border-radius: 12px; padding: 20px 15px; text-align: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);">
+                                <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Kelembapan</div>
+                                <div style="font-size: 2.2rem; font-weight: 800; color: ${dev._resolvedHumid != null ? humidStatusColor : '#64748b'}; line-height: 1;">
+                                    ${dev._resolvedHumid != null ? f(dev._resolvedHumid) : '-'}<span style="font-size: 1rem; margin-left: 3px;">${dev._resolvedHumid != null ? '%' : ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            html += `<button class="ups-carousel-btn next" onclick="scrollUpsCarousel(this, 1)"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `</div>`;
+        }
+
+        detailContent.innerHTML = html;
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        
+        let grid = detailContent.querySelector('.ups-device-grid');
+        if (grid) {
+            setTimeout(() => window.updateUpsCarouselButtons(grid), 50);
+            bindCarouselEvents(grid, devices);
+        }
+    }
+
+
+    function showParamInfo(paramLabel, siteCode, status, badgeText) {
+        let iconType = status === 'critical' ? 'error' : (status === 'warning' ? 'warning' : (status === 'normal' ? 'success' : 'info'));
+        let statusUpper = status === 'normal' ? 'NORMAL' : (status === 'warning' ? 'WARNING' : (status === 'critical' ? 'CRITICAL' : 'NO DATA'));
+        
+        let desc = status === 'no-data' 
+            ? `Belum ada perangkat / sensor <strong>${paramLabel}</strong> yang terdaftar di site <strong>${siteCode}</strong>.`
+            : `Status <strong>${paramLabel}</strong> di site <strong>${siteCode}</strong> saat ini: <strong style="color:${status === 'critical' ? '#f87171' : (status === 'warning' ? '#fbbf24' : '#4ade80')}">${statusUpper}</strong>.`;
+            
+        Swal.fire({
+            title: `${paramLabel} &mdash; ${siteCode}`,
+            html: desc,
+            icon: iconType,
+            confirmButtonColor: '#2563eb',
+            background: '#0f172a',
+            color: '#f8fafc'
+        });
+    }
+
+    function showDetail(siteId, defaultTab) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        
+        window.CURRENT_DETAIL_SITE_ID = siteId;
+        window.CURRENT_DETAIL_TAB = defaultTab;
+        
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        // Convert label ('ups-dc', 'ups-user') to Category Key in Data
+        let catKey = defaultTab === 'ups-dc' ? 'UPS DC' : 'UPS USER';
+        let categoryData = site.categories[catKey] || site.categories[catKey.toLowerCase()] || site.categories['Ups Dc']; // fallback
+        
+        let devices = [];
+        if (categoryData && categoryData.devices) {
+            devices = categoryData.devices;
+        }
+
+        const detailContent = document.getElementById('detail-content');
+        let html = `
+            <div class="ups-detail-header">
+                <h2 class="ups-detail-title">
+                    <i class="fa-solid fa-server"></i>
+                    ${site.site_code} - ${site.site_name} <span style="font-size: 1rem; color:#64748b; font-weight:400; margin-left: 10px;">(${catKey})</span>
+                </h2>
+            </div>
+        `;
+
+        if (devices.length === 0) {
+            html += `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 1.2rem;">Tidak ada perangkat tercatat untuk kategori ini.</div>`;
+        } else {
+            // Calculate Averages
+            let sumVIn = 0, countVIn = 0;
+            let sumVOut = 0, countVOut = 0;
+            let sumLoad = 0, countLoad = 0;
+            let sumBatt = 0, countBatt = 0;
+            let sumRoomTemp = 0, countRoomTemp = 0;
+            let sumMachTemp = 0, countMachTemp = 0;
+            
+            let devicesOnlineCount = 0;
+            
+            devices.forEach(dev => {
+                let st = (dev.ups_status || "").toLowerCase();
+                let isOffline = st === 'offline' || st === 'connection error' || st === 'auth error';
+                
+                if (!isOffline) {
+                    devicesOnlineCount++;
+                    
+                    if (dev.voltage_in_a > 0) { sumVIn += dev.voltage_in_a; countVIn++; }
+                    if (dev.voltage_out_a > 0) { sumVOut += dev.voltage_out_a; countVOut++; }
+                    if (dev.load_percent != null) { sumLoad += dev.load_percent; countLoad++; }
+                    
+                    let isTroy = (dev.ups_type || "").toLowerCase().includes("troy") || (dev.device_name || "").toLowerCase().includes("troy");
+                    if (!isTroy && dev.battery_percent != null && dev.battery_percent > 0) { sumBatt += dev.battery_percent; countBatt++; }
+                    
+                    if (dev.room_temp > 0) { sumRoomTemp += dev.room_temp; countRoomTemp++; }
+                    if (dev.ambient_temp > 0) { sumMachTemp += dev.ambient_temp; countMachTemp++; }
+                }
+            });
+            
+            let avgVIn = countVIn > 0 ? sumVIn / countVIn : 0;
+            let avgVOut = countVOut > 0 ? sumVOut / countVOut : 0;
+            let avgLoad = countLoad > 0 ? sumLoad / countLoad : 0;
+            let avgBatt = countBatt > 0 ? sumBatt / countBatt : 0;
+            let avgRoomTemp = countRoomTemp > 0 ? sumRoomTemp / countRoomTemp : 0;
+            let avgMachTemp = countMachTemp > 0 ? sumMachTemp / countMachTemp : 0;
+            
+            let avgHasCritical = false;
+            let avgHasWarning = false;
+            const checkAvgAnomaly = (val, critLow, critHigh, warnLow, warnHigh) => {
+                if (val == null || val === 0) return;
+                if (val < critLow || val >= critHigh) avgHasCritical = true;
+                else if (val < warnLow || val >= warnHigh) avgHasWarning = true;
+            };
+            
+            checkAvgAnomaly(avgVIn, 210, 230.01, 217, 223.01);
+            checkAvgAnomaly(avgVOut, 215, 225.01, 217, 223.01);
+            checkAvgAnomaly(avgLoad, -1, 90.01, -1, 80.01);
+            checkAvgAnomaly(avgBatt, 25.01, 1000, 40.01, 1000);
+            checkAvgAnomaly(avgMachTemp, -100, 35.01, -100, 30.01);
+            checkAvgAnomaly(avgRoomTemp, -100, 35.01, -100, 30.01);
+            
+            let avgBorderColor = 'rgba(59,130,246,0.3)';
+            if (avgHasCritical) avgBorderColor = 'rgba(239,68,68,0.8)';
+            else if (avgHasWarning) avgBorderColor = 'rgba(245,158,11,0.8)';
+            
+            const avg = (sum, count) => count > 0 ? (sum / count).toFixed(1) : '-';
+            
+            html += `
+            <div class="ups-avg-summary-card" style="border-color: ${avgBorderColor};">
+                <div class="ups-avg-summary-brand">
+                    <div class="ups-avg-summary-icon">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div class="ups-avg-summary-text">
+                        <div class="ups-avg-summary-title">Ringkasan Rata-Rata (Average)</div>
+                        <div class="ups-avg-summary-sub"><span class="ups-avg-live-dot"></span> Dihitung dari <strong>${devicesOnlineCount}</strong> UPS Online</div>
+                    </div>
+                </div>
+                <div class="ups-avg-summary-grid">
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Volt (In/Out)</div>
+                        <div class="ups-avg-chip-val">${avg(sumVIn, countVIn)}<small>V</small> / ${avg(sumVOut, countVOut)}<small>V</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Load</div>
+                        <div class="ups-avg-chip-val">${avg(sumLoad, countLoad)}<small>%</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Battery</div>
+                        <div class="ups-avg-chip-val">${avg(sumBatt, countBatt)}<small>%</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Temp (Room/Mach)</div>
+                        <div class="ups-avg-chip-val">${avg(sumRoomTemp, countRoomTemp)}<small>°</small> / ${avg(sumMachTemp, countMachTemp)}<small>°</small></div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Helper for anomaly (val < critLow || val >= critHigh)
+            const checkMetric = (val, critLow, critHigh, warnLow, warnHigh, allowZero = false) => {
+                if (val == null) return '';
+                if (val === 0) return allowZero ? '' : 'is-critical';
+                
+                if (val < critLow || val >= critHigh) return 'is-critical';
+                if (val < warnLow || val >= warnHigh) return 'is-warning';
+                return '';
+            };
+
+            // Pre-process device properties and determine severity
+            devices.forEach(dev => {
+                let is3Phase = (dev.ups_phase_type || '').includes('3');
+                dev._is3Phase = is3Phase;
+                
+                dev._vInClassA = checkMetric(dev.voltage_in_a, 210, 230.01, 217, 223.01, true);
+                dev._vInClassB = checkMetric(dev.voltage_in_b, 210, 230.01, 217, 223.01, true);
+                dev._vInClassC = checkMetric(dev.voltage_in_c, 210, 230.01, 217, 223.01, true);
+                dev._vOutClass = checkMetric(dev.voltage_out_a, 215, 225.01, 217, 223.01, true);
+                dev._freqClass = checkMetric(dev.input_frequency, 45, 55.01, 47, 53.01, true);
+
+                // Rule: If UPS has input voltage (>0) but output voltage is 0 -> CRITICAL
+                if ((dev.voltage_in_a || 0) > 0 && (dev.voltage_out_a || 0) === 0) {
+                    dev._vOutClass = 'is-critical';
+                }
+                dev._loadClass = checkMetric(dev.load_percent, -1, 90.01, -1, 80.01, true); // load can naturally be 0
+                
+                let ambientClass = checkMetric(dev.ambient_temp, -100, 35.01, -100, 30.01, true);
+                let roomClass = checkMetric(dev.room_temp, -100, 35.01, -100, 30.01, true);
+                dev._tempClass = ambientClass === 'is-critical' || roomClass === 'is-critical' ? 'is-critical' : (ambientClass === 'is-warning' || roomClass === 'is-warning' ? 'is-warning' : '');
+                
+                dev._isTroy = (dev.ups_type || "").toLowerCase().includes("troy") || (dev.device_name || "").toLowerCase().includes("troy");
+                dev._battClass = (dev._isTroy || dev.battery_percent == null || dev.battery_percent === 0) ? '' : checkMetric(dev.battery_percent, 25.01, 1000, 40.01, 1000, true);
+                
+                let devHasCritical = [dev._vInClassA, dev._vInClassB, dev._vInClassC, dev._vOutClass, dev._freqClass, dev._loadClass, dev._tempClass, dev._battClass].includes('is-critical');
+                let devHasWarning = [dev._vInClassA, dev._vInClassB, dev._vInClassC, dev._vOutClass, dev._freqClass, dev._loadClass, dev._tempClass, dev._battClass].includes('is-warning');
+                
+                let st = (dev.ups_status || "").toLowerCase();
+                let isOffline = st === 'offline' || st === 'connection error' || st === 'auth error';
+                
+                dev._badgeClass = 'normal';
+                dev._badgeText = 'Normal';
+                dev._sortScore = 0; // Normal
+                
+                if (dev.is_acknowledged) {
+                    let issueText = isOffline ? 'OFFLINE (ACK)' : (devHasCritical ? 'CRITICAL (ACK)' : (devHasWarning ? 'WARNING (ACK)' : 'ACKNOWLEDGED'));
+                    dev._badgeClass = 'acknowledged';
+                    dev._badgeText = issueText;
+                    dev._sortScore = 0.5; // Ranked calm
+                    dev._devHasCritical = false;
+                    dev._devHasWarning = false;
+                } else if (isOffline) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'OFFLINE';
+                    dev._sortScore = 2; // High priority (Top)
+                } else if (devHasCritical) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'CRITICAL';
+                    dev._sortScore = 2; // High priority (Top)
+                } else if (devHasWarning || st.includes('battery') || st.includes('bypass') || st.includes('dc source')) {
+                    dev._badgeClass = 'warning';
+                    dev._badgeText = 'WARNING';
+                    dev._sortScore = 1; // Medium priority
+                }
+                
+                dev._isOffline = isOffline;
+                dev._devHasCritical = devHasCritical && !dev.is_acknowledged;
+                dev._devHasWarning = devHasWarning && !dev.is_acknowledged;
+            });
+            
+            // Sort by severity (Critical > Warning > Normal), then alphabetically
+            devices.sort((a, b) => {
+                if (b._sortScore !== a._sortScore) {
+                    return b._sortScore - a._sortScore;
+                }
+                return (a.device_name || "").localeCompare(b.device_name || "");
+            });
+
+            html += `<div class="ups-carousel-wrapper">`;
+            html += `<button class="ups-carousel-btn prev" onclick="scrollUpsCarousel(this, -1)" disabled><i class="fa-solid fa-chevron-left"></i></button>`;
+            html += `<div class="ups-device-grid" onscroll="updateUpsCarouselButtons(this)">`;
+            devices.forEach(dev => {
+                const f = (val) => val == null ? '-' : parseFloat(val).toFixed(1);
+                
+                let cardBorderStyle = '';
+                if (dev.is_acknowledged) cardBorderStyle = 'border: 1px solid rgba(56,189,248,0.6); box-shadow: 0 0 12px rgba(56,189,248,0.25);';
+                else if (dev._isOffline) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8);';
+                else if (dev._devHasCritical) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8); box-shadow: 0 0 8px rgba(239,68,68,0.3);';
+                else if (dev._badgeClass === 'warning') cardBorderStyle = 'border: 1px solid rgba(245,158,11,0.8); box-shadow: 0 0 8px rgba(245,158,11,0.3);';
+                
+                let lastUpdate = dev.latest_sample_at ? new Date(dev.latest_sample_at).toLocaleString('id-ID') : 'Unknown';
+
+                let downtimeHtml = (dev.last_online_time || dev.latest_sample_at) ? `
+                    <div style="margin-top: 12px; padding: 5px 14px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #fca5a5; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis;" title="Down: ${formatDowntime(dev.last_online_time || dev.latest_sample_at)}">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: #f87171; flex-shrink: 0;"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Down: ${formatDowntime(dev.last_online_time || dev.latest_sample_at)} ${dev.last_online_time ? `(Sejak ${new Date(dev.last_online_time).toLocaleString('id-ID', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})})` : ''}</span>
+                    </div>
+                ` : '';
+
+                html += `
+                <div class="ups-dev-card" style="${cardBorderStyle}">
+                    <div class="ups-dev-header">
+                        <div>
+                            ${renderDevTitleHtml('<i class="fa-solid fa-bolt" style="color: #f59e0b;"></i>', dev.device_name, 'UPS Device')}
+                            <div class="ups-dev-meta">
+                                <span><i class="fa-solid fa-network-wired"></i> ${dev.ip_address || '-'}</span>
+                                <span><i class="fa-solid fa-bolt"></i> ${dev.ups_type || '-'} (${dev.ups_phase_type || '-'})</span>
+                            </div>
+                            <div class="ups-dev-meta" style="margin-top: 5px; font-size: 0.75rem;">
+                                <span><i class="fa-regular fa-clock"></i> Update: ${lastUpdate}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ups-badge ${dev._badgeClass}">${dev._badgeText}</div>
+                            <div class="ups-ack-dropdown" style="position: relative; z-index: 20;">
+                                <button class="btn p-0 text-white" type="button" onmousedown="event.stopPropagation()" onclick="window.toggleAckMenu(event, this)" style="border:none; outline:none; box-shadow:none;">
+                                    <i class="fa-solid fa-ellipsis-vertical" style="color:#94a3b8; font-size:1.2rem; padding: 8px 12px; cursor: pointer;"></i>
+                                </button>
+                                <ul class="ups-ack-menu shadow" style="display:none; position:absolute; right:0; top:100%; min-width:150px; margin:0; padding:0.5rem 0; list-style:none; border-radius:8px; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.95); backdrop-filter: blur(8px);">
+                                    <li><a style="color:#e2e8f0; text-decoration:none; padding:0.5rem 1rem; display:flex; align-items:center; gap:8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'" href="javascript:void(0)" onclick="window.openAcknowledgeModal('${dev.id || dev.device_id || ''}', '${(dev.device_name || 'UPS Device').replace(/'/g, "\\'") }', '${dev._badgeClass}', '${dev._badgeText}', 'ups');">Acknowledge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ups-dev-body" style="position: relative; overflow: hidden; border-radius: 0 0 16px 16px;">
+                        ${dev._isOffline ? renderDevOfflineOverlayHtml(dev, 'Perangkat mati atau komunikasi jaringan terputus', downtimeHtml) : ''}
+                        ${renderDevAckRibbonHtml(dev)}
+                        <!-- Input Section -->
+                        <div>
+                            <div class="ups-section-title">Input</div>
+                            <div class="ups-metric-row">
+                                <div class="ups-metric-box ${dev._vInClassA}">
+                                    <div class="ups-metric-label">Voltage A</div>
+                                    <div><span class="ups-metric-val">${f(dev.voltage_in_a)}</span><span class="ups-metric-unit">V</span></div>
+                                </div>
+                                ${dev._is3Phase ? `
+                                <div class="ups-metric-box ${dev._vInClassB}">
+                                    <div class="ups-metric-label">Voltage B</div>
+                                    <div><span class="ups-metric-val">${f(dev.voltage_in_b)}</span><span class="ups-metric-unit">V</span></div>
+                                </div>
+                                <div class="ups-metric-box ${dev._vInClassC}">
+                                    <div class="ups-metric-label">Voltage C</div>
+                                    <div><span class="ups-metric-val">${f(dev.voltage_in_c)}</span><span class="ups-metric-unit">V</span></div>
+                                </div>
+                                ` : ''}
+                                <div class="ups-metric-box ${dev._freqClass}">
+                                    <div class="ups-metric-label">Frequency</div>
+                                    <div><span class="ups-metric-val">${f(dev.input_frequency)}</span><span class="ups-metric-unit">Hz</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Output Section -->
+                        <div>
+                            <div class="ups-section-title">Output</div>
+                            <div class="ups-metric-row">
+                                <div class="ups-metric-box ${dev._vOutClass}">
+                                    <div class="ups-metric-label">Voltage A</div>
+                                    <div><span class="ups-metric-val">${f(dev.voltage_out_a)}</span><span class="ups-metric-unit">V</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Current A</div>
+                                    <div><span class="ups-metric-val">${f(dev.current_out_a)}</span><span class="ups-metric-unit">A</span></div>
+                                </div>
+                                <div class="ups-metric-box ${dev._loadClass}">
+                                    <div class="ups-metric-label">Load</div>
+                                    <div><span class="ups-metric-val">${f(dev.load_percent)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Battery Section -->
+                        <div>
+                            <div class="ups-section-title">Battery</div>
+                            <div class="ups-metric-row">
+                                ${dev._isTroy ? '' : `
+                                <div class="ups-metric-box ${dev._battClass}">
+                                    <div class="ups-metric-label">Battery Level</div>
+                                    <div><span class="ups-metric-val">${(dev.battery_percent == null || dev.battery_percent === 0) ? '-' : f(dev.battery_percent)}</span><span class="ups-metric-unit">${(dev.battery_percent == null || dev.battery_percent === 0) ? '' : '%'}</span></div>
+                                </div>
+                                `}
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Battery Volt</div>
+                                    <div><span class="ups-metric-val">${f(dev.battery_voltage)}</span><span class="ups-metric-unit">V</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Runtime</div>
+                                    <div><span class="ups-metric-val">${f(dev.battery_runtime_min)}</span><span class="ups-metric-unit">Min</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Env Section -->
+                        <div>
+                            <div class="ups-section-title">Environment & Others</div>
+                            <div class="ups-metric-row">
+                                <div class="ups-metric-box ${dev._tempClass}">
+                                    <div class="ups-metric-label">Machine Temp</div>
+                                    <div><span class="ups-metric-val">${f(dev.ambient_temp)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                                <div class="ups-metric-box ${checkMetric(dev.room_temp, -100, 35, -100, 30, true)}">
+                                    <div class="ups-metric-label">Room Temp</div>
+                                    <div><span class="ups-metric-val">${f(dev.room_temp)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Grounding</div>
+                                    <div><span class="ups-metric-val">${f(dev.grounding_resistance)}</span><span class="ups-metric-unit">Ω</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            html += `</div>`;
+            html += `<button class="ups-carousel-btn next" onclick="scrollUpsCarousel(this, 1)"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `</div>`;
+        }
+
+        detailContent.innerHTML = html;
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        
+        let grid = detailContent.querySelector('.ups-device-grid');
+        if (grid) {
+            setTimeout(() => window.updateUpsCarouselButtons(grid), 50);
+            bindCarouselEvents(grid, devices);
+        }
+    }
+    
+    window.scrollUpsCarousel = function(btn, direction) {
+        let wrapper = btn.closest('.ups-carousel-wrapper');
+        let grid = wrapper.querySelector('.ups-device-grid');
+        let card = grid.querySelector('.ups-dev-card');
+        if (!card) return;
+        let scrollAmount = card.offsetWidth + 25; 
+        grid.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+    };
+
+    window.updateUpsCarouselButtons = function(grid) {
+        let wrapper = grid.closest('.ups-carousel-wrapper');
+        let btnPrev = wrapper.querySelector('.ups-carousel-btn.prev');
+        let btnNext = wrapper.querySelector('.ups-carousel-btn.next');
+        
+        if (btnPrev) btnPrev.disabled = grid.scrollLeft <= 5;
+        if (btnNext) btnNext.disabled = Math.ceil(grid.scrollLeft + grid.clientWidth) >= grid.scrollWidth - 5;
+    };
+    
+
+    function showCctvDetail(siteId) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        window.CURRENT_DETAIL_SITE_ID = siteId;
+        window.CURRENT_DETAIL_TAB = 'cctv';
+        
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        let keys = ['CCTV AVAILBILITY', 'CCTV Availbility', 'CCTV'];
+        let devices = [];
+        if (site && site.categories) {
+            for (let k of Object.keys(site.categories)) {
+                if (keys.some(key => key.toLowerCase() === k.toLowerCase())) {
+                    let catData = site.categories[k];
+                    if (catData && catData.devices) {
+                        catData.devices.forEach(d => {
+                            let at = (d.asset_type_name || '').toUpperCase();
+                            let cat = (d.ups_category || '').toUpperCase();
+                            if ((at === 'CCTV' || cat.includes('CCTV')) && !devices.some(existing => existing.device_id === d.device_id)) {
+                                devices.push(d);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        const detailContent = document.getElementById('detail-content');
+        let html = `
+            <div class="ups-detail-header">
+                <h2 class="ups-detail-title">
+                    <i class="fa-solid fa-video"></i>
+                    ${site.site_code} - ${site.site_name} <span style="font-size: 1rem; color:#64748b; font-weight:400; margin-left: 10px;">(CCTV)</span>
+                </h2>
+            </div>
+        `;
+
+        if (devices.length === 0) {
+            html += `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 1.2rem;">Tidak ada perangkat CCTV tercatat untuk site ini.</div>`;
+        } else {
+            let devicesOnlineCount = 0;
+            
+            devices.forEach(dev => {
+                let st = (dev.ups_status || "").toLowerCase();
+                let isOffline = dev.is_offline === true || dev.is_stale || (st === 'offline' || st === 'connection error' || st === 'auth error' || st === 'down');
+                
+                dev._badgeClass = 'normal';
+                dev._badgeText = 'ONLINE';
+                dev._sortScore = 0; 
+                
+                if (isOffline) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'OFFLINE';
+                    dev._sortScore = 2; 
+                } else if (st === 'warning') {
+                    dev._badgeClass = 'warning';
+                    dev._badgeText = 'WARNING';
+                    dev._sortScore = 1;
+                }
+                
+                dev._isOffline = isOffline;
+                if (!isOffline) devicesOnlineCount++;
+            });
+            
+            devices.sort((a, b) => {
+                if (b._sortScore !== a._sortScore) return b._sortScore - a._sortScore;
+                return (a.device_name || "").localeCompare(b.device_name || "");
+            });
+            
+            html += `<div class="ups-carousel-wrapper">`;
+            html += `<button class="ups-carousel-btn prev" onclick="scrollUpsCarousel(this, -1)" disabled><i class="fa-solid fa-chevron-left"></i></button>`;
+            html += `<div class="ups-device-grid" onscroll="updateUpsCarouselButtons(this)">`;
+            
+            devices.forEach(dev => {
+                let cardBorderStyle = '';
+                if (dev._isOffline) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8);';
+                else if (dev._badgeClass === 'warning') cardBorderStyle = 'border: 1px solid rgba(245,158,11,0.8); box-shadow: 0 0 8px rgba(245,158,11,0.3);';
+                else cardBorderStyle = 'border: 1px solid rgba(74, 222, 128, 0.4);';
+                
+                let lastUpdate = dev.latest_sample_at ? new Date(dev.latest_sample_at).toLocaleString('id-ID') : 'Unknown';
+
+                html += `
+                <div class="ups-dev-card" style="${cardBorderStyle}">
+                    <div class="ups-dev-header">
+                        <div>
+                            ${renderDevTitleHtml('<i class="fa-solid fa-video" style="color: #4ade80;"></i>', dev.device_name, 'CCTV')}
+                            <div class="ups-dev-meta">
+                                <span><i class="fa-solid fa-layer-group"></i> ${dev.ups_category || 'CCTV'}</span>
+                            </div>
+                            <div class="ups-dev-meta" style="margin-top: 5px; font-size: 0.75rem;">
+                                <span><i class="fa-regular fa-clock"></i> Update: ${lastUpdate}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ups-badge ${dev._badgeClass}">${dev._badgeText}</div>
+                            <div class="ups-ack-dropdown" style="position: relative; z-index: 20;">
+                                <button class="btn p-0 text-white" type="button" onmousedown="event.stopPropagation()" onclick="window.toggleAckMenu(event, this)" style="border:none; outline:none; box-shadow:none;">
+                                    <i class="fa-solid fa-ellipsis-vertical" style="color:#94a3b8; font-size:1.2rem; padding: 8px 12px; cursor: pointer;"></i>
+                                </button>
+                                <ul class="ups-ack-menu shadow" style="display:none; position:absolute; right:0; top:100%; min-width:150px; margin:0; padding:0.5rem 0; list-style:none; border-radius:8px; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.95); backdrop-filter: blur(8px);">
+                                    <li><a style="color:#e2e8f0; text-decoration:none; padding:0.5rem 1rem; display:flex; align-items:center; gap:8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'" href="javascript:void(0)" onclick="window.openAcknowledgeModal('${dev.id || dev.device_id || ''}', '${(dev.device_name || 'CCTV').replace(/'/g, "\'") }', '${dev._badgeClass}', '${dev._badgeText}', 'cctv');">Acknowledge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ups-dev-body" style="position: relative; overflow: hidden; border-radius: 0 0 16px 16px; align-items: center; justify-content: center; min-height: 150px;">
+                        ${dev._isOffline ? `
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.88); backdrop-filter: blur(4px); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 15px;">
+                                <i class="fa-solid fa-link-slash fa-3x" style="color: #ef4444; margin-bottom: 12px; filter: drop-shadow(0 2px 8px rgba(239,68,68,0.4));"></i>
+                                <div style="font-size: 1.15rem; font-weight: 800; color: #f87171; letter-spacing: 1px;">KONEKSI TERPUTUS</div>
+                                <div style="font-size: 0.85rem; color: #fca5a5; margin-top: 6px;">CCTV tidak dapat dijangkau</div>
+                                ${dev.latest_sample_at ? `<div style="font-size: 0.75rem; color: #94a3b8; margin-top: 8px;">Downtime: ${formatDowntime(dev.latest_sample_at)}</div>` : ''}
+                            </div>
+                        ` : `
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-check-circle fa-4x" style="color: #4ade80; margin-bottom: 12px; filter: drop-shadow(0 2px 8px rgba(74,222,128,0.4));"></i>
+                                <div style="font-size: 1.15rem; font-weight: 800; color: #4ade80; letter-spacing: 1px;">ONLINE</div>
+                                <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 6px;">CCTV beroperasi normal</div>
+                            </div>
+                        `}
+                    </div>
+                </div>`;
+            });
+            
+            html += `</div>`;
+            html += `<button class="ups-carousel-btn next" onclick="scrollUpsCarousel(this, 1)"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `</div>`;
+        }
+        
+        detailContent.innerHTML = html;
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        
+        setTimeout(() => {
+            initUpsCarouselDrag();
+            document.querySelectorAll('.ups-device-grid').forEach(grid => updateUpsCarouselButtons(grid));
+        }, 100);
+    }
+    function showPacDetail(siteId) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        
+        window.CURRENT_DETAIL_SITE_ID = siteId;
+        window.CURRENT_DETAIL_TAB = 'pac-dc';
+        
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        let categoryKey = Object.keys(site.categories).find(k => k.toLowerCase() === 'pac ruangan dc' || k.toLowerCase() === 'pac dc');
+        let categoryData = categoryKey ? site.categories[categoryKey] : null;
+        
+        let devices = [];
+        if (categoryData && categoryData.devices) {
+            devices = categoryData.devices;
+        }
+
+        const detailContent = document.getElementById('detail-content');
+        let html = `
+            <div class="ups-detail-header">
+                <h2 class="ups-detail-title">
+                    <i class="fa-solid fa-fan"></i>
+                    ${site.site_code} - ${site.site_name} <span style="font-size: 1rem; color:#64748b; font-weight:400; margin-left: 10px;">(PAC Ruangan DC)</span>
+                </h2>
+            </div>
+        `;
+
+        if (devices.length === 0) {
+            html += `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 1.2rem;">Tidak ada perangkat PAC tercatat untuk site ini.</div>`;
+        } else {
+            const f = (val) => val == null ? '-' : parseFloat(val).toFixed(1);
+            const fi = (val) => val == null ? '-' : parseInt(val);
+            
+            // Calculate PAC Averages
+            let sumTemp = 0, countTemp = 0;
+            let sumHumid = 0, countHumid = 0;
+            let sumTempSet = 0, countTempSet = 0;
+            let sumHumidSet = 0, countHumidSet = 0;
+            let sumCoolDem = 0, countCoolDem = 0;
+            let sumValve = 0, countValve = 0;
+            
+            let devicesOnlineCount = 0;
+            
+            // Add sorting and _isOffline logic
+            let devHasCriticalTotal = false;
+            let devHasWarningTotal = false;
+            
+            devices.forEach(dev => {
+                let unitStatusCode = dev.pl_unit_status_code;
+                let sampleTime = dev.pl_time || dev.latest_sample_at;
+                let isStaleByTime = sampleTime ? ((new Date().getTime() - new Date(sampleTime).getTime()) / (1000 * 60) > 15) : true;
+                let isOffline = dev.is_offline === true || isStaleByTime;
+                
+                let pacTemp = dev.pl_temp || 0;
+                let pacHumid = dev.pl_humid || 0;
+                let tempSet = dev.pl_temp_setpoint || 0;
+                let humidSet = dev.pl_humid_setpoint || 0;
+                let alarms = dev.pl_alarms || '';
+                let hasAlarm = alarms.length > 0 && alarms.toLowerCase() !== 'normal' && alarms.toLowerCase() !== 'none';
+                
+                let tempCritical = false, tempWarning = false;
+                if (tempSet > 0) {
+                    let diff = Math.abs(pacTemp - tempSet);
+                    tempCritical = diff >= 13;
+                    tempWarning = diff >= 8 && diff < 13;
+                } else {
+                    tempCritical = pacTemp > 30 || (pacTemp > 0 && pacTemp < 13);
+                    tempWarning = (pacTemp >= 25.1 && pacTemp <= 30) || (pacTemp >= 13 && pacTemp <= 17.9);
+                }
+                
+                let humidCritical = false, humidWarning = false;
+                if (humidSet > 0) {
+                    let diff = Math.abs(pacHumid - humidSet);
+                    humidCritical = diff >= 13;
+                    humidWarning = diff >= 8 && diff < 13;
+                } else {
+                    humidCritical = pacHumid > 65 || (pacHumid > 0 && pacHumid < 35);
+                    humidWarning = (pacHumid >= 60.1 && pacHumid <= 65) || (pacHumid >= 35 && pacHumid <= 39.9);
+                }
+                
+                let devHasCritical = tempCritical || humidCritical || hasAlarm;
+                let devHasWarning = tempWarning || humidWarning;
+                
+                if (devHasCritical) devHasCriticalTotal = true;
+                if (devHasWarning) devHasWarningTotal = true;
+                
+                dev._badgeClass = 'normal';
+                dev._badgeText = 'Normal';
+                dev._sortScore = 0; // Normal
+                
+                if (dev.is_acknowledged) {
+                    let issueText = isOffline ? 'OFFLINE (ACK)' : (devHasCritical ? 'CRITICAL (ACK)' : (devHasWarning ? 'WARNING (ACK)' : 'ACKNOWLEDGED'));
+                    dev._badgeClass = 'acknowledged';
+                    dev._badgeText = issueText;
+                    dev._sortScore = 0.5; // Ranked calm
+                    dev._devHasCritical = false;
+                    dev._devHasWarning = false;
+                    dev._hasAlarm = false;
+                } else if (isOffline) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'OFFLINE';
+                    dev._sortScore = 2; // High priority (Top)
+                } else if (devHasCritical) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = 'CRITICAL';
+                    dev._sortScore = 2; // High priority (Top)
+                } else if (devHasWarning) {
+                    dev._badgeClass = 'warning';
+                    dev._badgeText = 'WARNING';
+                    dev._sortScore = 1; // Medium priority
+                }
+                
+                dev._isOffline = isOffline;
+                dev._devHasCritical = devHasCritical && !dev.is_acknowledged;
+                dev._devHasWarning = devHasWarning && !dev.is_acknowledged;
+                dev._tempCritical = tempCritical;
+                dev._tempWarning = tempWarning;
+                dev._humidCritical = humidCritical;
+                dev._humidWarning = humidWarning;
+                dev._hasAlarm = hasAlarm && !dev.is_acknowledged;
+                dev._alarmsText = alarms;
+                
+                if (!isOffline) {
+                    devicesOnlineCount++;
+                    if (dev.pl_temp > 0) { sumTemp += dev.pl_temp; countTemp++; }
+                    if (dev.pl_humid > 0) { sumHumid += dev.pl_humid; countHumid++; }
+                    if (dev.pl_temp_setpoint > 0) { sumTempSet += dev.pl_temp_setpoint; countTempSet++; }
+                    if (dev.pl_humid_setpoint > 0) { sumHumidSet += dev.pl_humid_setpoint; countHumidSet++; }
+                    if (dev.pl_cool_demand >= 0) { sumCoolDem += dev.pl_cool_demand; countCoolDem++; }
+                    if (dev.pl_valve_open >= 0) { sumValve += dev.pl_valve_open; countValve++; }
+                }
+            });
+            
+            let avgTemp = countTemp > 0 ? sumTemp / countTemp : 0;
+            let avgHumid = countHumid > 0 ? sumHumid / countHumid : 0;
+            let avgTempSet = countTempSet > 0 ? sumTempSet / countTempSet : 0;
+            let avgHumidSet = countHumidSet > 0 ? sumHumidSet / countHumidSet : 0;
+            let avgCoolDem = countCoolDem > 0 ? sumCoolDem / countCoolDem : 0;
+            let avgValve = countValve > 0 ? sumValve / countValve : 0;
+            
+            let avgHasCritical = false;
+            let avgHasWarning = false;
+            
+            if (avgTempSet > 0) {
+                let diff = Math.abs(avgTemp - avgTempSet);
+                if (diff >= 13) avgHasCritical = true;
+                else if (diff >= 8) avgHasWarning = true;
+            } else {
+                if (avgTemp < 13 || avgTemp > 30) avgHasCritical = true;
+                else if (avgTemp <= 17.9 || avgTemp >= 25.1) avgHasWarning = true;
+            }
+            
+            if (avgHumidSet > 0) {
+                let diff = Math.abs(avgHumid - avgHumidSet);
+                if (diff >= 13) avgHasCritical = true;
+                else if (diff >= 8) avgHasWarning = true;
+            } else {
+                if (avgHumid < 35 || avgHumid > 65) avgHasCritical = true;
+                else if (avgHumid <= 39.9 || avgHumid >= 60.1) avgHasWarning = true;
+            }
+            
+            let avgBorderColor = 'rgba(56,189,248,0.3)';
+            if (avgHasCritical) avgBorderColor = 'rgba(239,68,68,0.8)';
+            else if (avgHasWarning) avgBorderColor = 'rgba(245,158,11,0.8)';
+            
+            const avg = (sum, count) => count > 0 ? (sum / count).toFixed(1) : '-';
+            
+            html += `
+            <div class="ups-avg-summary-card" style="border-color: ${avgBorderColor}; margin-bottom: 25px;">
+                <div class="ups-avg-summary-brand">
+                    <div class="ups-avg-summary-icon" style="color: #38bdf8; background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.2);">
+                        <i class="fa-solid fa-fan"></i>
+                    </div>
+                    <div class="ups-avg-summary-text">
+                        <div class="ups-avg-summary-title">Ringkasan Rata-Rata (Average)</div>
+                        <div class="ups-avg-summary-sub"><span class="ups-avg-live-dot" style="background:#38bdf8; box-shadow:0 0 6px #38bdf8;"></span> Dihitung dari <strong>${devicesOnlineCount}</strong> PAC Online</div>
+                    </div>
+                </div>
+                <div class="ups-avg-summary-grid">
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Temp (Room/Set)</div>
+                        <div class="ups-avg-chip-val">${avg(sumTemp, countTemp)}<small>°</small> / ${avg(sumTempSet, countTempSet)}<small>°</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Humid (Room/Set)</div>
+                        <div class="ups-avg-chip-val">${avg(sumHumid, countHumid)}<small>%</small> / ${avg(sumHumidSet, countHumidSet)}<small>%</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Cool Demand</div>
+                        <div class="ups-avg-chip-val">${avg(sumCoolDem, countCoolDem)}<small>%</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Avg Valve Open</div>
+                        <div class="ups-avg-chip-val">${avg(sumValve, countValve)}<small>%</small></div>
+                    </div>
+                </div>
+            </div>`;
+            
+            devices.sort((a, b) => {
+                if (b._sortScore !== a._sortScore) {
+                    return b._sortScore - a._sortScore;
+                }
+                return (a.device_name || "").localeCompare(b.device_name || "");
+            });
+            
+            html += `<div class="ups-carousel-wrapper">`;
+            html += `<button class="ups-carousel-btn prev" onclick="scrollUpsCarousel(this, -1)" disabled><i class="fa-solid fa-chevron-left"></i></button>`;
+            html += `<div class="ups-device-grid" onscroll="updateUpsCarouselButtons(this)">`;
+            devices.forEach(dev => {
+                
+                let unitStatusCode = dev.pl_unit_status_code;
+                let unitStatusText = '-';
+                let unitStatusColor = '#94a3b8';
+                if (unitStatusCode === 0) { unitStatusText = 'Standby / Off'; unitStatusColor = '#94a3b8'; }
+                else if (unitStatusCode === 1) { unitStatusText = 'Cooling'; unitStatusColor = '#38bdf8'; }
+                else if (unitStatusCode === 2) { unitStatusText = 'Heating'; unitStatusColor = '#fb923c'; }
+                else if (unitStatusCode === 3) { unitStatusText = 'Dehumidifying'; unitStatusColor = '#a78bfa'; }
+                else if (unitStatusCode === 4) { unitStatusText = 'Humidifying'; unitStatusColor = '#2dd4bf'; }
+                else if (unitStatusCode === 5) { unitStatusText = 'Standby'; unitStatusColor = '#fbbf24'; }
+                else if (unitStatusCode === 6) { unitStatusText = 'Free Cooling'; unitStatusColor = '#67e8f9'; }
+                else if (unitStatusCode === 7) { unitStatusText = 'Idle'; unitStatusColor = '#94a3b8'; }
+                else if (unitStatusCode != null) { unitStatusText = `Code ${unitStatusCode}`; }
+                
+                let pacTempClass = '';
+                if (!dev.is_acknowledged && dev._tempCritical) pacTempClass = 'is-critical';
+                else if (!dev.is_acknowledged && dev._tempWarning) pacTempClass = 'is-warning';
+                
+                let pacHumidClass = '';
+                if (!dev.is_acknowledged && dev._humidCritical) pacHumidClass = 'is-critical';
+                else if (!dev.is_acknowledged && dev._humidWarning) pacHumidClass = 'is-warning';
+                
+                let supText = dev.pl_supervisory_status === 1 ? 'Active' : 'Inactive';
+                let supColor = dev.pl_supervisory_status === 1 ? '#4ade80' : '#94a3b8';
+                
+                let comp1On = dev.pl_comp1 === 1;
+                let comp2On = dev.pl_comp2 === 1;
+                let comp3On = dev.pl_comp3 === 1;
+                let heater1On = dev.pl_heater1 === 1;
+                let heater2On = dev.pl_heater2 === 1;
+                
+                let cardBorderStyle = '';
+                if (dev.is_acknowledged) cardBorderStyle = 'border: 1px solid rgba(56,189,248,0.6); box-shadow: 0 0 12px rgba(56,189,248,0.25);';
+                else if (dev._isOffline) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8);';
+                else if (dev._devHasCritical) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8); box-shadow: 0 0 8px rgba(239,68,68,0.3);';
+                else if (dev._badgeClass === 'warning') cardBorderStyle = 'border: 1px solid rgba(245,158,11,0.8); box-shadow: 0 0 8px rgba(245,158,11,0.3);';
+
+                const dotIndicator = (isOn, labelText) => {
+                    let color = isOn ? '#4ade80' : '#64748b';
+                    let bg = isOn ? 'rgba(34,197,94,0.15)' : 'rgba(30,41,59,0.8)';
+                    return `<div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 10px; background: ${bg}; border-radius: 8px; border: 1px solid ${isOn ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.08)'}; width: 100%;">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: ${isOn ? '0 0 6px ' + color : 'none'}; flex-shrink: 0;"></div>
+                        <span style="font-size: 0.78rem; color: ${color}; font-weight: 600;">${labelText}</span>
+                    </div>`;
+                };
+
+                let lastUpdate = dev.pl_time ? new Date(dev.pl_time).toLocaleString('id-ID') : (dev.latest_sample_at ? new Date(dev.latest_sample_at).toLocaleString('id-ID') : 'Unknown');
+                let downtimeTime = dev.pl_time || dev.latest_sample_at || null;
+
+                let downtimeHtml = downtimeTime ? `
+                    <div style="margin-top: 12px; padding: 5px 14px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #fca5a5; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis;" title="Down: ${formatDowntime(downtimeTime)}">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: #f87171; flex-shrink: 0;"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Down: ${formatDowntime(downtimeTime)} ${downtimeTime ? `(Sejak ${new Date(downtimeTime).toLocaleString('id-ID', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})})` : ''}</span>
+                    </div>
+                ` : '';
+
+                html += `
+                <div class="ups-dev-card" style="min-width: 420px; ${cardBorderStyle}">
+                    <div class="ups-dev-header">
+                        <div>
+                            ${renderDevTitleHtml('<i class="fa-solid fa-fan" style="color: #38bdf8;"></i>', dev.device_name, 'PAC Unit')}
+                            <div class="ups-dev-meta">
+                                <span><i class="fa-solid fa-network-wired"></i> ${dev.ip_address || '-'}</span>
+                                <span><i class="fa-solid fa-hashtag"></i> Unit ID: ${fi(dev.pl_unit_id)}</span>
+                            </div>
+                            <div class="ups-dev-meta" style="margin-top: 5px; font-size: 0.75rem;">
+                                <span><i class="fa-regular fa-clock"></i> Update: ${lastUpdate}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ups-badge ${dev._badgeClass}">${dev._badgeText}</div>
+                            <div class="ups-ack-dropdown" style="position: relative; z-index: 20;">
+                                <button class="btn p-0 text-white" type="button" onmousedown="event.stopPropagation()" onclick="window.toggleAckMenu(event, this)" style="border:none; outline:none; box-shadow:none;">
+                                    <i class="fa-solid fa-ellipsis-vertical" style="color:#94a3b8; font-size:1.2rem; padding: 8px 12px; cursor: pointer;"></i>
+                                </button>
+                                <ul class="ups-ack-menu shadow" style="display:none; position:absolute; right:0; top:100%; min-width:150px; margin:0; padding:0.5rem 0; list-style:none; border-radius:8px; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.95); backdrop-filter: blur(8px);">
+                                    <li><a style="color:#e2e8f0; text-decoration:none; padding:0.5rem 1rem; display:flex; align-items:center; gap:8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'" href="javascript:void(0)" onclick="window.openAcknowledgeModal('${dev.id || dev.device_id || ''}', '${(dev.device_name || 'PAC Unit').replace(/'/g, "\\'") }', '${dev._badgeClass}', '${dev._badgeText}', 'pac');">Acknowledge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ups-dev-body" style="position: relative; overflow: hidden; border-radius: 0 0 16px 16px;">
+                        ${dev._isOffline ? renderDevOfflineOverlayHtml(dev, 'Unit PAC offline atau komunikasi jaringan terputus', downtimeHtml) : ''}
+                        ${renderDevAckRibbonHtml(dev)}
+                        <!-- Room Conditions & Setpoints (2x2 Grid) -->
+                        <div>
+                            <div class="ups-section-title"><i class="fa-solid fa-temperature-half" style="margin-right: 6px;"></i>Kondisi Ruangan & Target Setpoint</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div class="ups-metric-box ${pacTempClass}">
+                                    <div class="ups-metric-label">Room Temp (Aktual)</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_temp)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                                <div class="ups-metric-box" style="border-left: 3px solid rgba(56,189,248,0.4);">
+                                    <div class="ups-metric-label">Temp Setpoint (Target)</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_temp_setpoint)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <div class="ups-metric-box ${pacHumidClass}">
+                                    <div class="ups-metric-label">Room Humid (Aktual)</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_humid)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                                <div class="ups-metric-box" style="border-left: 3px solid rgba(16,185,129,0.4);">
+                                    <div class="ups-metric-label">Humid Setpoint (Target)</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_humid_setpoint)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Water & Valve -->
+                        <div>
+                            <div class="ups-section-title"><i class="fa-solid fa-droplet" style="margin-right: 6px;"></i>Water & Valve</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Valve Open</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_valve_open)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Water In</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_water_in_temp)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Water Out</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_water_out_temp)}</span><span class="ups-metric-unit">°C</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Demand -->
+                        <div>
+                            <div class="ups-section-title"><i class="fa-solid fa-gauge-high" style="margin-right: 6px;"></i>Demand</div>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Cool</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_cool_demand)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Heat</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_heat_demand)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Dehum</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_dehum_demand)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Humid</div>
+                                    <div><span class="ups-metric-val">${f(dev.pl_humid_demand)}</span><span class="ups-metric-unit">%</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unit Status & Components -->
+                        <div>
+                            <div class="ups-section-title"><i class="fa-solid fa-gears" style="margin-right: 6px;"></i>Unit Status & Components</div>
+                            
+                            <!-- Supervisory & Unit Mode (2 Kolom Sejajar Penuh) -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 12px; background: rgba(30,41,59,0.8); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); width: 100%;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Supervisory:</span>
+                                    <span style="font-size: 0.82rem; font-weight: 700; color: ${supColor};">${supText}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 12px; background: rgba(30,41,59,0.8); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); width: 100%;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Unit Mode:</span>
+                                    <span style="font-size: 0.82rem; font-weight: 700; color: ${unitStatusColor};">${unitStatusText}</span>
+                                </div>
+                            </div>
+
+                            <!-- Compressors (3 Kolom Sejajar Penuh) -->
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+                                ${dotIndicator(comp1On, 'Comp 1')}
+                                ${dotIndicator(comp2On, 'Comp 2')}
+                                ${dotIndicator(comp3On, 'Comp 3')}
+                            </div>
+
+                            <!-- Heaters (2 Kolom Sejajar Penuh) -->
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                ${dotIndicator(heater1On, 'Heater 1')}
+                                ${dotIndicator(heater2On, 'Heater 2')}
+                            </div>
+                        </div>
+
+                        ${dev._hasAlarm ? `
+                        <!-- Active Alarms -->
+                        <div>
+                            <div class="ups-section-title" style="color: #f87171;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>Active Alarms</div>
+                            <div style="padding: 10px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #fca5a5; font-size: 0.85rem; font-weight: 600;">
+                                ${dev._alarmsText}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>`;
+            });
+            
+            html += `</div>`;
+            html += `<button class="ups-carousel-btn next" onclick="scrollUpsCarousel(this, 1)"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `</div>`;
+        }
+
+        detailContent.innerHTML = html;
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        
+        let grid = detailContent.querySelector('.ups-device-grid');
+        if (grid) {
+            setTimeout(() => window.updateUpsCarouselButtons(grid), 50);
+        }
+    }
+    
+    function showCctvDetail(siteId) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        
+        window.CURRENT_DETAIL_SITE_ID = siteId;
+        window.CURRENT_DETAIL_TAB = 'cctv';
+        
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        let keys = ['CCTV AVAILBILITY', 'CCTV Availbility', 'CCTV'];
+        let devices = [];
+        if (site && site.categories) {
+            for (let k of Object.keys(site.categories)) {
+                if (keys.some(key => key.toLowerCase() === k.toLowerCase())) {
+                    let catData = site.categories[k];
+                    if (catData && catData.devices) {
+                        catData.devices.forEach(d => {
+                            let at = (d.asset_type_name || '').toUpperCase();
+                            let cat = (d.ups_category || '').toUpperCase();
+                            if ((at === 'CCTV' || cat.includes('CCTV')) && !devices.some(existing => existing.device_id === d.device_id)) {
+                                devices.push(d);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        const detailContent = document.getElementById('detail-content');
+        let html = `
+            <div class="ups-detail-header">
+                <h2 class="ups-detail-title">
+                    <i class="fa-solid fa-video" style="color: #c084fc;"></i>
+                    ${site.site_code} - ${site.site_name} <span style="font-size: 1rem; color:#64748b; font-weight:400; margin-left: 10px;">(CCTV Availability & Monitoring)</span>
+                </h2>
+            </div>
+        `;
+
+        if (devices.length === 0) {
+            html += `<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 1.2rem;">Tidak ada perangkat CCTV tercatat untuk site ini.</div>`;
+        } else {
+            let devicesOnlineCount = 0;
+            let devicesOfflineCount = 0;
+            
+            devices.forEach(dev => {
+                let cctvSampleTime = dev.ccl_time || dev.latest_sample_at;
+                let isStaleByTime = cctvSampleTime ? ((new Date().getTime() - new Date(cctvSampleTime).getTime()) / (1000 * 60) > 15) : true;
+                let st = (dev.ups_status || "").toLowerCase().trim();
+                let isOffline = dev.is_offline === true || isStaleByTime || st === 'offline' || st === 'connection error' || st === 'auth error' || st === 'stream error' || st === 'down' || (st !== 'online' && st !== 'up' && st !== '');
+                
+                dev._badgeClass = 'normal';
+                dev._badgeText = 'Online';
+                dev._sortScore = 0;
+                
+                if (dev.is_acknowledged) {
+                    dev._badgeClass = 'acknowledged';
+                    dev._badgeText = 'ACKNOWLEDGED';
+                    dev._sortScore = 0.5;
+                    devicesOnlineCount++; // Counted as handled
+                } else if (isOffline) {
+                    dev._badgeClass = 'critical';
+                    dev._badgeText = dev.ups_status ? dev.ups_status.toUpperCase() : 'OFFLINE';
+                    dev._sortScore = 2;
+                    devicesOfflineCount++;
+                } else {
+                    devicesOnlineCount++;
+                }
+                
+                dev._isOffline = isOffline;
+            });
+            
+            let totalDev = devices.length;
+            let availPercent = totalDev > 0 ? Math.round((devicesOnlineCount / totalDev) * 100) : 0;
+            
+            let avgHasCritical = devicesOfflineCount > 0 && devicesOnlineCount === 0;
+            let avgHasWarning = devicesOfflineCount > 0 && devicesOnlineCount > 0;
+            
+            let avgBorderColor = 'rgba(168, 85, 247, 0.3)';
+            if (avgHasCritical) avgBorderColor = 'rgba(239, 68, 68, 0.8)';
+            else if (avgHasWarning) avgBorderColor = 'rgba(245, 158, 11, 0.8)';
+            
+            html += `
+            <div class="ups-avg-summary-card" style="border-color: ${avgBorderColor}; margin-bottom: 25px;">
+                <div class="ups-avg-summary-brand">
+                    <div class="ups-avg-summary-icon" style="color: #c084fc; background: rgba(192, 132, 252, 0.1); border-color: rgba(192, 132, 252, 0.2);">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div class="ups-avg-summary-text">
+                        <div class="ups-avg-summary-title">Ringkasan Ketersediaan CCTV (Availability)</div>
+                        <div class="ups-avg-summary-sub">
+                            <span class="ups-avg-live-dot" style="background:${devicesOnlineCount > 0 ? '#4ade80' : '#ef4444'}; box-shadow:0 0 6px ${devicesOnlineCount > 0 ? '#4ade80' : '#ef4444'};"></span> 
+                            <strong>${devicesOnlineCount}</strong> dari <strong>${totalDev}</strong> Kamera Online / Acknowledged
+                        </div>
+                    </div>
+                </div>
+                <div class="ups-avg-summary-grid">
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Total Kamera</div>
+                        <div class="ups-avg-chip-val">${totalDev}<small> Unit</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Kamera Online / Ack</div>
+                        <div class="ups-avg-chip-val" style="color: #4ade80;">${devicesOnlineCount}<small> Unit</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Kamera Offline</div>
+                        <div class="ups-avg-chip-val" style="color: ${devicesOfflineCount > 0 ? '#f87171' : '#94a3b8'};">${devicesOfflineCount}<small> Unit</small></div>
+                    </div>
+                    <div class="ups-avg-chip">
+                        <div class="ups-avg-chip-label">Availability Rate</div>
+                        <div class="ups-avg-chip-val" style="color: ${availPercent >= 100 ? '#4ade80' : (availPercent >= 50 ? '#fbbf24' : '#f87171')};">${availPercent}<small>%</small></div>
+                    </div>
+                </div>
+            </div>`;
+            
+            devices.sort((a, b) => {
+                if (b._sortScore !== a._sortScore) return b._sortScore - a._sortScore;
+                return (a.device_name || "").localeCompare(b.device_name || "");
+            });
+            
+            html += `<div class="ups-carousel-wrapper">`;
+            html += `<button class="ups-carousel-btn prev" onclick="scrollUpsCarousel(this, -1)" disabled><i class="fa-solid fa-chevron-left"></i></button>`;
+            html += `<div class="ups-device-grid" onscroll="updateUpsCarouselButtons(this)">`;
+            
+            devices.forEach((dev, idx) => {
+                let cardBorderStyle = '';
+                if (dev.is_acknowledged) cardBorderStyle = 'border: 1px solid rgba(56,189,248,0.6); box-shadow: 0 0 12px rgba(56,189,248,0.25);';
+                else if (dev._isOffline) cardBorderStyle = 'border: 1px solid rgba(239,68,68,0.8);';
+                else cardBorderStyle = 'border: 1px solid rgba(168,85,247,0.3);';
+                
+                let camChannel = idx < 9 ? `0${idx + 1}` : `${idx + 1}`;
+                let downtimeTime = dev.latest_sample_at || null;
+
+                let downtimeHtml = downtimeTime ? `
+                    <div style="margin-top: 12px; padding: 5px 14px; background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #fca5a5; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" title="Down: ${formatDowntime(downtimeTime)}">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: #f87171;"></i> <span>Down: ${formatDowntime(downtimeTime)}</span>
+                    </div>
+                ` : '';
+                
+                html += `
+                <div class="ups-dev-card" style="min-width: 350px; ${cardBorderStyle}">
+                    <div class="ups-dev-header">
+                        <div>
+                            ${renderDevTitleHtml('<i class="fa-solid fa-video" style="color: #c084fc;"></i>', dev.device_name, 'CCTV Camera')}
+                            <div class="ups-dev-meta">
+                                <span><i class="fa-solid fa-network-wired"></i> ${dev.ip_address || 'No IP'}</span>
+                                <span><i class="fa-solid fa-hashtag"></i> CH-${camChannel}</span>
+                            </div>
+                            <div class="ups-dev-meta" style="margin-top: 5px; font-size: 0.75rem;">
+                                <span><i class="fa-regular fa-clock"></i> Status: ${dev.is_acknowledged ? 'Acknowledged' : (dev._isOffline ? 'Offline' : 'Online')}</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="ups-badge ${dev._badgeClass}">${dev._badgeText}</div>
+                            <div class="ups-ack-dropdown" style="position: relative; z-index: 20;">
+                                <button class="btn p-0 text-white" type="button" onmousedown="event.stopPropagation()" onclick="window.toggleAckMenu(event, this)" style="border:none; outline:none; box-shadow:none;">
+                                    <i class="fa-solid fa-ellipsis-vertical" style="color:#94a3b8; font-size:1.2rem; padding: 8px 12px; cursor: pointer;"></i>
+                                </button>
+                                <ul class="ups-ack-menu shadow" style="display:none; position:absolute; right:0; top:100%; min-width:150px; margin:0; padding:0.5rem 0; list-style:none; border-radius:8px; font-size:0.85rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.95); backdrop-filter: blur(8px);">
+                                    <li><a style="color:#e2e8f0; text-decoration:none; padding:0.5rem 1rem; display:flex; align-items:center; gap:8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'" href="javascript:void(0)" onclick="window.openAcknowledgeModal('${dev.id || dev.device_id || ''}', '${(dev.device_name || 'CCTV Camera').replace(/'/g, "\\'") }', '${dev._badgeClass}', '${dev._badgeText}', 'cctv');">Acknowledge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ups-dev-body" style="position: relative; overflow: hidden; border-radius: 0 0 16px 16px;">
+                        ${dev._isOffline ? renderDevOfflineOverlayHtml(dev, 'Kamera CCTV offline atau stream terputus', downtimeHtml) : ''}
+                        ${renderDevAckRibbonHtml(dev)}
+
+                        <div>
+                            <div class="ups-section-title"><i class="fa-solid fa-network-wired" style="margin-right: 6px;"></i>Konektivitas CCTV</div>
+                            <div class="ups-metric-row ups-metric-row--2">
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">IP Address</div>
+                                    <div style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; font-family: monospace; line-height: 1.4;">${dev.ip_address || '-'}</div>
+                                </div>
+                                <div class="ups-metric-box">
+                                    <div class="ups-metric-label">Status Stream</div>
+                                    <div style="font-size: 1.05rem; font-weight: 700; color: ${dev._isOffline ? '#f87171' : '#4ade80'}; line-height: 1.4;">
+                                        <i class="fa-solid ${dev._isOffline ? 'fa-circle-xmark' : 'fa-circle-check'}" style="margin-right: 6px;"></i>${dev.ups_status || (dev._isOffline ? 'Offline' : 'Online')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            html += `</div>`;
+            html += `<button class="ups-carousel-btn next" onclick="scrollUpsCarousel(this, 1)"><i class="fa-solid fa-chevron-right"></i></button>`;
+            html += `</div>`;
+        }
+
+        detailContent.innerHTML = html;
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        
+        let grid = detailContent.querySelector('.ups-device-grid');
+        if (grid) {
+            setTimeout(() => window.updateUpsCarouselButtons(grid), 50);
+            bindCarouselEvents(grid, devices);
+        }
+    }
+    
+    function hideDetail() {
+        if (window.upsAutoSlideInterval) clearInterval(window.upsAutoSlideInterval);
+        window.CURRENT_DETAIL_SITE_ID = null;
+        window.CURRENT_DETAIL_TAB = null;
+        document.getElementById('detail-view').style.display = 'none';
+        document.getElementById('grid-view').style.display = 'block';
+    }
+
+    window.openAcknowledgeModal = function(deviceId, deviceName, badgeClass, badgeText, deviceType) {
+        try {
+            document.querySelectorAll('.ups-ack-menu').forEach(m => m.style.display = 'none');
+            
+            let idEl = document.getElementById('ackDeviceId');
+            if (idEl) idEl.value = deviceId || '';
+            else throw new Error("Elemen ackDeviceId tidak ditemukan di HTML.");
+            
+            // Populate device info card
+            let iconEl = document.getElementById('ackDeviceIcon');
+            let nameEl = document.getElementById('ackDeviceName');
+            let typeEl = document.getElementById('ackDeviceType');
+            let statusEl = document.getElementById('ackDeviceStatus');
+            
+            let typeConfig = {
+                sensor: { icon: 'fa-temperature-half', color: '#4ade80', bg: 'rgba(34,197,94,0.12)', label: 'Sensor Suhu' },
+                ups:    { icon: 'fa-bolt', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', label: 'UPS' },
+                pac:    { icon: 'fa-fan', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', label: 'PAC / Precision AC' },
+                cctv:   { icon: 'fa-video', color: '#c084fc', bg: 'rgba(192,132,252,0.12)', label: 'CCTV Camera' }
+            };
+            let cfg = typeConfig[deviceType] || typeConfig.sensor;
+            
+            if (iconEl) {
+                iconEl.style.background = cfg.bg;
+                iconEl.innerHTML = '<i class="fa-solid ' + cfg.icon + '" style="color:' + cfg.color + ';"></i>';
+            }
+            if (nameEl) nameEl.textContent = deviceName || 'Unknown Device';
+            if (typeEl) typeEl.textContent = cfg.label;
+            if (statusEl) {
+                statusEl.textContent = badgeText || 'N/A';
+                let statusColors = {
+                    normal:   { bg: 'rgba(34,197,94,0.15)', color: '#4ade80', border: 'rgba(34,197,94,0.3)' },
+                    warning:  { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: 'rgba(245,158,11,0.3)' },
+                    critical: { bg: 'rgba(239,68,68,0.15)', color: '#f87171', border: 'rgba(239,68,68,0.3)' }
+                };
+                let sc = statusColors[badgeClass] || statusColors.normal;
+                statusEl.style.background = sc.bg;
+                statusEl.style.color = sc.color;
+                statusEl.style.border = '1px solid ' + sc.border;
+            }
+            
+            // Populate reason dropdown
+            let reasonSelect = document.getElementById('ackReason');
+            if (reasonSelect) reasonSelect.innerHTML = '';
+            else throw new Error("Elemen ackReason tidak ditemukan di HTML.");
+            
+            let reasons = ['Maintenance'];
+            let dt = deviceType || '';
+            
+            if (dt === 'ups') {
+                reasons.push('Overload', 'Battery Low', 'Bypass Mode', 'Mains Failure', 'Hardware Fault');
+            } else if (dt === 'pac') {
+                reasons.push('High Temp', 'Compressor Trip', 'Leakage', 'Filter Dirty', 'Communication Error', 'Standby / Off');
+            } else if (dt === 'sensor') {
+                reasons.push('Offline', 'Calibration', 'Broken Sensor');
+            } else if (dt === 'cctv') {
+                reasons.push('Offline', 'Stream Error', 'Hardware Fault');
+            }
+            reasons.push('Other');
+
+            reasons.forEach(r => {
+                let opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                opt.style.background = '#0f172a';
+                opt.style.color = '#e2e8f0';
+                reasonSelect.appendChild(opt);
+            });
+
+            let formEl = document.getElementById('ackForm');
+            if (formEl) formEl.reset();
+            else throw new Error("Elemen ackForm tidak ditemukan di HTML.");
+            
+            // Re-set required state based on initial select value
+            if (window.handleReasonChange) {
+                window.handleReasonChange(reasonSelect);
+            }
+            
+            // Re-set deviceId after reset
+            if (idEl) idEl.value = deviceId || '';
+
+            // Pre-fill default start time (now) and end time (24 hours ahead)
+            let now = new Date();
+            let pad = (n) => n < 10 ? '0' + n : n;
+            let formatLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            
+            let startInput = document.getElementById('ackStartTime');
+            let endInput = document.getElementById('ackEndTime');
+            if (startInput) startInput.value = formatLocal(now);
+            if (endInput) {
+                let defaultEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours default
+                endInput.value = formatLocal(defaultEnd);
+            }
+            
+            let modalEl = document.getElementById('ackModal');
+            if (modalEl) {
+                if (typeof bootstrap === 'undefined') throw new Error("Library Bootstrap 5 tidak termuat (bootstrap is undefined).");
+                let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                throw new Error("Elemen ackModal tidak ditemukan di HTML.");
+            }
+        } catch (err) {
+            alert("Error menampilkan modal: " + err.message);
+            console.error(err);
+        }
+    };
+    
+    window.handleReasonChange = function(select) {
+        let notesLabel = document.getElementById('ackNotesOptText');
+        let notesInput = document.getElementById('ackNotes');
+        if (!notesInput) return;
+        
+        if (select.value === 'Other') {
+            notesInput.required = true;
+            if (notesLabel) {
+                notesLabel.textContent = '(Wajib)';
+                notesLabel.style.color = '#ef4444';
+            }
+            notesInput.placeholder = 'Tuliskan catatan detail untuk alasan Other...';
+            notesInput.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        } else {
+            notesInput.required = false;
+            if (notesLabel) {
+                notesLabel.textContent = '(Opsional)';
+                notesLabel.style.color = '#475569';
+            }
+            notesInput.placeholder = 'Tambahkan catatan jika perlu...';
+            notesInput.style.borderColor = 'rgba(255,255,255,0.08)';
+        }
+    };
+
+    function submitAcknowledge(e) {
+        e.preventDefault();
+        
+        let form = document.getElementById('ackForm');
+        let startTimeVal = document.getElementById('ackStartTime').value;
+        let endTimeVal = document.getElementById('ackEndTime').value;
+
+        if (!startTimeVal || !endTimeVal) {
+            Swal.fire('Peringatan', 'Waktu Mulai dan Waktu Selesai wajib diisi.', 'warning');
+            return;
+        }
+
+        let startDt = new Date(startTimeVal);
+        let endDt = new Date(endTimeVal);
+        if (endDt <= startDt) {
+            Swal.fire('Peringatan', 'Waktu Selesai harus lebih besar / setelah Waktu Mulai.', 'warning');
+            return;
+        }
+
+        let formData = new FormData(form);
+        let btn = document.getElementById('ackSubmitBtn');
+        let originalText = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+        
+        fetch('/api/ups/acknowledge', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+            if (data.status === 'success') {
+                let modalEl = document.getElementById('ackModal');
+                let modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+                Swal.fire('Berhasil', data.message, 'success');
+            } else {
+                Swal.fire('Gagal', data.message || 'Terjadi kesalahan.', 'error');
+            }
+        })
+        .catch(err => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+            console.error(err);
+        });
+    }
+
+    // Global click listener to close custom ack menus
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ups-ack-dropdown')) {
+            document.querySelectorAll('.ups-ack-menu').forEach(m => m.style.display = 'none');
+        }
+    });
+
+    window.toggleAckMenu = function(e, btn) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        let m = btn.nextElementSibling;
+        let v = m.style.display === 'block';
+        document.querySelectorAll('.ups-ack-menu').forEach(x => x.style.display = 'none');
+        m.style.display = v ? 'none' : 'block';
+    };
+
+    window.startMarquee = function(el) {
+        if (el.scrollWidth > el.clientWidth) {
+            el.dataset.originalText = el.innerText;
+            el.innerHTML = `<marquee scrollamount="4" style="line-height: inherit;">${el.innerText}</marquee>`;
+        }
+    };
+    
+    window.stopMarquee = function(el) {
+        if (el.dataset.originalText) {
+            el.innerText = el.dataset.originalText;
+            delete el.dataset.originalText;
+        }
+    };
+
+    window.showDcpiBreakdown = function(siteId) {
+        if (!window.UPS_DASHBOARD_DATA) return;
+        let site = window.UPS_DASHBOARD_DATA.find(s => s.site_id === siteId);
+        if (!site) return;
+        
+        let dcpiOverallText = (site.dcpi_overall !== null && site.dcpi_overall !== undefined) ? Number(site.dcpi_overall).toFixed(2) : '-';
+        let dcpiUpsText = (site.dcpi_ups !== null && site.dcpi_ups !== undefined) ? Number(site.dcpi_ups).toFixed(2) : '-';
+        let dcpiCctvText = (site.dcpi_cctv !== null && site.dcpi_cctv !== undefined) ? Number(site.dcpi_cctv).toFixed(2) : '-';
+        let dcpiSuhuText = (site.dcpi_suhu !== null && site.dcpi_suhu !== undefined) ? Number(site.dcpi_suhu).toFixed(2) : '-';
+        
+        let html = `
+            <div style="display:flex; flex-direction:column; gap: 15px; padding: 10px;">
+                <div style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 5px;">
+                    Skor DCPI Site Keseluruhan: <span style="font-weight: 800; color: #fff;">${dcpiOverallText}</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+                    <div style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(56,189,248,0.2);">
+                        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">UPS DC</div>
+                        <div style="font-size: 1.4rem; color: #38bdf8; font-weight: 700; margin-top: 5px;">${dcpiUpsText}</div>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(168,85,247,0.2);">
+                        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">CCTV</div>
+                        <div style="font-size: 1.4rem; color: #a855f7; font-weight: 700; margin-top: 5px;">${dcpiCctvText}</div>
+                    </div>
+                    <div style="background: rgba(15,23,42,0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(74,222,128,0.2);">
+                        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">SUHU/PAC</div>
+                        <div style="font-size: 1.4rem; color: #4ade80; font-weight: 700; margin-top: 5px;">${dcpiSuhuText}</div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #64748b; font-style: italic; text-align: left;">
+                    * UPS USER (Non-DC) tidak diikutsertakan dalam perhitungan ini.
+                </div>
+            </div>
+        `;
+        
+        Swal.fire({
+            title: 'Detail Skor DCPI',
+            html: html,
+            background: '#1e293b',
+            color: '#fff',
+            width: '600px',
+            showConfirmButton: false,
+            showCloseButton: true
+        });
+    };
+</script>
+}

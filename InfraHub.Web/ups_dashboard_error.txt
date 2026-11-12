@@ -1,0 +1,15 @@
+Microsoft.Data.SqlClient.SqlException (0x80131904): A transport-level error has occurred when receiving results from the server. (provider: TCP Provider, error: 0 - An existing connection was forcibly closed by the remote host.)
+ ---> System.ComponentModel.Win32Exception (10054): An existing connection was forcibly closed by the remote host.
+   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ThrowExceptionAndWarning(Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParserStateObject.ReadAsyncCallbackCaptureException(TaskCompletionSource`1 source)
+--- End of stack trace from previous location ---
+   at InfraHub.Infrastructure.Data.StoredProcedureExecutor.ExecuteSqlAsync(String sql, Object[] parameters) in D:\webserver\www\InfraHub.Web\Infrastructure\Data\StoredProcedureExecutor.cs:line 144
+   at InfraHub.Infrastructure.Data.StoredProcedureExecutor.ExecuteSqlAsync(String sql, Object[] parameters) in D:\webserver\www\InfraHub.Web\Infrastructure\Data\StoredProcedureExecutor.cs:line 144
+   at InfraHub.Infrastructure.Data.StoredProcedureExecutor.ExecuteSqlAsync(String sql, Object[] parameters) in D:\webserver\www\InfraHub.Web\Infrastructure\Data\StoredProcedureExecutor.cs:line 144
+   at InfraHub.Web.Areas.Ups.Controllers.UpsDashboardController.FetchSiteRowsAsync(List`1 authorizedSiteIds) in D:\webserver\www\InfraHub.Web\Areas\Ups\Controllers\UpsDashboardController.cs:line 207
+   at InfraHub.Web.Areas.Ups.Controllers.UpsDashboardController.GetDashboardData() in D:\webserver\www\InfraHub.Web\Areas\Ups\Controllers\UpsDashboardController.cs:line 74
+ClientConnectionId:c8ddc7bb-8c5d-42f6-aa64-519bed594807
+Error Number:10054,State:0,Class:20

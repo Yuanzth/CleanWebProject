@@ -1,0 +1,175 @@
+<div id="upsReportKomparasi" style="display:none; flex-direction:column; gap:28px; width:100%; padding-bottom: 40px;">
+
+    <!-- HEADER BADGE -->
+    <div style="display:flex; align-items:center; gap:12px; padding:16px 20px; background:linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.08)); border:1px solid rgba(96,165,250,0.2); border-radius:14px;">
+        <div style="width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #3b82f6, #8b5cf6); color:white; font-size:18px;">
+            <i class="fa-solid fa-chart-column"></i>
+        </div>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--ups-text);">Komparasi Antar Site</div>
+            <div style="font-size:12px; color:var(--ups-muted);">Perbandingan rata-rata nilai UPS DC vs UPS USER di setiap site</div>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:16px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span style="width:12px; height:12px; border-radius:3px; background:#60a5fa; display:inline-block;"></span>
+                <span style="font-size:11px; color:var(--ups-muted);">UPS DC</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; margin-right:12px;">
+                <span style="width:12px; height:12px; border-radius:3px; background:#4ade80; display:inline-block;"></span>
+                <span style="font-size:11px; color:var(--ups-muted);">UPS USER</span>
+            </div>
+            <button onclick="upsRptExportKomparasiCustom()" style="background:#10b981; color:white; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all 0.2s; box-shadow:0 4px 6px -1px rgba(16,185,129,0.2);" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                <i class="fa-solid fa-file-excel"></i> Export Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- SECTION 1: TABEL BEBAN & DAYA -->
+    <div class="ups-rpt-panel ups-rpt-panel--glass">
+        <div class="ups-rpt-panel__header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ups-icon-yellow-bg); color:var(--ups-icon-yellow-color); font-size:15px;">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h2 class="ups-rpt-panel__title" style="margin:0;">Beban & Daya</h2>
+                    <div style="font-size:11px; color:var(--ups-muted);">Load (%) dan Total Watts per site</div>
+                </div>
+            </div>
+        </div>
+        <div class="ups-rpt-panel__body" style="padding:0;">
+            <div style="overflow-x:auto; border-radius:0 0 16px 16px;">
+                <table style="width:100%; border-collapse:collapse; font-size:13px;" id="tableKomparasiLoad">
+                    <thead>
+                        <tr style="background:rgba(15,23,42,0.5); border-bottom:1px solid rgba(148,163,184,0.12);">
+                            <th style="padding:14px 20px; text-align:left; font-weight:700; color:var(--ups-muted); font-size:11px; letter-spacing:0.5px; text-transform:uppercase;">Site</th>
+                            <th style="padding:14px 16px; text-align:center; font-weight:700; color:#60a5fa; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;">Load DC (%)</th>
+                            <th style="padding:14px 16px; text-align:center; font-weight:700; color:#4ade80; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;">Load USER (%)</th>
+                            <th style="padding:14px 16px; text-align:center; font-weight:700; color:#60a5fa; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;">Daya DC (W)</th>
+                            <th style="padding:14px 16px; text-align:center; font-weight:700; color:#4ade80; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;">Daya USER (W)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableKomparasiLoadBody" style="color:var(--ups-text);">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: TEGANGAN INPUT & OUTPUT -->
+    <div class="ups-rpt-panel ups-rpt-panel--glass">
+        <div class="ups-rpt-panel__header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ups-icon-blue-bg); color:var(--ups-icon-blue-color); font-size:15px;">
+                    <i class="fa-solid fa-wave-square"></i>
+                </div>
+                <div>
+                    <h2 class="ups-rpt-panel__title" style="margin:0;">Tegangan (Voltage)</h2>
+                    <div style="font-size:11px; color:var(--ups-muted);">Rata-rata Input & Output (Volt)</div>
+                </div>
+            </div>
+        </div>
+        <div class="ups-rpt-panel__body" style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:320px;">
+                <div style="font-size:12px; font-weight:600; color:var(--ups-muted); margin-bottom:10px; padding-left:4px;">
+                    <i class="fa-solid fa-arrow-right-to-bracket" style="margin-right:4px; color:#60a5fa;"></i> Input Voltage (Average)
+                </div>
+                <div style="height:330px; position:relative;">
+                    <canvas id="chartKompVin"></canvas>
+                </div>
+            </div>
+            <div style="flex:1; min-width:320px;">
+                <div style="font-size:12px; font-weight:600; color:var(--ups-muted); margin-bottom:10px; padding-left:4px;">
+                    <i class="fa-solid fa-arrow-right-from-bracket" style="margin-right:4px; color:#4ade80;"></i> Output Voltage (Average)
+                </div>
+                <div style="height:330px; position:relative;">
+                    <canvas id="chartKompVout"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: SUHU -->
+    <div class="ups-rpt-panel ups-rpt-panel--glass">
+        <div class="ups-rpt-panel__header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ups-icon-red-bg); color:var(--ups-icon-red-color); font-size:15px;">
+                    <i class="fa-solid fa-temperature-half"></i>
+                </div>
+                <div>
+                    <h2 class="ups-rpt-panel__title" style="margin:0;">Suhu (Temperature)</h2>
+                    <div style="font-size:11px; color:var(--ups-muted);">Rata-rata suhu mesin & ruangan (°C)</div>
+                </div>
+            </div>
+        </div>
+        <div class="ups-rpt-panel__body" style="display:flex; gap:20px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:320px;">
+                <div style="font-size:12px; font-weight:600; color:var(--ups-muted); margin-bottom:10px; padding-left:4px;">
+                    <i class="fa-solid fa-microchip" style="margin-right:4px; color:#fb923c;"></i> Suhu Mesin (Ambient)
+                </div>
+                <div style="height:330px; position:relative;">
+                    <canvas id="chartKompTempAmbient"></canvas>
+                </div>
+            </div>
+            <div style="flex:1; min-width:320px;">
+                <div style="font-size:12px; font-weight:600; color:var(--ups-muted); margin-bottom:10px; padding-left:4px;">
+                    <i class="fa-solid fa-house-chimney" style="margin-right:4px; color:#38bdf8;"></i> Suhu Ruangan (Room)
+                </div>
+                <div style="height:330px; position:relative;">
+                    <canvas id="chartKompTempRoom"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 4: BATERAI (Horizontal) -->
+    <div class="ups-rpt-panel ups-rpt-panel--glass">
+        <div class="ups-rpt-panel__header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ups-icon-green-bg); color:var(--ups-icon-green-color); font-size:15px;">
+                    <i class="fa-solid fa-battery-three-quarters"></i>
+                </div>
+                <div>
+                    <h2 class="ups-rpt-panel__title" style="margin:0;">Kapasitas Baterai</h2>
+                    <div style="font-size:11px; color:var(--ups-muted);">Rata-rata kapasitas baterai per site (%) — Horizontal Bar</div>
+                </div>
+            </div>
+        </div>
+        <div class="ups-rpt-panel__body">
+            <div id="chartKompBatteryWrap" style="height:400px; position:relative;">
+                <canvas id="chartKompBattery"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 5: RINGKASAN LENGKAP (Master Table) -->
+    <div class="ups-rpt-panel ups-rpt-panel--glass">
+        <div class="ups-rpt-panel__header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--ups-icon-earth-bg); color:var(--ups-icon-earth-color); font-size:15px;">
+                    <i class="fa-solid fa-table-columns"></i>
+                </div>
+                <div>
+                    <h2 class="ups-rpt-panel__title" style="margin:0;">Ringkasan Lengkap</h2>
+                    <div style="font-size:11px; color:var(--ups-muted);">Seluruh parameter rata-rata per site dalam satu tabel</div>
+                </div>
+            </div>
+        </div>
+        <div class="ups-rpt-panel__body" style="padding:0;">
+            <div style="overflow-x:auto; border-radius:0 0 16px 16px;">
+                <table style="width:100%; border-collapse:collapse; font-size:12px; white-space:nowrap;" id="tableKomparasiMaster">
+                    <thead>
+                        <tr id="tableKomparasiMasterHead" style="background:rgba(15,23,42,0.5); border-bottom:1px solid rgba(148,163,184,0.12);">
+                            <!-- Injected by JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableKomparasiMasterBody" style="color:var(--ups-text);">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

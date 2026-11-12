@@ -1,0 +1,83 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="ITAssetTrack Agent"
+           Manufacturer="PT InfraHub Enterprise"
+           Version="1.2.0.0"
+           UpgradeCode="D37E84B1-29E5-4C88-A4F7-991A572610A3"
+           Scope="perMachine"
+           Language="1033">
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="ITAssetTrack Agent" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="EendsoPulse">
+        <Component Id="DataFolderComponent" Guid="F9D4B72C-1E8A-42B1-8C53-3E4F6A7B8C9D">
+          <CreateFolder />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Files Include="build_method_2_pyinstaller_onedir\itassettrack_pulse\**" />
+      <Component Id="AutostartRegistryComponent" Guid="B8E5D92A-4C71-4E9F-A1D3-72C8B5E9D1F4">
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run" Name="ITAssetTrack_Pulse" Value="&quot;[INSTALLFOLDER]itassettrack_pulse.exe&quot;" Type="string" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="MainFeature" Title="ITAssetTrack Agent Application" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="DataFolderComponent" />
+    </Feature>
+
+    <!-- Custom Actions: 1. Kill process before uninstall/upgrade to avoid restart prompt -->
+    <CustomAction Id="KillRunningProcess"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="cmd.exe /c taskkill /F /IM itassettrack_pulse.exe"
+                  Execute="immediate"
+                  Return="ignore" />
+
+    <!-- Custom Actions: 2. Register Scheduled Task with Highest RunLevel (Admin Privileges on Logon) -->
+    <CustomAction Id="RegisterScheduledTask"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="cmd.exe /c schtasks /create /tn &quot;ITAssetTrack_Pulse&quot; /tr &quot;\&quot;[INSTALLFOLDER]itassettrack_pulse.exe\&quot;&quot; /sc onlogon /rl highest /f"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <!-- Custom Actions: 3. Set Restrictive ACL Security on ProgramData Folder -->
+    <CustomAction Id="SetSecurityAcl"
+                  Directory="DATAFOLDER"
+                  ExeCommand="cmd.exe /c icacls &quot;[CommonAppDataFolder]EendsoPulse&quot; /grant:r &quot;SYSTEM:(OI)(CI)F&quot; &quot;Administrators:(OI)(CI)F&quot; &quot;Users:(OI)(CI)RX&quot; /t /c"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <!-- Custom Actions: 4. Unregister Scheduled Task on Uninstall -->
+    <CustomAction Id="UnregisterScheduledTask"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="cmd.exe /c schtasks /delete /tn &quot;ITAssetTrack_Pulse&quot; /f"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <!-- Custom Actions: 5. Launch Application right after installation -->
+    <CustomAction Id="LaunchAppAfterInstall"
+                  Directory="INSTALLFOLDER"
+                  ExeCommand="cmd.exe /c start &quot;&quot; &quot;[INSTALLFOLDER]itassettrack_pulse.exe&quot;"
+                  Execute="immediate"
+                  Return="asyncNoWait" />
+
+    <InstallExecuteSequence>
+      <Custom Action="KillRunningProcess" Before="InstallValidate" />
+      <Custom Action="RegisterScheduledTask" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="SetSecurityAcl" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="UnregisterScheduledTask" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
+      <Custom Action="LaunchAppAfterInstall" After="InstallFinalize" Condition="NOT Installed" />
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

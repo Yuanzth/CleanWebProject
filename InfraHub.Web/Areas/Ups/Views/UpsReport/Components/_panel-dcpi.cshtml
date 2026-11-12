@@ -1,0 +1,148 @@
+<div class="ups-rpt-panel ups-rpt-panel--dcpi" id="upsRptPanelDcpi" style="display: none; padding: 24px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; margin-bottom: 8px;">
+    <div class="ups-rpt-panel__header" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <h3 class="ups-rpt-panel__title" style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-gauge-high" style="color: #6366f1;"></i> 
+            <div>
+                Data Center Performance Index (DCPI)
+                <div id="dcpiPeriodLabel" style="font-size: 0.75rem; color: #94a3b8; font-weight: 400; margin-top: 2px;"></div>
+            </div>
+        </h3>
+        <div class="ups-rpt-dcpi-site-score" style="display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+            <span style="font-size: 0.85rem; color: #94a3b8;">Global Score:</span>
+            <div id="dcpiGlobalScore" style="font-size: 1.25rem; font-weight: 700; color: #fff;">-</div>
+            <div id="dcpiGlobalStars" style="color: #eab308; font-size: 1rem;"></div>
+        </div>
+    </div>
+    <div class="ups-rpt-panel__body">
+        <div id="dcpiDeviceCards" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+        </div>
+    </div>
+</div>
+<script>
+function upsRptRenderDcpi(data) {
+    var panel = document.getElementById('upsRptPanelDcpi');
+    if (!panel) return;
+
+    if (!data || !data.meta) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    var score = typeof data.meta.dcpi_site_score !== 'undefined' ? data.meta.dcpi_site_score : data.meta.dcpiSiteScore;
+    if (typeof score === 'undefined') {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'block';
+    
+    // Period Label
+    var pLabel = document.getElementById('dcpiPeriodLabel');
+    if (pLabel) pLabel.innerText = 'Periode: ' + (data.meta.period_label || data.meta.periodLabel || '-');
+    
+    // Global Score
+    document.getElementById('dcpiGlobalScore').innerText = score > 0 ? score.toFixed(2) : '-';
+    
+    // Global Stars
+    var starHtml = '';
+    var fullStars = Math.floor(score);
+    var hasHalf = (score - fullStars) >= 0.5;
+    for(var i=1; i<=5; i++) {
+        if (i <= fullStars) starHtml += '<i class="fa-solid fa-star"></i>';
+        else if (i === fullStars + 1 && hasHalf) starHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+        else starHtml += '<i class="fa-regular fa-star" style="opacity:0.3"></i>';
+    }
+    document.getElementById('dcpiGlobalStars').innerHTML = starHtml;
+
+    // Devices
+    var dcpiCards = document.getElementById('dcpiDeviceCards');
+    dcpiCards.innerHTML = '';
+    
+    var devicesObj = data.meta.dcpi_devices || data.meta.dcpiDevices;
+    
+    if (devicesObj && typeof devicesObj === 'object') {
+        var devices = Object.keys(devicesObj);
+        if (devices.length === 0) {
+            dcpiCards.innerHTML = '<div style="color: #94a3b8; font-size: 0.9rem; padding: 12px; font-style: italic;">Tidak ada data perangkat</div>';
+            return;
+        }
+
+        var nameMap = (data.meta && (data.meta.device_names || data.meta.deviceNames)) || {};
+
+        devices.forEach(function(devId) {
+            var devScore = Number(devicesObj[devId]) || 0;
+            var devName = "";
+
+            // 1. Direct lookup in nameMap (case-insensitive)
+            if (nameMap[devId]) {
+                devName = nameMap[devId];
+            } else {
+                var matchKey = Object.keys(nameMap).find(k => k.toLowerCase() === devId.toLowerCase());
+                if (matchKey) devName = nameMap[matchKey];
+            }
+
+            // 2. Lookup in data.trends
+            if (!devName && data.trends) {
+                for (var key in data.trends) {
+                    var tr = data.trends[key];
+                    if (tr && tr.devices && Array.isArray(tr.devices)) {
+                        var found = tr.devices.find(d => (d.id && d.id.toLowerCase() === devId.toLowerCase()) || (d.name && d.name.toLowerCase() === devId.toLowerCase()));
+                        if (found && found.name) {
+                            devName = found.name;
+                            break;
+                        }
+                    } else if (key === 'devices' && Array.isArray(tr)) {
+                        var found = tr.find(d => (d.id && d.id.toLowerCase() === devId.toLowerCase()) || (d.name && d.name.toLowerCase() === devId.toLowerCase()));
+                        if (found && found.name) {
+                            devName = found.name;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: If devId is not a UUID, use it; otherwise format nicely
+            if (!devName) {
+                if (devId.length === 36 && devId.includes('-')) {
+                    devName = "Perangkat (" + devId.substring(0, 8) + ")";
+                } else {
+                    devName = devId;
+                }
+            }
+
+            // Determine color class based on score
+            var scoreColor = '#4ade80'; // 5 (green)
+            var bgGrad = 'linear-gradient(145deg, rgba(34,197,94,0.1), rgba(34,197,94,0.02))';
+            if (devScore < 3) {
+                scoreColor = '#f87171'; // 1-2 (red)
+                bgGrad = 'linear-gradient(145deg, rgba(239,68,68,0.1), rgba(239,68,68,0.02))';
+            } else if (devScore < 4) {
+                scoreColor = '#fbbf24'; // 3 (yellow)
+                bgGrad = 'linear-gradient(145deg, rgba(251,191,36,0.1), rgba(251,191,36,0.02))';
+            } else if (devScore < 5) {
+                scoreColor = '#60a5fa'; // 4 (blue)
+                bgGrad = 'linear-gradient(145deg, rgba(96,165,250,0.1), rgba(96,165,250,0.02))';
+            }
+
+            var card = document.createElement('div');
+            card.style.cssText = 'background: ' + bgGrad + '; border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s;';
+            card.innerHTML = `
+                <div style="display:flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #e2e8f0; font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;" title="${devName}">${devName}</div>
+                </div>
+                <div style="display:flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                    <div style="color: ${scoreColor}; font-weight: 700; font-size: 1.15rem;">${devScore.toFixed(2)}</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Index</div>
+                </div>
+            `;
+            // Hover effect
+            card.onmouseenter = function() { this.style.transform = 'translateY(-2px)'; this.style.borderColor = 'rgba(255,255,255,0.1)'; };
+            card.onmouseleave = function() { this.style.transform = 'none'; this.style.borderColor = 'rgba(255,255,255,0.03)'; };
+            
+            dcpiCards.appendChild(card);
+        });
+    } else {
+        dcpiCards.innerHTML = '<div style="color: #94a3b8; font-size: 0.9rem; padding: 12px; font-style: italic;">Tidak ada data perangkat</div>';
+    }
+}
+</script>

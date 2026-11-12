@@ -1,0 +1,162 @@
+@{
+    ViewData["Title"] = "Manajemen Data Pengguna Asset";
+}
+
+<div class="management-card p-4">
+    <div class="table-responsive">
+        <table id="assignmentTable" class="table management-table align-middle w-100">
+            <thead>
+                <tr>
+                    <th>Employee Pemakai</th>
+                    <th>NRP</th>
+                    <th>Site / Divisi</th>
+                    <th>Perangkat (SN)</th>
+                    <th>Model / Merk</th>
+                    <th>Mulai Pakai</th>
+                    <th>Status</th>
+                    <th class="text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            // DataTables Server-Side Processing
+            const table = $('#assignmentTable').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: false,
+                ajax: {
+                    url: '/api/asset-assignment/datatables',
+                    type: 'POST'
+                },
+                columns: [
+                    {
+                        data: 'employeeName',
+                        createdCell: function(td) { $(td).attr('data-label', 'Employee'); },
+                        render: function (data, type, row) {
+                            return `<span class="fw-bold text-dark">${data}</span><span class="d-block text-muted small">${row.department || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'nrp',
+                        createdCell: function(td) { $(td).attr('data-label', 'NRP'); },
+                        render: function (data) {
+                            return `<span class="badge bg-light text-dark border font-monospace">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        createdCell: function(td) { $(td).attr('data-label', 'Site'); },
+                        render: function (data) {
+                            return `<span><span class="badge bg-info-subtle text-info">${data.site || '-'}</span>&nbsp;<span class="badge bg-secondary-subtle text-secondary">${data.division || '-'}</span></span>`;
+                        }
+                    },
+                    {
+                        data: 'serialNumber',
+                        createdCell: function(td) { $(td).attr('data-label', 'SN'); },
+                        render: function (data, type, row) {
+                            return `<a href="/Asset/Details/${row.assetId}" class="font-monospace fw-bold text-primary text-decoration-none"><i class="bi bi-laptop me-1"></i>${data}</a>`;
+                        }
+                    },
+                    {
+                        data: 'brandModel',
+                        createdCell: function(td) { $(td).attr('data-label', 'Model'); },
+                        render: function (data) {
+                            return `<span class="small fw-semibold text-dark">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'assignDate',
+                        createdCell: function(td) { $(td).attr('data-label', 'Mulai'); },
+                        render: function (data) {
+                            return `<span class="small text-muted">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        createdCell: function(td) { $(td).attr('data-label', 'Status'); },
+                        render: function () {
+                            return `<span class="badge-status badge-available"><i class="bi bi-check-circle-fill"></i>Aktif</span>`;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-center',
+                        createdCell: function(td) { $(td).attr('data-label', 'Aksi'); },
+                        render: function (data) {
+                            return `<button type="button" class="btn btn-sm btn-return-asset" data-id="${data}" title="Kembalikan Perangkat">↩ Return</button>`;
+                        }
+                    }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div> Memuat data...',
+                    search: "_INPUT_",
+                    searchPlaceholder: "🔍 Cari (Nama / SN / Site)...",
+                    lengthMenu: "Tampilkan _MENU_ baris",
+                    info: "_START_–_END_ dari _TOTAL_ penugasan aktif",
+                    infoEmpty: "0 penugasan",
+                    zeroRecords: "Tidak ada data yang cocok",
+                    paginate: { first: "Awal", last: "Akhir", next: "→", previous: "←" }
+                },
+                initComplete: function () {
+                    @if (!User.IsInRole("Viewer"))
+                    {
+                        <text>
+                        const filterWrapper = $('#assignmentTable_filter');
+                        const searchInput = filterWrapper.find('input');
+                        if (searchInput.length && !filterWrapper.find('.filter-input-btn-group').length) {
+                            searchInput.wrap('<div class="filter-input-btn-group"></div>');
+                            filterWrapper.find('.filter-input-btn-group').append(`
+                                <a href="/AssetAssignment/Assign" class="btn btn-primary btn-sm flex-shrink-0 rounded-pill px-3" style="font-size:12px; padding:7px 14px; white-space:nowrap; font-weight:600;">
+                                    <i class="bi bi-person-plus-fill me-1"></i><span class="d-none d-sm-inline">Alokasikan Perangkat</span><span class="d-inline d-sm-none">+ Alokasi</span>
+                                </a>
+                            `);
+                        }
+                        </text>
+                    }
+                }
+            });
+
+            // SweetAlert2 Return Asset Confirmation
+            $('#assignmentTable').on('click', '.btn-return-asset', function () {
+                const assignmentId = $(this).data('id');
+                Swal.fire({
+                    title: 'Proses Pengembalian Aset?',
+                    text: "Asset akan dikembalikan ke status Available (Belum Digunakan).",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#f59e0b',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Ya, Kembalikan!',
+                    cancelButtonText: 'Batal',
+                    customClass: { popup: 'rounded-4' }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/AssetAssignment/Return/${assignmentId}`,
+                            type: 'POST',
+                            data: { __RequestVerificationToken: token },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false });
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire('Gagal!', res.message, 'error');
+                                }
+                            },
+                            error: function () { Swal.fire('Error!', 'Gagal menghubungi server.', 'error'); }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

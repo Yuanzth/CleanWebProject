@@ -1,0 +1,1261 @@
+@model ITAssetTrack.Models.SerahTerima
+@{
+    ViewData["Title"] = "Serah Terima Asset - Penyerahan";
+    ViewData["PageLabel"] = "Serah Terima";
+}
+
+@if (TempData["Success"] != null)
+{
+    <span id="tempDataSuccess" style="display:none;">@TempData["Success"]</span>
+}
+
+<style>
+    /* ─── Wizard Container ─── */
+    .wizard-container { max-width: 1200px; margin: 0 auto; }
+
+    /* ─── Step Progress Bar ─── */
+    .wizard-progress {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+        margin-bottom: 24px;
+        position: relative;
+    }
+    .wizard-step-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+        z-index: 1;
+    }
+    .wizard-step-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 19px;
+        left: 50%;
+        width: 100%;
+        height: 3px;
+        background: #e2e8f0;
+        z-index: 0;
+        transition: background 0.4s;
+    }
+    .wizard-step-item.completed:not(:last-child)::after {
+        background: linear-gradient(90deg, #06b6d4, #0891b2);
+    }
+    .wizard-step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid #e2e8f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: #94a3b8;
+        position: relative;
+        z-index: 2;
+        transition: all 0.35s cubic-bezier(.4,0,.2,1);
+    }
+    .wizard-step-item.active .wizard-step-circle {
+        border-color: #06b6d4;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: #fff;
+        box-shadow: 0 0 0 6px rgba(6,182,212,0.15);
+        transform: scale(1.08);
+    }
+    .wizard-step-item.completed .wizard-step-circle {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+    }
+    .wizard-step-label {
+        margin-top: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-align: center;
+        line-height: 1.3;
+        max-width: 80px;
+    }
+    .wizard-step-item.active .wizard-step-label { color: #0891b2; }
+    .wizard-step-item.completed .wizard-step-label { color: #059669; }
+
+    /* ─── Step Panels ─── */
+    .wizard-panel {
+        display: none;
+        animation: fadeInSlide 0.35s ease;
+    }
+    .wizard-panel.active { display: block; }
+    @@keyframes fadeInSlide {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Section Card ─── */
+    .step-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(30,41,59,0.06);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .step-card-header {
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #f0fdfe 0%, #e0f7fa 100%);
+        border-bottom: 1px solid #cffafe;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 13px;
+        color: #0e7490;
+    }
+    .step-card-header i { font-size: 16px; }
+    .step-card-body { padding: 18px 20px; }
+
+    /* ─── Form Fields ─── */
+    .field-group { margin-bottom: 14px; }
+    .field-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .field-group label .req { color: #ef4444; margin-left: 2px; }
+    .field-row.cols-2.compact { gap: 12px; }
+    .field-input {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 9px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #fff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .field-input:focus {
+        border-color: #06b6d4;
+        box-shadow: 0 0 0 3px rgba(6,182,212,0.12);
+    }
+    .field-input[readonly] { background: #f8fafc; color: #64748b; }
+    .field-input.autofilled { background: #f0fdfe; border-color: #67e8f9; }
+    .field-row { display: grid; gap: 16px; }
+    .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    /* ─── Big Card Toggles ─── */
+    .toggle-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 12px;
+    }
+    .toggle-btn {
+        padding: 16px 14px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 64px;
+        text-align: center;
+        user-select: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .toggle-btn i { font-size: 20px; color: #0891b2; }
+    .toggle-btn:hover {
+        border-color: #06b6d4;
+        color: #0891b2;
+        background: #f0fdfe;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(6,182,212,0.15);
+    }
+    .toggle-btn.active {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        border-color: #0891b2;
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(6,182,212,0.35);
+        transform: translateY(-2px);
+    }
+    .toggle-btn.active i { color: #fff; }
+
+    /* ─── Big Hardware Cards ─── */
+    .hw-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    .hw-chip {
+        padding: 16px 14px;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        background: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 64px;
+        user-select: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .hw-chip i { font-size: 22px; color: #64748b; transition: color 0.2s; }
+    .hw-chip:hover {
+        border-color: #06b6d4;
+        color: #0891b2;
+        background: #f0fdfe;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(6,182,212,0.15);
+    }
+    .hw-chip.active {
+        background: #ecfeff;
+        border-color: #06b6d4;
+        color: #0891b2;
+        box-shadow: 0 6px 16px rgba(6,182,212,0.25);
+        transform: translateY(-2px);
+    }
+    .hw-chip.active i { color: #06b6d4; }
+
+    /* ─── Signature Box ─── */
+    .sig-card {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+    .sig-card-header {
+        padding: 10px 14px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .sig-canvas-wrap { padding: 12px; background: #fafafa; }
+    .sig-canvas-wrap canvas {
+        width: 100%;
+        height: 130px;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 8px;
+        cursor: crosshair;
+        background: #fff;
+        display: block;
+    }
+    .sig-actions { padding: 8px 12px; display: flex; gap: 8px; }
+    .sig-name-input { padding: 8px 12px; }
+    .btn-sig-clear {
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        color: #ef4444;
+        cursor: pointer;
+    }
+    .sig-locked {
+        min-height: 130px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 13px;
+        gap: 6px;
+    }
+
+    /* ─── Condition Checklist ─── */
+    .condition-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .condition-item {
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.2s;
+    }
+    .condition-item.ok { border-color: #10b981; background: #f0fdf4; color: #065f46; }
+    .condition-item.notok { border-color: #ef4444; background: #fff1f2; color: #991b1b; }
+    .condition-radios { display: flex; gap: 6px; }
+    .cond-btn {
+        width: 28px; height: 28px;
+        border-radius: 6px;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        font-size: 11px;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700;
+        transition: all 0.15s;
+    }
+    .cond-btn.ok-btn.active { background: #10b981; border-color: #10b981; color: #fff; }
+    .cond-btn.notok-btn.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+    /* ─── Wizard Navigation ─── */
+    .wizard-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(30,41,59,0.06);
+        border: 1px solid #f1f5f9;
+        margin-top: 16px;
+        gap: 12px;
+    }
+    .wizard-nav-left { display: flex; gap: 8px; }
+    .wizard-nav-right { display: flex; gap: 8px; }
+    .btn-wiz {
+        padding: 11px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.2s;
+        border: none;
+        outline: none;
+    }
+    .btn-wiz-outline {
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        color: #475569;
+    }
+    .btn-wiz-outline:hover { border-color: #06b6d4; color: #0891b2; }
+    .btn-wiz-primary {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: #fff;
+        box-shadow: 0 3px 12px rgba(6,182,212,0.3);
+    }
+    .btn-wiz-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(6,182,212,0.4); }
+    .btn-wiz-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        box-shadow: 0 3px 12px rgba(16,185,129,0.3);
+    }
+    .btn-wiz-danger {
+        background: #fff;
+        border: 1.5px solid #fecaca;
+        color: #ef4444;
+    }
+    .step-counter {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    /* ─── Summary Preview ─── */
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 9px 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 13px;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .label { color: #64748b; font-weight: 500; }
+    .summary-row .value { color: #1e293b; font-weight: 600; text-align: right; }
+
+    /* ─── Tab Nav ─── */
+    .tab-nav-modern {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 5px;
+    }
+    .tab-btn-modern {
+        flex: 1;
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        transition: all 0.2s;
+    }
+    .tab-btn-modern:hover { color: #0891b2; }
+    .tab-btn-modern.active {
+        background: #fff;
+        color: #0891b2;
+        box-shadow: 0 2px 8px rgba(30,41,59,0.08);
+    }    @@media (max-width: 640px) {
+        .field-row.cols-2 { grid-template-columns: 1fr; }
+        .field-row.cols-3 { grid-template-columns: 1fr; }
+        .condition-grid { grid-template-columns: 1fr; }
+        
+        /* Wizard Nav on Mobile */
+        .wizard-nav {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+            padding: 12px 14px !important;
+        }
+        .wizard-nav-left {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+        }
+        .wizard-nav-right {
+            display: flex !important;
+            gap: 8px !important;
+            width: 100% !important;
+            flex-wrap: wrap !important;
+        }
+        .wizard-nav-right .btn-wiz {
+            flex: 1 !important;
+            justify-content: center !important;
+        }
+        .wizard-nav-right .btn-wiz-success {
+            width: 100% !important;
+            flex: none !important;
+            margin-top: 4px !important;
+        }
+    }
+</style>
+<!-- Tab Navigation Modern -->
+<nav class="tab-nav-modern">
+    <a href="@Url.Action("Index","SerahTerima")" class="tab-btn-modern">
+        <i class="bi bi-list-task"></i> Daftar
+    </a>
+    <a href="@Url.Action("Penyerahan","SerahTerima")" class="tab-btn-modern active">
+        <i class="bi bi-box-arrow-up"></i> Penyerahan
+    </a>
+    <a href="@Url.Action("Pengembalian","SerahTerima")" class="tab-btn-modern">
+        <i class="bi bi-box-arrow-in-down"></i> Pengembalian
+    </a>
+</nav>
+
+<form asp-action="Penyerahan" method="post" id="stForm" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <!-- Hidden inputs -->
+    <input type="hidden" asp-for="SignaturePenyerah" id="hidSigPenyerah" />
+    <input type="hidden" asp-for="SignaturePenerima" id="hidSigPenerima" />
+    <input type="hidden" asp-for="SignatureDiketahui" id="hidSigDiketahui" />
+    <input type="hidden" id="additionalHardwareInput" asp-for="AdditionalHardware" />
+    <input type="hidden" id="stDeviceInput" asp-for="DeviceType" />
+    <input type="hidden" id="stRamInput" asp-for="Ram" />
+    <input type="hidden" id="stStorageInput" asp-for="Storage" />
+    <input type="hidden" id="stOsInput" asp-for="OperatingSystem" />
+
+    <div class="wizard-container">
+        <!-- ── Progress Bar ── -->
+        <div class="wizard-progress" id="wizardProgress">
+            <div class="wizard-step-item active" data-step="1">
+                <div class="wizard-step-circle">1</div>
+                <div class="wizard-step-label">Info Dokumen &amp; User</div>
+            </div>
+            <div class="wizard-step-item" data-step="2">
+                <div class="wizard-step-circle">2</div>
+                <div class="wizard-step-label">Spesifikasi Aset</div>
+            </div>
+            <div class="wizard-step-item" data-step="3">
+                <div class="wizard-step-circle">3</div>
+                <div class="wizard-step-label">Kondisi &amp; Catatan</div>
+            </div>
+            <div class="wizard-step-item" data-step="4">
+                <div class="wizard-step-circle">
+                    <i class="bi bi-pen" style="font-size:14px;"></i>
+                </div>
+                <div class="wizard-step-label">Tanda Tangan</div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════ -->
+        <!-- STEP 1: Info Dokumen & User -->
+        <!-- ══════════════════════════════ -->
+        <div class="wizard-panel active" id="step1">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-calendar3"></i> Informasi Dokumen
+                </div>
+                <div class="step-card-body">
+                    <div class="field-row cols-2">
+                        <div class="field-group">
+                            <label>Tanggal <span class="req">*</span></label>
+                            <input type="date" class="field-input" asp-for="Tanggal" />
+                        </div>
+                        <div class="field-group">
+                            <label>No. Dokumen <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="NoDokumen" placeholder="InfraHub/HQ_DEPT/PM2025/001" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-person-vcard-fill"></i> Identitas Penerima Aset
+                </div>
+                <div class="step-card-body">
+                    <div class="field-row cols-2">
+                        <div class="field-group">
+                            <label>Nama User Penerima <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="NamaUser" placeholder="Nama lengkap penerima" />
+                        </div>
+                        <div class="field-group">
+                            <label>NRP Pengguna <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="NRP" placeholder="Nomor Registrasi Pegawai" />
+                        </div>
+                    </div>
+                    <div class="field-row cols-2">
+                        <div class="field-group">
+                            <label>Site <span class="req">*</span></label>
+                            <select class="field-input" asp-for="Site">
+                                <option value="">Pilih Site</option>
+                                <option>HQ_DEPT</option><option>SITE_A</option><option>SITE_B</option>
+                                <option>SITE_C</option><option>SITE_D</option><option>SITE_H</option><option>SITE_G</option>
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <label>Divisi / Departemen <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="Division" placeholder="Divisi / Departemen" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-nav">
+                <div class="wizard-nav-left">
+                    <span class="step-counter">Langkah 1 dari 4</span>
+                </div>
+                <div class="wizard-nav-right">
+                    <button type="button" class="btn-wiz btn-wiz-primary" onclick="goNext(1)">
+                        Selanjutnya <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════ -->
+        <!-- STEP 2: Spesifikasi Aset -->
+        <!-- ══════════════════════════════ -->
+        <div class="wizard-panel" id="step2">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-upc-scan"></i> Serial Number & Identifikasi Aset
+                </div>
+                <div class="step-card-body">
+                    <div class="field-group">
+                        <label>Serial Number Aset (SN) <span class="req">*</span></label>
+                        <input type="text" class="field-input" asp-for="SerialNumber" id="SerialNumber" list="snDatalist" autocomplete="off"
+                               placeholder="Klik atau ketik SN (misal: SN-InfraHub-001) untuk autofill..." />
+                        <datalist id="snDatalist"></datalist>
+                        <small style="color:#06b6d4;font-size:11px;margin-top:4px;display:block;">
+                            <i class="bi bi-lightning-fill"></i> Pilih atau ketik SN untuk autofill otomatis semua spesifikasi
+                        </small>
+                    </div>
+                    <div class="field-group">
+                        <label>Tipe Perangkat <span class="req">*</span></label>
+                        <div class="toggle-group">
+                            <button type="button" class="toggle-btn @(Model.DeviceType == "Desktop" || string.IsNullOrEmpty(Model.DeviceType) ? "active" : "")" data-target="stDeviceInput" data-value="Desktop">
+                                <i class="bi bi-display"></i> Desktop
+                            </button>
+                            <button type="button" class="toggle-btn @(Model.DeviceType == "Notebook" ? "active" : "")" data-target="stDeviceInput" data-value="Notebook">
+                                <i class="bi bi-laptop"></i> Notebook
+                            </button>
+                        </div>
+                    </div>
+                    <div class="field-row cols-2">
+                        <div class="field-group">
+                            <label>Computer Name <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="ComputerName" id="ComputerName" placeholder="Auto-fill dari SN..." readonly />
+                        </div>
+                        <div class="field-group">
+                            <label>Series / Model <span class="req">*</span></label>
+                            <input type="text" class="field-input" asp-for="Series" id="Series" placeholder="Auto-fill dari SN..." readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-cpu-fill"></i> Spesifikasi Hardware
+                </div>
+                <div class="step-card-body">
+                    <div class="field-group">
+                        <label>RAM <span class="req">*</span></label>
+                        <div class="toggle-group">
+                            @foreach (var r in new[] {"8 GB","12 GB","16 GB","32 GB","64 GB"})
+                            {
+                                <button type="button" class="toggle-btn @(Model.Ram == r ? "active" : "")" data-target="stRamInput" data-value="@r">@r</button>
+                            }
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Storage <span class="req">*</span></label>
+                        <div class="toggle-group">
+                            @foreach (var s in new[] {"256 GB","512 GB","1 TB","2 TB","3 TB"})
+                            {
+                                <button type="button" class="toggle-btn @(Model.Storage == s ? "active" : "")" data-target="stStorageInput" data-value="@s">@s</button>
+                            }
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Operating System</label>
+                        <div class="toggle-group">
+                            @foreach (var os in new[] {"Windows 11 Pro","Windows 10","Others"})
+                            {
+                                <button type="button" class="toggle-btn @(Model.OperatingSystem == os ? "active" : "")" data-target="stOsInput" data-value="@os">
+                                    @if (os != "Others") { <i class="bi bi-windows"></i> }
+                                    @os
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-keyboard"></i> Serial Number Aksesoris
+                </div>
+                <div class="step-card-body">
+                    <div class="field-row cols-3">
+                        <div class="field-group">
+                            <label>Keyboard S.N</label>
+                            <input type="text" class="field-input" asp-for="KeyboardSN" id="KeyboardSN" placeholder="Auto-fill atau ketik SN Keyboard..." />
+                        </div>
+                        <div class="field-group">
+                            <label>Mouse S.N</label>
+                            <input type="text" class="field-input" asp-for="MouseSN" id="MouseSN" placeholder="Auto-fill atau ketik SN Mouse..." />
+                        </div>
+                        <div class="field-group">
+                            <label>Monitor S.N</label>
+                            <input type="text" class="field-input" asp-for="MonitorSN" id="MonitorSN" placeholder="Auto-fill atau ketik SN Monitor..." />
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Hardware Tambahan</label>
+                        <div class="hw-grid" id="hwGrid">
+                            @{
+                                var hwItems = new[] {
+                                    new { Icon = "bi-cpu", Label = "CPU", Value = "CPU" },
+                                    new { Icon = "bi-display", Label = "Monitor", Value = "Monitor" },
+                                    new { Icon = "bi-mouse3", Label = "Mouse", Value = "Mouse" },
+                                    new { Icon = "bi-keyboard", Label = "Keyboard", Value = "Keyboard" },
+                                    new { Icon = "bi-usb-plug-fill", Label = "Docking", Value = "Docking" },
+                                    new { Icon = "bi-headset", Label = "Headset", Value = "Headset" }
+                                };
+                                foreach (var hw in hwItems)
+                                {
+                                    bool isActive = (Model.AdditionalHardware ?? "").Contains(hw.Value);
+                                    <span class="hw-chip @(isActive ? "active" : "")" data-value="@hw.Value">
+                                        <i class="bi @hw.Icon"></i> @hw.Label
+                                    </span>
+                                }
+                            }
+                        </div>
+                        <input type="text" class="field-input" id="customHwInput" placeholder="Lainnya: Docking Station, Headset..." style="margin-top:10px;" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-nav">
+                <div class="wizard-nav-left">
+                    <button type="button" class="btn-wiz btn-wiz-outline" onclick="goPrev(2)">
+                        <i class="bi bi-arrow-left"></i> Sebelumnya
+                    </button>
+                    <span class="step-counter">Langkah 2 dari 4</span>
+                </div>
+                <div class="wizard-nav-right">
+                    <button type="button" class="btn-wiz btn-wiz-primary" onclick="goNext(2)">
+                        Selanjutnya <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════ -->
+        <!-- STEP 3: Kondisi Fisik & Catatan -->
+        <!-- ══════════════════════════════════ -->
+        <div class="wizard-panel" id="step3">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-clipboard2-check-fill"></i> Cek Kondisi Fisik Perangkat
+                </div>
+                <div class="step-card-body">
+                    <p style="font-size:12px;color:#64748b;margin-bottom:16px;">
+                        Tandai kondisi setiap komponen sebelum diserahkan: <strong style="color:#10b981;">✓ OK</strong> atau <strong style="color:#ef4444;">✗ Tidak OK</strong>
+                    </p>
+                    <div class="condition-grid" id="conditionGrid">
+                        @{
+                            var condItems = new[] {
+                                new { Label = "Body / Casing", Icon = "bi-box" },
+                                new { Label = "Layar / Display", Icon = "bi-display" },
+                                new { Label = "Keyboard", Icon = "bi-keyboard" },
+                                new { Label = "Mouse", Icon = "bi-mouse3" },
+                                new { Label = "Power Adapter", Icon = "bi-plug" },
+                                new { Label = "Port USB/HDMI", Icon = "bi-usb-symbol" },
+                            };
+                            foreach (var c in condItems)
+                            {
+                                <div class="condition-item" data-condition="@c.Label">
+                                    <span><i class="bi @c.Icon me-1"></i> @c.Label</span>
+                                    <div class="condition-radios">
+                                        <button type="button" class="cond-btn ok-btn" data-cond-ok="true" title="OK">✓</button>
+                                        <button type="button" class="cond-btn notok-btn" title="Tidak OK">✗</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <input type="hidden" id="conditionSummary" name="ConditionSummary" value="" />
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-camera-fill"></i> Dokumentasi Foto
+                </div>
+                <div class="step-card-body">
+                    <div class="field-group">
+                        <label>Upload Foto Serah Terima (Wajib) <span class="req">*</span></label>
+                        <input type="file" name="photos" class="field-input" multiple accept="image/*" style="padding:8px;" />
+                        <small style="color:#94a3b8;font-size:11px;margin-top:4px;display:block;">Harap pilih minimal 1 foto bukti (evidence). Bisa memilih lebih dari satu foto.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-chat-square-text-fill"></i> Catatan / Remarks
+                </div>
+                <div class="step-card-body">
+                    <textarea class="field-input" asp-for="Catatan" rows="3"
+                              placeholder="Tuliskan catatan atau keterangan tambahan..." style="resize:vertical;"></textarea>
+                </div>
+            </div>
+
+            <div class="wizard-nav">
+                <div class="wizard-nav-left">
+                    <button type="button" class="btn-wiz btn-wiz-outline" onclick="goPrev(3)">
+                        <i class="bi bi-arrow-left"></i> Sebelumnya
+                    </button>
+                    <span class="step-counter">Langkah 3 dari 4</span>
+                </div>
+                <div class="wizard-nav-right">
+                    <button type="button" class="btn-wiz btn-wiz-primary" onclick="goNext(3)">
+                        Selanjutnya <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════ -->
+        <!-- STEP 4: Tanda Tangan -->
+        <!-- ══════════════════════════════ -->
+        <div class="wizard-panel" id="step4">
+            <!-- Summary Review -->
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-eye-fill"></i> Ringkasan Penyerahan
+                </div>
+                <div class="step-card-body">
+                    <div id="summaryContent"></div>
+                </div>
+            </div>
+
+            <!-- Tanda Tangan -->
+            <div class="step-card">
+                <div class="step-card-header">
+                    <i class="bi bi-pen-fill"></i> Pengesahan Tanda Tangan Digital
+                </div>
+                <div class="step-card-body">
+                    <div class="field-row cols-3">
+                        <!-- Diserahkan Oleh -->
+                        <div>
+                            <div class="sig-card">
+                                <div class="sig-card-header"><i class="bi bi-person-check"></i> Diserahkan Oleh <span style="color:#64748b;font-weight:400;">(IT Staff)</span></div>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator") || User.IsInRole("Technician"))
+                                {
+                                    <div class="sig-canvas-wrap">
+                                        <canvas id="canvasPenyerah"></canvas>
+                                    </div>
+                                    <div class="sig-actions">
+                                        <button type="button" class="btn-sig-clear" onclick="clearSig('canvasPenyerah','hidSigPenyerah','padPenyerah')">Hapus</button>
+                                    </div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaPenyerah" placeholder="Nama jelas..." style="font-size:12px;padding:7px 10px;" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="sig-locked"><i class="bi bi-lock-fill"></i> Diisi IT Staff</div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaPenyerah" readonly style="font-size:12px;padding:7px 10px;background:#f8fafc;" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Diterima Oleh -->
+                        <div>
+                            <div class="sig-card">
+                                <div class="sig-card-header"><i class="bi bi-person-check"></i> Diterima Oleh <span style="color:#64748b;font-weight:400;">(User)</span></div>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator") || User.IsInRole("Technician"))
+                                {
+                                    <div class="sig-canvas-wrap">
+                                        <canvas id="canvasPenerima"></canvas>
+                                    </div>
+                                    <div class="sig-actions">
+                                        <button type="button" class="btn-sig-clear" onclick="clearSig('canvasPenerima','hidSigPenerima','padPenerima')">Hapus</button>
+                                    </div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaPenerima" placeholder="Nama jelas..." style="font-size:12px;padding:7px 10px;" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="sig-locked"><i class="bi bi-lock-fill"></i> Diisi oleh User / Karyawan</div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaPenerima" readonly style="font-size:12px;padding:7px 10px;background:#f8fafc;" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Diketahui Oleh -->
+                        <div>
+                            <div class="sig-card">
+                                <div class="sig-card-header"><i class="bi bi-person-check"></i> Diketahui Oleh <span style="color:#64748b;font-weight:400;">(Leader)</span></div>
+                                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator") || User.IsInRole("Approver1"))
+                                {
+                                    <div class="sig-canvas-wrap">
+                                        <canvas id="canvasDiketahui"></canvas>
+                                    </div>
+                                    <div class="sig-actions">
+                                        <button type="button" class="btn-sig-clear" onclick="clearSig('canvasDiketahui','hidSigDiketahui','padDiketahui')">Hapus</button>
+                                    </div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaDiketahui" placeholder="Nama jelas..." style="font-size:12px;padding:7px 10px;" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="sig-locked"><i class="bi bi-lock-fill"></i> Diisi SMO Leader</div>
+                                    <div class="sig-name-input">
+                                        <input type="text" class="field-input" asp-for="NamaDiketahui" readonly style="font-size:12px;padding:7px 10px;background:#f8fafc;" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-nav">
+                <div class="wizard-nav-left">
+                    <button type="button" class="btn-wiz btn-wiz-outline" onclick="goPrev(4)">
+                        <i class="bi bi-arrow-left"></i> Sebelumnya
+                    </button>
+                    <span class="step-counter">Langkah 4 dari 4</span>
+                </div>
+                <div class="wizard-nav-right">
+                    <button type="submit" name="submitAction" value="Draft" class="btn-wiz btn-wiz-outline" onclick="collectAllSigs()">
+                        <i class="bi bi-floppy"></i> Draft
+                    </button>
+                    <button type="submit" name="submitAction" value="Submit" class="btn-wiz btn-wiz-success" onclick="collectAllSigs()">
+                        <i class="bi bi-send-check-fill"></i> Submit Penyerahan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end wizard-container -->
+</form>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script>
+    // ─── Wizard State ───────────────────────────────────
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    function updateProgress(step) {
+        document.querySelectorAll('.wizard-step-item').forEach((item, idx) => {
+            const s = idx + 1;
+            item.classList.remove('active', 'completed');
+            if (s < step) item.classList.add('completed');
+            else if (s === step) item.classList.add('active');
+        });
+        // Update check icons for completed
+        document.querySelectorAll('.wizard-step-item.completed .wizard-step-circle').forEach(c => {
+            if (!c.querySelector('i')) c.innerHTML = '<i class="bi bi-check-lg" style="font-size:14px;"></i>';
+        });
+    }
+
+    function showStep(step) {
+        document.querySelectorAll('.wizard-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('step' + step);
+        if (panel) panel.classList.add('active');
+        currentStep = step;
+        updateProgress(step);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (step === 4) buildSummary();
+    }
+
+    function validateStep(step) {
+        if (step === 1) {
+            const tanggal = document.getElementById('Tanggal').value;
+            const noDokumen = document.getElementById('NoDokumen').value.trim();
+            const namaUser = document.getElementById('NamaUser').value.trim();
+            const nrp = document.getElementById('NRP').value.trim();
+            const site = document.getElementById('Site').value;
+            const division = document.getElementById('Division').value.trim();
+
+            if (!tanggal || !noDokumen || !namaUser || !nrp || !site || !division) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Form Belum Lengkap',
+                    text: 'Semua field bertanda bintang (*) pada Langkah 1 wajib diisi.',
+                    confirmButtonColor: '#06b6d4'
+                });
+                return false;
+            }
+        }
+        else if (step === 2) {
+            const sn = document.getElementById('SerialNumber').value.trim();
+            const compName = document.getElementById('ComputerName').value.trim();
+            const series = document.getElementById('Series').value.trim();
+            const deviceType = document.getElementById('stDeviceInput').value;
+            const ram = document.getElementById('stRamInput').value;
+            const storage = document.getElementById('stStorageInput').value;
+
+            if (!sn || !compName || !series || !deviceType || !ram || !storage) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Form Belum Lengkap',
+                    text: 'Semua field bertanda bintang (*) pada Langkah 2 wajib diisi (termasuk Tipe Perangkat, RAM, dan Storage).',
+                    confirmButtonColor: '#06b6d4'
+                });
+                return false;
+            }
+        }
+        else if (step === 3) {
+            // Validate checklist conditions
+            let allChecked = true;
+            document.querySelectorAll('.condition-item').forEach(item => {
+                if (item.querySelectorAll('.cond-btn.active').length === 0) {
+                    allChecked = false;
+                }
+            });
+
+            if (!allChecked) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Form Belum Lengkap',
+                    text: 'Harap periksa dan tandai kondisi (OK / Tidak OK) untuk semua komponen perangkat.',
+                    confirmButtonColor: '#06b6d4'
+                });
+                return false;
+            }
+
+            // Validate photos evidence upload
+            const photoInput = document.querySelector('input[type="file"][name="photos"]');
+            if (!photoInput || photoInput.files.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Evidence Foto Wajib',
+                    text: 'Harap upload minimal 1 foto bukti (evidence) serah terima.',
+                    confirmButtonColor: '#06b6d4'
+                });
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function goNext(from) {
+        if (!validateStep(from)) return;
+        if (from < totalSteps) showStep(from + 1);
+    }
+
+    function goPrev(from) {
+        if (from > 1) showStep(from - 1);
+    }
+
+    // ─── Toggle Buttons ────────────────────────────────
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.toggle-btn');
+        if (!btn) return;
+        const targetId = btn.dataset.target;
+        const val = btn.dataset.value;
+        const group = btn.closest('.toggle-group');
+        if (group) group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const hidInput = document.getElementById(targetId);
+        if (hidInput) hidInput.value = val;
+    });
+
+    // ─── Hardware Chips ────────────────────────────────
+    document.querySelectorAll('.hw-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            this.classList.toggle('active');
+            updateHwInput();
+        });
+    });
+
+    function updateHwInput() {
+        const selected = [];
+        document.querySelectorAll('.hw-chip.active').forEach(c => selected.push(c.dataset.value));
+        const custom = document.getElementById('customHwInput').value.trim();
+        if (custom) selected.push(...custom.split(',').map(s => s.trim()).filter(Boolean));
+        document.getElementById('additionalHardwareInput').value = selected.join(', ');
+    }
+
+    document.getElementById('customHwInput')?.addEventListener('change', updateHwInput);
+
+    // ─── Condition Checklist ───────────────────────────
+    document.querySelectorAll('.condition-item').forEach(item => {
+        item.querySelector('.ok-btn')?.addEventListener('click', function() {
+            item.querySelector('.ok-btn').classList.add('active');
+            item.querySelector('.notok-btn').classList.remove('active');
+            item.classList.remove('notok');
+            item.classList.add('ok');
+            updateConditionSummary();
+        });
+        item.querySelector('.notok-btn')?.addEventListener('click', function() {
+            item.querySelector('.notok-btn').classList.add('active');
+            item.querySelector('.ok-btn').classList.remove('active');
+            item.classList.remove('ok');
+            item.classList.add('notok');
+            updateConditionSummary();
+        });
+    });
+
+    function updateConditionSummary() {
+        const issues = [];
+        document.querySelectorAll('.condition-item').forEach(item => {
+            if (item.querySelector('.notok-btn.active')) {
+                issues.push(item.dataset.condition + ': Tidak OK');
+            }
+        });
+        document.getElementById('conditionSummary').value = issues.length ? issues.join('; ') : 'Semua Kondisi OK';
+    }
+
+    // ─── Summary Builder ───────────────────────────────
+    function buildSummary() {
+        const get = (id) => { const el = document.getElementById(id) || document.querySelector('[name="' + id + '"]'); return el ? el.value : '-'; };
+        const getInput = (name) => { const el = document.querySelector('input[name="' + name + '"], select[name="' + name + '"], textarea[name="' + name + '"]'); return el ? el.value : '-'; };
+
+        const rows = [
+            { label: 'Tanggal', value: getInput('Tanggal') || '-' },
+            { label: 'No. Dokumen', value: getInput('NoDokumen') || '-' },
+            { label: 'Nama Penerima', value: getInput('NamaUser') || '-' },
+            { label: 'NRP', value: getInput('NRP') || '-' },
+            { label: 'Site', value: getInput('Site') || '-' },
+            { label: 'Divisi', value: getInput('Division') || '-' },
+            { label: 'Serial Number', value: getInput('SerialNumber') || '-' },
+            { label: 'Tipe Perangkat', value: document.getElementById('stDeviceInput')?.value || '-' },
+            { label: 'Computer Name', value: document.getElementById('ComputerName')?.value || '-' },
+            { label: 'Series / Model', value: document.getElementById('Series')?.value || '-' },
+            { label: 'RAM', value: document.getElementById('stRamInput')?.value || '-' },
+            { label: 'Storage', value: document.getElementById('stStorageInput')?.value || '-' },
+            { label: 'OS', value: document.getElementById('stOsInput')?.value || '-' },
+            { label: 'Hardware Tambahan', value: document.getElementById('additionalHardwareInput')?.value || '-' },
+            { label: 'Kondisi Fisik', value: document.getElementById('conditionSummary')?.value || '-' },
+            { label: 'Catatan', value: getInput('Catatan') || '-' },
+        ];
+
+        const html = rows.map(r => `
+            <div class="summary-row">
+                <span class="label">${r.label}</span>
+                <span class="value">${r.value}</span>
+            </div>`).join('');
+        const summaryEl = document.getElementById('summaryContent');
+        if (summaryEl) summaryEl.innerHTML = html;
+    }
+
+    // ─── Signature Pads ────────────────────────────────
+    let padPenyerah, padPenerima, padDiketahui;
+
+    function initSignaturePads() {
+        const c1 = document.getElementById('canvasPenyerah');
+        const c2 = document.getElementById('canvasPenerima');
+        const c3 = document.getElementById('canvasDiketahui');
+
+        function setupPad(canvas) {
+            if (!canvas) return null;
+            canvas.width = canvas.offsetWidth || 200;
+            canvas.height = 130;
+            const pad = new SignaturePad(canvas, {
+                backgroundColor: 'rgba(255,255,255,0)',
+                penColor: '#1e293b',
+                minWidth: 1,
+                maxWidth: 2.5
+            });
+            return pad;
+        }
+
+        padPenyerah = setupPad(c1);
+        padPenerima = setupPad(c2);
+        padDiketahui = setupPad(c3);
+    }
+
+    function clearSig(canvasId, hidId, padName) {
+        const padMap = { padPenyerah, padPenerima, padDiketahui };
+        const pad = padMap[padName];
+        if (pad) pad.clear();
+        const hid = document.getElementById(hidId);
+        if (hid) hid.value = '';
+    }
+
+    function collectAllSigs() {
+        if (padPenyerah && !padPenyerah.isEmpty()) {
+            document.getElementById('hidSigPenyerah').value = padPenyerah.toDataURL();
+        }
+        if (padPenerima && !padPenerima.isEmpty()) {
+            document.getElementById('hidSigPenerima').value = padPenerima.toDataURL();
+        }
+        if (padDiketahui && !padDiketahui.isEmpty()) {
+            document.getElementById('hidSigDiketahui').value = padDiketahui.toDataURL();
+        }
+        updateHwInput();
+    }
+
+    // Initialize pads when step 4 is shown
+    const origShowStep = showStep;
+    window.showStep = function(step) {
+        origShowStep(step);
+        if (step === 4) {
+            setTimeout(initSignaturePads, 100);
+        }
+    };
+
+    // ─── Load SN Datalist Options for Autocomplete ────
+    fetch('@Url.Action("GetAllSN","SerahTerima")')
+        .then(r => r.json())
+        .then(data => {
+            const dl = document.getElementById('snDatalist');
+            if (dl && data && data.length) {
+                dl.innerHTML = data.map(i => `<option value="${i.sn}">${i.label}</option>`).join('');
+            }
+        })
+        .catch(e => console.error('Error fetching SN list', e));
+
+    // ─── Auto-fill from Serial Number ─────────────────
+    async function doAutoFillBySN(sn) {
+        sn = (sn || '').trim();
+        if (!sn) return;
+
+        try {
+            const res = await fetch(`@Url.Action("GetAssetBySN","SerahTerima")?sn=${encodeURIComponent(sn)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data) return;
+
+            // Set device type
+            const devInput = document.getElementById('stDeviceInput');
+            if (devInput) devInput.value = data.deviceType || 'Notebook';
+            document.querySelectorAll('[data-target="stDeviceInput"]').forEach(b => {
+                const target = (b.dataset.value || '').toLowerCase();
+                const actual = (data.deviceType || 'Notebook').toLowerCase();
+                b.classList.toggle('active', actual.includes(target) || target.includes(actual));
+            });
+
+            // Text fields
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val || ''; el.classList.add('autofilled'); } };
+            setVal('ComputerName', data.computerName);
+            setVal('Series', data.series);
+            setVal('KeyboardSN', data.keyboardSN);
+            setVal('MouseSN', data.mouseSN);
+            setVal('MonitorSN', data.monitorSN);
+
+            // Helper for matching card values
+            const matchCard = (targetId, actualValue) => {
+                const hiddenInput = document.getElementById(targetId);
+                if (hiddenInput) hiddenInput.value = actualValue || '';
+                const cleanActual = (actualValue || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                let matchedAny = false;
+                document.querySelectorAll(`[data-target="${targetId}"]`).forEach(b => {
+                    const cleanCard = (b.dataset.value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const isMatch = cleanCard && cleanActual && (cleanActual.includes(cleanCard) || cleanCard.includes(cleanActual));
+                    b.classList.toggle('active', isMatch);
+                    if (isMatch) matchedAny = true;
+                });
+                if (!matchedAny && actualValue) {
+                    const othersBtn = document.querySelector(`[data-target="${targetId}"][data-value="Others"]`);
+                    if (othersBtn) othersBtn.classList.add('active');
+                }
+            };
+
+            matchCard('stRamInput', data.ram);
+            matchCard('stStorageInput', data.storage);
+            matchCard('stOsInput', data.operatingSystem);
+
+            // Hardware
+            const hwInput = document.getElementById('additionalHardwareInput');
+            if (hwInput) hwInput.value = data.additionalHardware || '';
+            document.querySelectorAll('.hw-chip').forEach(chip => chip.classList.remove('active'));
+            if (data.additionalHardware) {
+                const rawHw = (data.additionalHardware || '').toLowerCase();
+                document.querySelectorAll('.hw-chip').forEach(chip => {
+                    const chipVal = (chip.dataset.value || '').toLowerCase();
+                    if (chipVal && rawHw.includes(chipVal)) {
+                        chip.classList.add('active');
+                    }
+                });
+            }
+        } catch(e) { console.error('AutoFill error', e); }
+    }
+
+    const snEl = document.getElementById('SerialNumber');
+    if (snEl) {
+        snEl.addEventListener('change', function() { doAutoFillBySN(this.value); });
+        snEl.addEventListener('input', function() { if (this.value.length >= 3) doAutoFillBySN(this.value); });
+    }
+
+    // Init on load
+    updateProgress(1);
+
+    // Success toast
+    const toast = document.getElementById('tempDataSuccess');
+    if (toast) {
+        alert('✅ ' + toast.textContent);
+    }
+</script>
+}

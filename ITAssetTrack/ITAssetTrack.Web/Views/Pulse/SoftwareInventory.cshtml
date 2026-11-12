@@ -1,0 +1,157 @@
+@{
+    ViewData["Title"] = "ITAssetTrack — Master Inventaris Software Global";
+}
+
+<div class="pulse-software-container">
+    <!-- Header Title -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("Dashboard", "Pulse")" class="btn btn-sm btn-light border rounded-pill px-2 py-1 text-muted">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+                <h1 class="h4 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-grid-3x3-gap-fill text-primary"></i> Master Inventaris Software Global
+                </h1>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Daftar seluruh software dan aplikasi yang terpasang pada komputer karyawan InfraHub (Pencarian fleet-wide)</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" onclick="reloadSoftwareTable()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Tabel
+            </button>
+        </div>
+    </div>
+
+    <!-- ── KPI Metric Cards ── -->
+    <div class="row g-2 g-md-3 mb-3">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-primary">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Total Catatan Terinstall</span>
+                    <span class="badge bg-primary rounded-circle p-1"><i class="bi bi-layers-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0">@ViewBag.TotalSoftwareRecords</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Akumulasi instalasi software di seluruh komputer</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Aplikasi Unik Terdeteksi</span>
+                    <span class="badge bg-success rounded-circle p-1"><i class="bi bi-app-indicator text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-success mb-0">@ViewBag.UniqueSoftwareCount</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Varian judul software teridentifikasi</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-info">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Komputer Terpindai</span>
+                    <span class="badge bg-info rounded-circle p-1"><i class="bi bi-pc-display text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-info mb-0">@ViewBag.TotalDevicesScanned</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Komputer yang mengirimkan data inventaris</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DataTables Server-Side AJAX Table (Responsive Touch-Scroll, Prioritize Hostname) ── -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+        <div class="table-responsive">
+            <table id="softwareTable" class="table table-hover align-middle w-100" style="font-size: 12px;">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Nama Software / Aplikasi</th>
+                        <th>Versi</th>
+                        <th>Publisher / Vendor</th>
+                        <th>Tanggal Install</th>
+                        <th>Komputer / Hostname</th>
+                        <th>Waktu Scan</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let softwareDataTable = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initSoftwareDataTable();
+    });
+
+    function initSoftwareDataTable() {
+        softwareDataTable = $('#softwareTable').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ordering: false,
+            pageLength: 15,
+            ajax: {
+                url: '/api/pulse/software/datatables',
+                type: 'POST'
+            },
+            columns: [
+                {
+                    data: 'softwareName',
+                    render: function (data) {
+                        return `<div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                    <i class="bi bi-app text-primary"></i> ${data}
+                                </div>`;
+                    }
+                },
+                {
+                    data: 'softwareVersion',
+                    render: function (data) {
+                        return `<span class="badge bg-light text-dark border">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'publisher',
+                    render: function (data) {
+                        return `<span class="text-muted">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'installDate',
+                    render: function (data) {
+                        return `<span class="text-muted">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'computerName',
+                    render: function (data, type, row) {
+                        return `<div><strong class="text-primary"><i class="bi bi-laptop me-1"></i>${data}</strong></div>
+                                <div class="text-muted small" style="font-size: 10px;">SN: ${row.serialNumber}</div>`;
+                    }
+                },
+                {
+                    data: 'createdAt',
+                    render: function (data) {
+                        return `<span class="text-muted small">${data}</span>`;
+                    }
+                }
+            ],
+            language: {
+                search: "Cari Software / Komputer / Vendor:",
+                lengthMenu: "Tampil _MENU_ data",
+                info: "Menampilkan _START_ s/d _END_ dari _TOTAL_ software",
+                infoEmpty: "Tidak ada data",
+                zeroRecords: "Tidak ada software yang cocok",
+                paginate: { first: "«", last: "»", next: "›", previous: "‹" }
+            }
+        });
+    }
+
+    function reloadSoftwareTable() {
+        if (softwareDataTable) softwareDataTable.ajax.reload();
+    }
+</script>
+}

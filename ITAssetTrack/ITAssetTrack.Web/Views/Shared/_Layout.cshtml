@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ITAssetTrack - Sistem Manajemen Aset IT InfraHub" />
+    <title>@ViewData["Title"] - ITAssetTrack</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" />
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/site.css?v=fixed2" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/management.css?v=1.0" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar px-3">
+    <button class="topbar-toggle-btn d-lg-none me-2" id="sidebarToggle" type="button" aria-label="Toggle Navigation">
+        <i class="bi bi-list"></i>
+    </button>
+    <div class="topbar-brand d-flex align-items-center gap-2">
+        <img src="~/images/LogooPama.png" alt="InfraHub Logo" style="width: auto; height: 36px; object-fit: contain; margin-left: 6px; margin-right: 6px;" />
+        <div class="brand-text d-none d-sm-flex align-items-center">
+            <span class="brand-name text-white" style="font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">InfraHub EEN'DSO</span>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3 ms-auto">
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+            var rawName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? User.Identity.Name ?? "User";
+
+            string displayName = rawName.Split('(')[0].Trim();
+            if (string.IsNullOrEmpty(displayName)) displayName = rawName;
+
+            var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string initials = nameParts.Length >= 2 
+                ? $"{nameParts[0][0]}{nameParts[1][0]}".ToUpper() 
+                : (displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : "US");
+
+            string roleLabel = userRole switch
+            {
+                "Admin" => "System Admin",
+                "Coordinator" => "Koordinator PM",
+                "Technician" => "Teknisi ITAssetTrack",
+                "Approver1" => "PIC TEAM",
+                "Approver2" => "Section Head",
+                "Viewer" => "Report Viewer",
+                _ => userRole
+            };
+
+            string roleStyle = userRole switch
+            {
+                "Admin" => "background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);",
+                "Coordinator" => "background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);",
+                "Technician" => "background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);",
+                "Approver1" => "background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);",
+                "Approver2" => "background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: #ffffff; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.35);",
+                _ => "background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: #ffffff;"
+            };
+
+            string avatarBg = userRole switch
+            {
+                "Admin" => "linear-gradient(135deg, #ef4444, #b91c1c)",
+                "Coordinator" => "linear-gradient(135deg, #3b82f6, #1e40af)",
+                "Technician" => "linear-gradient(135deg, #10b981, #047857)",
+                "Approver1" => "linear-gradient(135deg, #f59e0b, #b45309)",
+                "Approver2" => "linear-gradient(135deg, #8b5cf6, #5b21b6)",
+                _ => "linear-gradient(135deg, #6b7280, #374151)"
+            };
+
+            <div class="dropdown">
+                <button class="user-profile-btn border-0 dropdown-toggle text-decoration-none d-flex align-items-center gap-1"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false" title="@rawName (@roleLabel)">
+                    <span class="user-profile-name fw-bold text-white small me-1 d-none d-sm-inline">@displayName</span>
+                    <div class="user-avatar-circle ms-1" style="background: @avatarBg;">
+                        @initials
+                    </div>
+                    <i class="bi bi-chevron-down text-white-50 ms-1" style="font-size: 10px;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2" style="z-index: 1100; min-width: 250px; border-radius: 14px;">
+                    <li class="px-3 py-2 bg-light rounded-3 mb-2">
+                        <div class="fw-bold text-dark" style="font-size: 14px;">@rawName</div>
+                        <div class="small text-muted d-flex align-items-center gap-1 mt-1">
+                            <i class="bi bi-shield-check text-primary"></i>
+                            <span class="fw-semibold text-secondary">@roleLabel</span>
+                        </div>
+                    </li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown-item text-danger rounded-2 d-flex align-items-center gap-2 py-2 fw-semibold">
+                                <i class="bi bi-box-arrow-right"></i> Keluar (Logout)
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        }
+        else
+        {
+            <a href="@Url.Action("Login", "Account")" class="btn btn-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+            </a>
+        }
+    </div>
+</header>
+
+<!-- ── Layout Body ── -->
+<div class="layout-body">
+
+    <!-- ── Sidebar Backdrop for Mobile ── -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ── Sidebar ── -->
+    <nav class="sidebar">
+        <ul class="sidebar-nav">
+
+            @{
+                var _role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+                var _ctrl = ViewContext.RouteData.Values["Controller"]?.ToString() ?? "";
+                var _action = ViewContext.RouteData.Values["Action"]?.ToString() ?? "";
+            }
+
+            @* === VIEWER (Pak Freddy): Hanya Report PM Bulanan, Aset Saya & Serah Terima === *@
+            @if (_role == "Viewer")
+            {
+                <li>
+                    <a href="@Url.Action("ScheduledList", "Maintenance")"
+                       class="nav-link @(_ctrl == "Maintenance" ? "active" : "")">
+                        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                        <span>Report PM Bulanan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="@Url.Action("MyAsset", "Home")"
+                       class="nav-link @(_action == "MyAsset" ? "active" : "")">
+                        <i class="bi bi-laptop-fill"></i>
+                        <span>Aset Saya</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="@Url.Action("Index", "SerahTerima")"
+                       class="nav-link @(_ctrl == "SerahTerima" ? "active" : "")">
+                        <i class="bi bi-file-earmark-check-fill"></i>
+                        <span>Serah Terima Saya</span>
+                    </a>
+                </li>
+            }
+            else
+            {
+                @* === Dashboard (Admin, Coordinator, Technician, Approver) === *@
+                <li>
+                    <button class="nav-toggle @(_ctrl == "Home" ? "active open" : "")"
+                            onclick="toggleSubmenu(this)">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                        <i class="bi bi-chevron-right nav-arrow"></i>
+                    </button>
+                    <ul class="sidebar-submenu @(_ctrl == "Home" ? "open" : "")">
+                        <li>
+                            <a href="@Url.Action("AssetDashboard", "Home")"
+                               class="@(_action == "AssetDashboard" ? "active" : "")">
+                                <i class="bi bi-pie-chart-fill"></i>
+                                <span>Dashboard Asset</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("MaintenanceDashboard", "Home")"
+                               class="@(_action == "MaintenanceDashboard" ? "active" : "")">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>Dashboard Maintenance</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                @* === Manajemen Asset (Admin & Coordinator - Pak Salman only) === *@
+                @if (_role == "Admin" || _role == "Coordinator")
+                {
+                    <li>
+                        <button class="nav-toggle @(new[] { "Asset", "Employee", "AssetAssignment" }.Contains(_ctrl) ? "active open" : "")"
+                                onclick="toggleSubmenu(this)">
+                            <i class="bi bi-pc-display"></i>
+                            <span>Manajemen Asset</span>
+                            <i class="bi bi-chevron-right nav-arrow"></i>
+                        </button>
+                        <ul class="sidebar-submenu @(new[] { "Asset", "Employee", "AssetAssignment" }.Contains(_ctrl) ? "open" : "")">
+                            @if (_role == "Admin" || _role == "Coordinator")
+                            {
+                                <li>
+                                    <a href="@Url.Action("Index", "Employee")"
+                                       class="@(_ctrl == "Employee" ? "active" : "")">
+                                        <i class="bi bi-people"></i>
+                                        <span>Manajemen Data Employee</span>
+                                    </a>
+                                </li>
+                            }
+                            <li>
+                                <a href="@Url.Action("Index", "Asset")"
+                                   class="@(_ctrl == "Asset" ? "active" : "")">
+                                    <i class="bi bi-laptop"></i>
+                                    <span>Manajemen Data Asset</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="@Url.Action("Index", "AssetAssignment")"
+                                   class="@(_ctrl == "AssetAssignment" ? "active" : "")">
+                                    <i class="bi bi-person-badge"></i>
+                                    <span>Manajemen Data Pengguna Asset</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+
+                @* === Maintenance (Admin, Coordinator, Technician, Approver) === *@
+                @if (User.IsInRole("Approver1") || User.IsInRole("Approver2"))
+                {
+                    <li>
+                        <a href="@Url.Action("PmExecution", "Maintenance", new { tab = "unsigned" })"
+                           class="nav-link @(_ctrl == "Maintenance" && _action == "PmExecution" ? "active" : "")">
+                            <i class="bi bi-shield-check text-warning"></i>
+                            <span>Approval Scheduled PM</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="@Url.Action("ScheduledList", "Maintenance")"
+                           class="nav-link @(new[] {"ScheduledList","ScheduledForm","PrintScheduledPm"}.Contains(_action) ? "active" : "")">
+                            <i class="bi bi-calendar-check text-primary"></i>
+                            <span>Scheduled PM</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="@Url.Action("UnscheduledList", "Maintenance", new { listTab = "approval" })"
+                           class="nav-link @(_ctrl == "Maintenance" && _action == "UnscheduledList" ? "active" : "")">
+                            <i class="bi bi-patch-check text-danger"></i>
+                            <span>Unscheduled PM</span>
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li>
+                        <button class="nav-toggle @(_ctrl == "Maintenance" ? "active open" : "")"
+                                onclick="toggleSubmenu(this)">
+                            <i class="bi bi-tools"></i>
+                            <span>Maintenance</span>
+                            <i class="bi bi-chevron-right nav-arrow"></i>
+                        </button>
+                        <ul class="sidebar-submenu @(_ctrl == "Maintenance" ? "open" : "")">
+                            <li>
+                                <a href="@Url.Action("UnscheduledList", "Maintenance")"
+                                   class="@(_action.Contains("Unscheduled") ? "active" : "")">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>Unscheduled PM</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="@Url.Action("ScheduledList", "Maintenance")"
+                                   class="@(new[] {"ScheduledList","ScheduledForm","PrintScheduledPm"}.Contains(_action) ? "active" : "")">
+                                    <i class="bi bi-calendar-check"></i>
+                                    <span>Scheduled PM</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="@Url.Action("PmExecution", "Maintenance")"
+                                   class="@(_action == "PmExecution" ? "active" : "")">
+                                    <i class="bi bi-clipboard2-pulse"></i>
+                                    <span>PM Execution</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+
+                @* === ITAssetTrack Telemetry (Dedicated Agent Fleet Monitoring) === *@
+                <li>
+                    <button class="nav-toggle @(_ctrl == "Pulse" ? "active open" : "")"
+                            onclick="toggleSubmenu(this)">
+                        <i class="bi bi-broadcast-pin text-primary"></i>
+                        <span>ITAssetTrack</span>
+                        <i class="bi bi-chevron-right nav-arrow"></i>
+                    </button>
+                    <ul class="sidebar-submenu @(_ctrl == "Pulse" ? "open" : "")">
+                        <li>
+                            <a href="@Url.Action("Dashboard", "Pulse")"
+                               class="@(_ctrl == "Pulse" && _action == "Dashboard" ? "active" : "")">
+                                <i class="bi bi-speedometer2"></i>
+                                <span>Dashboard Device</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Reports", "Pulse")"
+                               class="@(_ctrl == "Pulse" && _action == "Reports" ? "active" : "")">
+                                <i class="bi bi-laptop"></i>
+                                <span>Laporan Telemetri</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Unregistered", "Pulse")"
+                               class="@(_ctrl == "Pulse" && _action == "Unregistered" ? "active" : "")">
+                                <i class="bi bi-shield-plus"></i>
+                                <span>Audit Perangkat Baru</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                @* === Serah Terima (Admin, Coordinator, Technician) === *@
+                <li>
+                    <a href="@Url.Action("Index", "SerahTerima")"
+                        class="nav-link @(_ctrl == "SerahTerima" ? "active" : "")">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Serah Terima</span>
+                    </a>
+                </li>
+            }
+
+        </ul>
+    </nav>
+
+    <!-- ── Main Content ── -->
+    <main class="main-content">
+        @RenderBody()
+    </main>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- jQuery (required for DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Bootstrap 5 JS Bundle (includes Popper for modals/tooltips) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<!-- SweetAlert2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!-- Signature Pad -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<!-- Site JS -->
+<script src="~/js/site.js" asp-append-version="true"></script>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

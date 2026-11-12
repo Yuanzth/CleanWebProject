@@ -1,0 +1,109 @@
+@{
+    var status = ViewData["status"] as string ?? "normal";
+    var anomalies = ViewData["anomalies"] as IEnumerable<dynamic>;
+    var hasAnomalies = anomalies != null && anomalies.Any();
+    var allTowerNormal = ViewData["allTowerNormal"] as bool? ?? true;
+    var avgTilt = ViewData["avgTilt"] as double? ?? 0.4;
+    var tiltStatus = ViewData["tiltStatus"] as string ?? "Safe";
+    var spdHealth = ViewData["spdHealth"] as string ?? "Good";
+    var earthResistance = ViewData["earthResistance"] as string ?? "Normal";
+    var lightingActivity = ViewData["lightingActivity"] as string ?? "Normal";
+    var canAcknowledge = ViewData["canAcknowledge"] as bool? ?? false;
+}
+
+<div class="db-panel db-panel--tower @((status != "normal" && hasAnomalies) ? "db-panel--" + status : "")" id="towerPanelContainer">
+
+    @* Panel Header *@
+    <div class="db-panel__header">
+        <div class="db-panel__title-group">
+            <div class="db-panel__icon-wrap">
+                <i class="fa-solid fa-tower-cell"></i>
+            </div>
+            <span class="db-panel__title">Tower Stability & Environment</span>
+        </div>
+        <div id="towerBadgeContainer">
+            @if(hasAnomalies)
+            {
+                <span class="db-badge db-badge--critical db-badge--xs">
+                    <i class="fa-solid fa-triangle-exclamation"></i> @anomalies.Count() Issues
+                </span>
+            }
+            else if(allTowerNormal)
+            {
+                <span class="db-badge db-badge--normal db-badge--xs" id="towerStatusBadge">
+                    <i class="fa-solid fa-circle-check fa-xs"></i> All Tower Normal
+                </span>
+            }
+            else
+            {
+                <span class="db-badge db-badge--warning db-badge--xs" id="towerStatusBadge">
+                    Tower Anomaly
+                </span>
+            }
+        </div>
+    </div>
+
+    @* Anomaly Grid *@
+    @if(hasAnomalies)
+    {
+        <div class="db-anomaly-grid db-anomaly-grid--list" id="towerAnomalyGrid">
+            @foreach(var anm in anomalies)
+            {
+                var anmDict = anm as IDictionary<string, object>;
+                var cardVd = new ViewDataDictionary(ViewData);
+                cardVd["zone_id"] = anmDict != null && anmDict.ContainsKey("zone_id") ? anmDict["zone_id"] : (anm.GetType().GetProperty("zone_id") != null ? anm.zone_id : null);
+                cardVd["site"] = anmDict != null && anmDict.ContainsKey("site") ? anmDict["site"] : (anm.GetType().GetProperty("site") != null ? anm.site : "SITE");
+                cardVd["name"] = anmDict != null && anmDict.ContainsKey("name") ? anmDict["name"] : (anm.GetType().GetProperty("name") != null ? anm.name : "ID");
+                cardVd["status"] = anmDict != null && anmDict.ContainsKey("status") ? anmDict["status"] : (anm.GetType().GetProperty("status") != null ? anm.status : "warning");
+                cardVd["type"] = anmDict != null && anmDict.ContainsKey("type") ? anmDict["type"] : (anm.GetType().GetProperty("type") != null ? anm.type : "tower");
+                cardVd["value"] = anmDict != null && anmDict.ContainsKey("value") ? anmDict["value"] : (anm.GetType().GetProperty("value") != null ? anm.value : 0);
+                cardVd["meta"] = anmDict != null && anmDict.ContainsKey("meta") ? anmDict["meta"] : (anm.GetType().GetProperty("meta") != null ? anm.meta : new object[] {});
+                cardVd["panel"] = anmDict != null && anmDict.ContainsKey("panel") ? anmDict["panel"] : (anm.GetType().GetProperty("panel") != null ? anm.panel : "tower");
+                cardVd["canAcknowledge"] = canAcknowledge;
+                cardVd["anomaly_id"] = anmDict != null && anmDict.ContainsKey("anomaly_id") ? anmDict["anomaly_id"] : (anm.GetType().GetProperty("anomaly_id") != null ? anm.anomaly_id : null);
+                cardVd["acknowledged"] = anmDict != null && anmDict.ContainsKey("acknowledged") ? anmDict["acknowledged"] : (anm.GetType().GetProperty("acknowledged") != null ? anm.acknowledged : false);
+                @await Html.PartialAsync("Components/_AnomalyCard", cardVd)
+            }
+        </div>
+    }
+    else
+    {
+        <div class="db-anomaly-grid db-anomaly-grid--list" id="towerAnomalyGrid" style="display:none;"></div>
+    }
+
+    @* Normal View *@
+    <div class="db-stability-card" id="towerNormalView" @if(hasAnomalies){ <text>style="display:none;"</text> }>
+
+        <div class="db-stability-card__left mb-4">
+            <div class="db-stability-tilt__label mt-4">AVG Tilt</div>
+            <div class="db-stability-tilt__value" id="avgTiltValue">
+                @avgTilt.ToString("F1")<span class="db-deg">°</span>
+            </div>
+            <div class="db-stability-tilt__status" id="tiltStatusText">
+                (@tiltStatus)
+            </div>
+        </div>
+
+        <div class="db-stability-card__right">
+            <div class="db-stability-info-row">
+                <span class="db-stability-info-row__key">SPD Health</span>
+                <span class="db-stability-info-row__sep">:</span>
+                <span class="db-stability-info-row__val db-status-text--@(spdHealth.ToLower())" id="spdHealthText">@spdHealth</span>
+            </div>
+            <div class="db-stability-info-row">
+                <span class="db-stability-info-row__key">Earth Resistance</span>
+                <span class="db-stability-info-row__sep">:</span>
+                <span class="db-stability-info-row__val db-status-text--@(earthResistance.ToLower())" id="earthResistanceText">@earthResistance</span>
+            </div>
+            <div class="db-stability-info-row">
+                <span class="db-stability-info-row__key">Lighting Activity</span>
+                <span class="db-stability-info-row__sep">:</span>
+                <span class="db-stability-info-row__val db-status-text--@(lightingActivity.ToLower())" id="lightingActivityText">@lightingActivity</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+

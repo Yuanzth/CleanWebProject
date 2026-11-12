@@ -1,0 +1,49 @@
+@model dynamic
+
+@{
+    var weather = "Sunny"; // Default, this should come from model or something.
+    var wIcon = "fa-solid fa-cloud";
+    var wColor = "#f1f5f9";
+    var wIconColor = "#64748b";
+
+    switch(weather) {
+        case "Sunny": 
+            wIcon = "fa-solid fa-sun"; wColor = "#ffedd5"; wIconColor = "#ea580c"; break;
+        case "Cloudy": 
+            wIcon = "fa-solid fa-cloud"; wColor = "#f1f5f9"; wIconColor = "#64748b"; break;
+        case "Rainy": 
+            wIcon = "fa-solid fa-cloud-rain"; wColor = "#e0f2fe"; wIconColor = "#0284c7"; break;
+        case "Stormy": 
+            wIcon = "fa-solid fa-cloud-bolt"; wColor = "#f3e8ff"; wIconColor = "#7e22ce"; break;
+    }
+}
+
+<div class="row mt-3">
+    
+    <div class="col-6">
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Weather",
+            value = weather,
+            iconClass = wIcon,
+            color = wColor,
+            iconColor = wIconColor,
+            style = "min-width: 0;",
+            compact = true
+        })
+    </div>
+    
+    <div class="col-6">
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Humidity & Temp",
+            value = "0% / 0°C",
+            iconClass = "fa-solid fa-temperature-half",
+            color = "#f0fdf4",
+            iconColor = "#65a30d",
+            style = "min-width: 0;",
+            compact = true
+        })
+    </div>
+</div>
+
+
+

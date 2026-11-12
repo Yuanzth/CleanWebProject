@@ -1,0 +1,273 @@
+@{
+    ViewData["Title"] = "Manajemen Data Asset";
+}
+
+<!-- Status Filter Pills & Actions Card -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius:14px; background:#fff; padding:12px 18px;">
+    <div class="asset-toolbar d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <!-- Left: Filter Pills -->
+        <div class="asset-pills-row">
+            <div class="filter-pill-group">
+                <button type="button" class="filter-pill-btn active" data-status="All">
+                    Semua <span class="badge bg-secondary ms-1">@ViewBag.TotalAssets</span>
+                </button>
+                <button type="button" class="filter-pill-btn" data-status="Available">
+                    Available <span class="badge bg-success ms-1">@ViewBag.AvailableCount</span>
+                </button>
+                <button type="button" class="filter-pill-btn" data-status="InUse">
+                    In Use <span class="badge bg-primary ms-1">@ViewBag.InUseCount</span>
+                </button>
+                <button type="button" class="filter-pill-btn" data-status="UnderMaintenance">
+                    Maintenance <span class="badge bg-warning text-dark ms-1">@ViewBag.MaintenanceCount</span>
+                </button>
+            </div>
+        </div>
+        <!-- Right: Action Buttons -->
+        @if (!User.IsInRole("Viewer"))
+        {
+            <div class="asset-action-btns d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" style="border-radius:8px; font-size:12px; padding:6px 14px; white-space:nowrap;" data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Import Excel
+                </button>
+                <a href="@Url.Action("Create", "Asset")" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; padding:6px 14px; white-space:nowrap;">
+                    <i class="bi bi-plus-lg me-1"></i>Tambah Asset
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="management-card p-4">
+    <div class="table-responsive">
+        <table id="assetTable" class="table management-table align-middle w-100">
+            <thead>
+                <tr>
+                    <th>Serial Number (SN)</th>
+                    <th>Asset Tag</th>
+                    <th>Tipe / Merk</th>
+                    <th>Model / Series</th>
+                    <th>Spesifikasi (RAM/Storage)</th>
+                    <th>Pengguna Aktif</th>
+                    <th>Status</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Import Excel Master -->
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-labelledby="importExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="importExcelModalLabel">
+                    <i class="bi bi-file-earmark-excel-fill text-success me-2"></i>Import Excel Master Device
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="importForm" action="@Url.Action("ImportExcel", "Asset")" method="post" enctype="multipart/form-data">
+                <div class="modal-body py-3">
+                    <p class="text-muted small mb-3">
+                        Unggah file Excel <strong>Asset PC & NB_HQ_DEPT.xlsx</strong> untuk mengimpor atau memperbarui data master aset & employee secara otomatis.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pilih File Excel (.xlsx)</label>
+                        <input type="file" name="file" class="form-control rounded-3" accept=".xlsx, .xls" />
+                        <span class="form-text text-muted small">Jika dikosongkan, sistem akan membaca file bawaan Asset PC & NB_HQ_DEPT.xlsx dari root project.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4" id="btnSubmitImport">
+                        <i class="bi bi-upload me-1"></i> Mulai Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let currentStatus = 'All';
+
+            // Anti-Forgery Token Header setup
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            // DataTables Server-Side Processing (Yajra Style)
+            const table = $('#assetTable').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                searchDelay: 500, // Debounce search calls to 500ms
+                ajax: {
+                    url: '/api/asset/datatables',
+                    type: 'POST',
+                    data: function (d) {
+                        d.statusFilter = currentStatus;
+                    }
+                },
+                columns: [
+                    {
+                        data: 'serialNumber',
+                        createdCell: function(td) { $(td).attr('data-label', 'SN'); },
+                        render: function (data) {
+                            return `<span class="font-monospace fw-bold text-dark">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'noSN',
+                        createdCell: function(td) { $(td).attr('data-label', 'Asset Tag'); },
+                        render: function (data) {
+                            return `<span class="badge bg-light text-secondary border font-monospace">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        createdCell: function(td) { $(td).attr('data-label', 'Tipe'); },
+                        render: function (data) {
+                            return `<span><span class="fw-semibold">${data.deviceType || '-'}</span>&nbsp;<span class="text-muted small">(${data.brand || '-'})</span></span>`;
+                        }
+                    },
+                    {
+                        data: 'model',
+                        createdCell: function(td) { $(td).attr('data-label', 'Model'); },
+                        render: function (data) {
+                            return `<span class="small text-muted">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        createdCell: function(td) { $(td).attr('data-label', 'Spek'); },
+                        render: function (data) {
+                            const ram = data.ram ? `${data.ram}` : '';
+                            const storage = data.storage ? `${data.storage}` : '';
+                            return `<span class="badge bg-light text-dark border">${ram} | ${storage}</span>`;
+                        }
+                    },
+                    {
+                        data: 'assignedTo',
+                        createdCell: function(td) { $(td).attr('data-label', 'User'); },
+                        render: function (data) {
+                            if (data && data !== '-') {
+                                return `<span class="fw-semibold text-dark"><i class="bi bi-person me-1 text-primary"></i>${data}</span>`;
+                            }
+                            return `<span class="text-muted small">Belum Dialokasikan</span>`;
+                        }
+                    },
+                    {
+                        data: 'status',
+                        createdCell: function(td) { $(td).attr('data-label', 'Status'); },
+                        render: function (data) {
+                            if (data === 'Available') {
+                                return `<span class="badge-status badge-available"><i class="bi bi-check-circle-fill"></i>Available</span>`;
+                            } else if (data === 'InUse') {
+                                return `<span class="badge-status badge-inuse"><i class="bi bi-laptop-fill"></i>In Use</span>`;
+                            } else {
+                                return `<span class="badge-status badge-maintenance"><i class="bi bi-tools"></i>Maintenance</span>`;
+                            }
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        createdCell: function(td) { $(td).attr('data-label', 'Aksi'); },
+                        render: function (data) {
+                            return `
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="/Asset/Details/${data}" class="btn-action-icon btn-action-view" title="Detail Spec & History">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="/Asset/Edit/${data}" class="btn-action-icon btn-action-edit" title="Edit Aset">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn-action-icon btn-action-delete btn-delete-asset" data-id="${data}" title="Hapus Aset">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div> Memuat data server-side...',
+                    search: "_INPUT_",
+                    searchPlaceholder: "🔍 Cari Asset (SN / Model / User)...",
+                    lengthMenu: "Tampilkan _MENU_ baris",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ total aset",
+                    infoEmpty: "Menampilkan 0 aset",
+                    zeroRecords: "Tidak ada data aset yang cocok",
+                    paginate: { first: "Awal", last: "Akhir", next: "→", previous: "←" }
+                }
+            });
+
+            // Filter Pill Tab Switcher
+            $('.filter-pill-btn').on('click', function () {
+                $('.filter-pill-btn').removeClass('active');
+                $(this).addClass('active');
+                currentStatus = $(this).data('status');
+                table.ajax.reload();
+            });
+
+            // SweetAlert2 Delete Confirmation
+            $('#assetTable').on('click', '.btn-delete-asset', function () {
+                const assetId = $(this).data('id');
+                Swal.fire({
+                    title: 'Hapus Asset ini?',
+                    text: "Data aset yang dihapus tidak dapat dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal',
+                    customClass: { popup: 'rounded-4' }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/Asset/Delete/${assetId}`,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: token
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        title: 'Berhasil!',
+                                        text: res.message,
+                                        icon: 'success',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire('Gagal!', res.message, 'error');
+                                }
+                            },
+                            error: function () {
+                                Swal.fire('Error!', 'Gagal menghubungi server.', 'error');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // SweetAlert2 Loading on Excel Import Submit
+            $('#importForm').on('submit', function () {
+                $('#importExcelModal').modal('hide');
+                Swal.fire({
+                    title: 'Mengimpor Master Excel...',
+                    text: 'Mohon tunggu, sistem sedang memproses data master aset & employee.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            });
+        });
+    </script>
+}

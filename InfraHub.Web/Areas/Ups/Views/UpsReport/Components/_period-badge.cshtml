@@ -1,0 +1,9 @@
+@*
+    Partial: _period-badge.blade.php
+    Menampilkan rentang tanggal yang sedang ditampilkan di card.
+    Variabel $dateFrom & $dateTo diturunkan dari parent scope (index.blade.php).
+*@
+<div class="ups-rpt-panel__period">
+    <i class="fa-regular fa-calendar-days"></i>
+    <span class="ups-rpt-period-text">{{ $report['meta']['period_label'] ?? '-' }}</span>
+</div>

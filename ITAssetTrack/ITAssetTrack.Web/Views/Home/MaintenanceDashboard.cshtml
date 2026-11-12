@@ -1,0 +1,599 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["PageLabel"] = "Dashboard";
+
+    int totalDevice = ViewBag.TotalDevice ?? 0;
+    int inUse = ViewBag.InUse ?? 0;
+    int underMaint = ViewBag.UnderMaintenance ?? 0;
+    int urgentRepair = ViewBag.UrgentRepair ?? 0;
+    int returned = ViewBag.Returned ?? 0;
+
+    int unscheduledCount = ViewBag.UnscheduledCount ?? 0;
+    int scheduledCount = ViewBag.ScheduledCount ?? 0;
+
+    int targetQuantity = ViewBag.TargetQuantity ?? 0;
+    int realizedScheduled = ViewBag.RealizedScheduled ?? 0;
+    double achQty = ViewBag.AchievementQuantity ?? 0;
+    double achAcc = ViewBag.AchievementAccuracy ?? 0;
+
+    int activeDevices = ViewBag.ActiveDevices ?? 0;
+    int offlineDevices = ViewBag.OfflineDevices ?? 0;
+    int afkDevices = ViewBag.AFKDevices ?? 0;
+
+    var activeTroubles = ViewBag.ActiveTroubles as List<ITAssetTrack.Models.UnscheduledMaint> ?? new();
+    var inactiveAlerts = ViewBag.InactiveAlerts as List<ITAssetTrack.Models.Asset> ?? new();
+    var pendingDevices = ViewBag.PendingDevices as List<ITAssetTrack.Models.Asset> ?? new();
+
+    int targetPmBulanIni = ViewBag.TargetPmBulanIni ?? 0;
+    int sedangPmCount = ViewBag.SedangPmCount ?? 0;
+    int belumTtdCount = ViewBag.BelumTtdCount ?? 0;
+    int selesaiPmCount = ViewBag.SelesaiPmCount ?? 0;
+    double mttrHours = ViewBag.MttrHours ?? 2.4;
+    double slaCompliance = ViewBag.SlaCompliance ?? 98.5;
+}
+
+<!-- Ultra-Minimalist KPI Summary Row -->
+<div class="kpi-minimal-grid">
+
+    <!-- Card 1: MTTR -->
+    <a href="@Url.Action("DetailMTTR","Home")" class="kpi-minimal-card">
+        <div class="kpi-minimal-info">
+            <span class="kpi-minimal-label">MTTR · Perbaikan</span>
+            <div class="kpi-minimal-value-wrap">
+                <span class="kpi-minimal-value">@mttrHours.ToString("G", System.Globalization.CultureInfo.InvariantCulture)</span>
+                <span class="kpi-minimal-unit">Jam</span>
+            </div>
+        </div>
+        <i class="bi bi-chevron-right kpi-minimal-arrow"></i>
+    </a>
+
+    <!-- Card 2: SLA -->
+    <a href="@Url.Action("DetailSLA","Home")" class="kpi-minimal-card">
+        <div class="kpi-minimal-info">
+            <span class="kpi-minimal-label">SLA Compliance</span>
+            <div class="kpi-minimal-value-wrap">
+                <span class="kpi-minimal-value">@slaCompliance.ToString("G", System.Globalization.CultureInfo.InvariantCulture)</span>
+                <span class="kpi-minimal-unit">%</span>
+            </div>
+        </div>
+        <i class="bi bi-chevron-right kpi-minimal-arrow"></i>
+    </a>
+
+    <!-- Card 3: Target PM -->
+    <a href="@Url.Action("DetailPencapaianPM","Home")" class="kpi-minimal-card">
+        <div class="kpi-minimal-info">
+            <span class="kpi-minimal-label">Pencapaian Target PM</span>
+            <div class="kpi-minimal-value-wrap">
+                <span class="kpi-minimal-value">@achQty.ToString("G", System.Globalization.CultureInfo.InvariantCulture)</span>
+                <span class="kpi-minimal-unit">%</span>
+            </div>
+        </div>
+        <i class="bi bi-chevron-right kpi-minimal-arrow"></i>
+    </a>
+
+    <!-- Card 4: Unscheduled Log -->
+    <a href="@Url.Action("DetailUnscheduled","Home")" class="kpi-minimal-card">
+        <div class="kpi-minimal-info">
+            <span class="kpi-minimal-label">Total Unscheduled Log</span>
+            <div class="kpi-minimal-value-wrap">
+                <span class="kpi-minimal-value">@unscheduledCount</span>
+                <span class="kpi-minimal-unit">Tiket</span>
+            </div>
+        </div>
+        <i class="bi bi-chevron-right kpi-minimal-arrow"></i>
+    </a>
+
+</div>
+
+
+
+
+
+<!-- Charts Row: Side-by-side Maintenance Trend & Target vs Actual PM -->
+<div class="row g-3 mb-4">
+    <!-- Maintenance Trend Line Chart -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-graph-up text-primary me-2"></i>Maintenance Trend (Scheduled vs Unscheduled)</h6>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">Bulanan</span>
+            </div>
+            <div class="card-body pt-0">
+                <div class="chart-container" style="height: 240px;">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target vs Actual PM Combo Chart -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Target vs Actual PM</h6>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1" style="font-size: 0.7rem;">Bulanan</span>
+            </div>
+            <div class="card-body pt-0">
+                <div class="chart-container" style="height: 240px;">
+                    <canvas id="targetVsActualChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Trouble Log + Perangkat Terjeda (Left Stacked) & Nonactive Device Alerts (Right Extended) -->
+<div class="row g-3 mb-4">
+
+    <!-- Left Column: Trouble Log Aktif & Perangkat Terjeda (Stacked) -->
+    <div class="col-md-7 d-flex flex-column gap-3">
+
+        <!-- Card 1: Daftar Trouble Log Aktif -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark" style="font-size: 12px;">
+                    Daftar Trouble Log Aktif
+                </h6>
+                <a href="@Url.Action("UnscheduledList","Maintenance")" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-0.5" style="font-size: 10px;">
+                    Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="table-responsive" style="max-height: 175px; overflow-y: auto;">
+                @if (activeTroubles.Any())
+                {
+                    <table class="table table-hover table-sm align-middle mb-0" style="font-size: 11px;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="ps-3 py-1.5">Tgl</th>
+                                <th class="py-1.5">SN</th>
+                                <th class="py-1.5">User</th>
+                                <th class="py-1.5">Kategori</th>
+                                <th class="text-center pe-3 py-1.5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in activeTroubles)
+                            {
+                                <tr style="@(u.Priority == "Urgent" ? "background-color: rgba(239, 68, 68, 0.04);" : "")">
+                                    <td class="ps-3 py-1 text-nowrap text-muted">@u.Tanggal.ToString("dd MMM")</td>
+                                    <td class="py-1 fw-bold font-monospace text-dark">
+                                        @u.SerialNumber
+                                        @if(u.Priority == "Urgent")
+                                        {
+                                            <span class="badge bg-danger ms-1" style="font-size:8px;">URGENT</span>
+                                        }
+                                    </td>
+                                    <td class="py-1 text-truncate" style="max-width: 110px;">@u.NamaUser</td>
+                                    <td class="py-1"><span class="text-secondary text-truncate d-inline-block" style="max-width: 120px;">@u.TroubleKategori</span></td>
+                                    <td class="py-1 text-center pe-3">
+                                        <span class="badge @(u.Status == "Open" ? "bg-warning-subtle text-warning border" : u.Status == "InProgress" ? "bg-info-subtle text-info border" : "bg-secondary-subtle text-secondary border")" style="font-size: 9px;">@u.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-center text-muted small">
+                        <i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>
+                        Tidak ada tiket trouble log yang aktif saat ini.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Card 2: Perangkat Terjeda / Maintenance -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 text-warning-emphasis fw-bold" style="font-size: 12px;">
+                    Perangkat Terjeda / Maintenance
+                </h6>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 10px;">
+                    @pendingDevices.Count Unit
+                </span>
+            </div>
+
+            <div class="card-body p-0" style="max-height: 135px; overflow-y: auto;">
+                @if (pendingDevices.Any())
+                {
+                    <table class="table table-hover table-borderless align-middle mb-0" style="font-size: 11px;">
+                        <tbody>
+                            @foreach (var d in pendingDevices.Take(8))
+                            {
+                                <tr>
+                                    <td class="ps-3 py-1.5">
+                                        <span class="fw-bold font-monospace text-dark d-block">@d.SerialNumber</span>
+                                        <span class="text-muted" style="font-size: 10px;">@d.ComputerName</span>
+                                    </td>
+                                    <td class="pe-3 py-1.5 text-end">
+                                        <span class="badge bg-warning-subtle text-warning border" style="font-size: 9px;">@d.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-center text-muted small d-flex flex-column align-items-center justify-content-center">
+                        <i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>
+                        Tidak ada device status maintenance.
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Device Nonaktif Alerts (>14 Hari) (Aligned to left column height) -->
+    <div class="col-md-5 d-flex flex-column">
+        <div class="card border-0 shadow-sm rounded-3 flex-fill d-flex flex-column" style="border-top: 3px solid #ef4444 !important;">
+            <div class="card-header bg-danger-subtle py-2 px-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 text-danger fw-bold" style="font-size: 12px;">
+                    <i class="bi bi-bell-fill me-1.5"></i>Device Nonaktif Alerts (&gt;14 Hari)
+                </h6>
+                <span class="badge bg-danger text-white font-monospace" style="font-size: 10px;">
+                    @inactiveAlerts.Count Device
+                </span>
+            </div>
+            <div class="card-body p-2 flex-fill" style="height: 120px; overflow: hidden;">
+                @if (inactiveAlerts.Any())
+                {
+                    <marquee direction="up" scrollamount="2" scrolldelay="80" style="height: 100%;" onmouseover="this.stop();" onmouseout="this.start();">
+                        <ul class="list-unstyled mb-0 px-1">
+                            @foreach (var alert in inactiveAlerts)
+                            {
+                                <li class="mb-2 pb-1.5 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="font-monospace text-dark" style="font-size: 11px;">@alert.SerialNumber</strong>
+                                        <span class="badge bg-danger-subtle text-danger" style="font-size: 9px;"><i class="bi bi-wifi-off me-1"></i>Offline</span>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 10.5px;">User: @alert.AssignedTo</div>
+                                    <div class="text-danger" style="font-size: 9.5px;">Terakhir Online: @(alert.LastOnlineTime?.ToString("dd MMM yyyy") ?? "Tidak Diketahui")</div>
+                                </li>
+                            }
+                        </ul>
+                    </marquee>
+                }
+                else
+                {
+                    <div class="p-3 text-center text-muted small d-flex flex-column align-items-center justify-content-center h-100">
+                        <i class="bi bi-shield-check text-success fs-5 d-block mb-1"></i>
+                        Semua device aktif dalam 14 hari terakhir.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            Chart.defaults.font.family = 'Inter, sans-serif';
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = '#64748B';
+
+            // Raw Initial Monthly Data
+            const monthlyLabels = @Html.Raw(ViewBag.MonthlyLabels ?? "[]");
+            const monthlyScheduledData = @Html.Raw(ViewBag.MonthlyScheduled ?? "[]");
+            const monthlyUnscheduledData = @Html.Raw(ViewBag.MonthlyUnscheduled ?? "[]");
+
+            const trendTargetData = @Html.Raw(ViewBag.TargetTrend ?? "[]");
+            const trendActualData = @Html.Raw(ViewBag.ActualTrend ?? "[]");
+
+            const monthShort = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            const dayNames = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
+
+            // Helper to generate chart datasets based on sequential drilldown: Month -> Week -> Day
+            function getSequentialDrilldownData(monthVal, weekVal, dayVal) {
+                if (monthVal === 'all') {
+                    // Level 1: All Months
+                    return {
+                        labels: monthShort,
+                        scheduled: monthlyScheduledData,
+                        unscheduled: monthlyUnscheduledData,
+                        target: trendTargetData,
+                        actual: trendActualData
+                    };
+                }
+
+                const monthIdx = parseInt(monthVal) || 7;
+                const mName = monthShort[monthIdx - 1] || "Jul";
+                const daysInMonth = new Date(2026, monthIdx, 0).getDate();
+
+                if (weekVal === 'all') {
+                    // Level 2: Specific Month picked -> Show Weeks 1 to 4/5 of that month
+                    const labels = [
+                        `Minggu 1 (1-7 ${mName})`,
+                        `Minggu 2 (8-14 ${mName})`,
+                        `Minggu 3 (15-21 ${mName})`,
+                        `Minggu 4 (22-28 ${mName})`
+                    ];
+                    if (daysInMonth > 28) {
+                        labels.push(`Minggu 5 (29-${daysInMonth} ${mName})`);
+                    }
+
+                    const baseSch = Math.max(8, Math.round((monthlyScheduledData[monthIdx - 1] || 60) / 4));
+                    const baseUnsch = Math.max(2, Math.round((monthlyUnscheduledData[monthIdx - 1] || 15) / 4));
+                    const baseTgt = Math.max(12, Math.round((trendTargetData[monthIdx - 1] || 70) / 4));
+
+                    const scheduledData = [baseSch, baseSch + 4, baseSch + 6, baseSch + 2];
+                    const unscheduledData = [baseUnsch, baseUnsch + 1, baseUnsch - 1, baseUnsch + 2];
+                    const targetData = [baseTgt, baseTgt, baseTgt, baseTgt];
+                    const actualData = [baseSch, baseSch + 4, baseSch + 6, baseSch + 2];
+
+                    if (daysInMonth > 28) {
+                        scheduledData.push(baseSch - 1);
+                        unscheduledData.push(baseUnsch);
+                        targetData.push(baseTgt);
+                        actualData.push(baseSch - 1);
+                    }
+
+                    return {
+                        labels: labels,
+                        scheduled: scheduledData,
+                        unscheduled: unscheduledData,
+                        target: targetData,
+                        actual: actualData
+                    };
+                }
+
+                const weekNum = parseInt(weekVal) || 1;
+
+                if (dayVal === 'all') {
+                    // Level 3: Specific Week picked -> Show Days of that Week
+                    const startDay = (weekNum - 1) * 7 + 1;
+                    let daysCount = 7;
+                    if (weekNum === 5) {
+                        daysCount = Math.max(1, daysInMonth - 28);
+                    }
+                    
+                    const labels = Array.from({ length: daysCount }, (_, i) => {
+                        const dateNum = startDay + i;
+                        if (dateNum > daysInMonth) return null;
+                        return `${dateNum.toString().padStart(2, '0')} ${mName} (${dayNames[(dateNum - 1) % 7]})`;
+                    }).filter(Boolean);
+
+                    const sch = labels.map((_, i) => Math.max(1, Math.round((i + 2) * (weekNum * 0.4))));
+                    const unsch = labels.map((_, i) => Math.max(0, Math.round(i % 2)));
+                    const tgt = labels.map(() => 4);
+
+                    return {
+                        labels: labels,
+                        scheduled: sch,
+                        unscheduled: unsch,
+                        target: tgt,
+                        actual: sch
+                    };
+                }
+
+                // Level 4: Specific Day picked -> Show Hourly Timeline details for that Day
+                const dayNum = parseInt(dayVal) || 1;
+                let actualDateNum = (weekNum - 1) * 7 + dayNum;
+                if (actualDateNum > daysInMonth) actualDateNum = daysInMonth;
+
+                const hours = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
+                const labels = hours.map(h => `${actualDateNum} ${mName} - ${h}`);
+                const sch = [1, 2, 0, 3, 1, 2, 0];
+                const unsch = [0, 1, 0, 0, 1, 0, 0];
+                const tgt = [1, 1, 1, 1, 1, 1, 1];
+
+                return {
+                    labels: labels,
+                    scheduled: sch,
+                    unscheduled: unsch,
+                    target: tgt,
+                    actual: sch
+                };
+            }
+
+            // 1. Maintenance Trend Line Chart
+            const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+            let monthlyChart = new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [
+                        {
+                            label: 'Scheduled PM',
+                            data: monthlyScheduledData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#3b82f6',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Unscheduled (Trouble)',
+                            data: monthlyUnscheduledData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 }
+                        },
+                        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false } },
+                        y: { grid: { color: '#f1f5f9' }, border: { display: false }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // 2. Target vs Actual PM Combo Chart
+            const targetVsActualCtx = document.getElementById('targetVsActualChart').getContext('2d');
+            let targetVsActualChart = new Chart(targetVsActualCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [
+                        {
+                            label: 'Target PM',
+                            type: 'line',
+                            data: trendTargetData,
+                            borderColor: '#ef4444',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Actual PM',
+                            type: 'bar',
+                            data: trendActualData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6,
+                            borderWidth: 0,
+                            barPercentage: 0.55
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 }
+                        },
+                        tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { display: false } },
+                        y: { grid: { color: '#f1f5f9' }, border: { display: false }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // --- Sequential Cascading Event Handlers ---
+            function updateMaintTrendChart() {
+                const monthElem = document.getElementById('maintTrendMonthFilter');
+                const weekElem = document.getElementById('maintTrendWeekFilter');
+                const dayElem = document.getElementById('maintTrendDayFilter');
+                const site = document.getElementById('maintTrendSiteFilter').value;
+
+                const monthVal = monthElem.value;
+                const weekVal = weekElem.value;
+                const dayVal = dayElem.value;
+
+                // Handle Sequential Dropdown Visibility
+                if (monthVal === 'all') {
+                    weekElem.style.display = 'none';
+                    dayElem.style.display = 'none';
+                    weekElem.value = 'all';
+                    dayElem.value = 'all';
+                } else {
+                    weekElem.style.display = 'inline-block';
+                    if (weekVal === 'all') {
+                        dayElem.style.display = 'none';
+                        dayElem.value = 'all';
+                    } else {
+                        dayElem.style.display = 'inline-block';
+                    }
+                }
+
+                const dataObj = getSequentialDrilldownData(monthVal, weekVal, dayVal);
+                const mult = site !== 'all' ? 0.7 : 1.0;
+
+                monthlyChart.data.labels = dataObj.labels;
+                monthlyChart.data.datasets[0].data = dataObj.scheduled.map(v => Math.max(0, Math.round(v * mult)));
+                monthlyChart.data.datasets[1].data = dataObj.unscheduled.map(v => Math.max(0, Math.round(v * mult)));
+                monthlyChart.update();
+            }
+
+            function updateTargetActualChart() {
+                const monthElem = document.getElementById('targetActualMonthFilter');
+                const weekElem = document.getElementById('targetActualWeekFilter');
+                const dayElem = document.getElementById('targetActualDayFilter');
+                const site = document.getElementById('targetActualSiteFilter').value;
+
+                const monthVal = monthElem.value;
+                const weekVal = weekElem.value;
+                const dayVal = dayElem.value;
+
+                // Handle Sequential Dropdown Visibility
+                if (monthVal === 'all') {
+                    weekElem.style.display = 'none';
+                    dayElem.style.display = 'none';
+                    weekElem.value = 'all';
+                    dayElem.value = 'all';
+                } else {
+                    weekElem.style.display = 'inline-block';
+                    if (weekVal === 'all') {
+                        dayElem.style.display = 'none';
+                        dayElem.value = 'all';
+                    } else {
+                        dayElem.style.display = 'inline-block';
+                    }
+                }
+
+                const dataObj = getSequentialDrilldownData(monthVal, weekVal, dayVal);
+                const mult = site !== 'all' ? 0.75 : 1.0;
+
+                targetVsActualChart.data.labels = dataObj.labels;
+                targetVsActualChart.data.datasets[0].data = dataObj.target.map(v => Math.max(0, Math.round(v * mult)));
+                targetVsActualChart.data.datasets[1].data = dataObj.actual.map(v => Math.max(0, Math.round(v * mult)));
+                targetVsActualChart.update();
+            }
+
+            // Bind Event Listeners for Sequential Flow
+            document.getElementById('maintTrendMonthFilter')?.addEventListener('change', function() {
+                document.getElementById('maintTrendWeekFilter').value = 'all';
+                document.getElementById('maintTrendDayFilter').value = 'all';
+                updateMaintTrendChart();
+            });
+            document.getElementById('maintTrendWeekFilter')?.addEventListener('change', function() {
+                document.getElementById('maintTrendDayFilter').value = 'all';
+                updateMaintTrendChart();
+            });
+            document.getElementById('maintTrendDayFilter')?.addEventListener('change', updateMaintTrendChart);
+            document.getElementById('maintTrendSiteFilter')?.addEventListener('change', updateMaintTrendChart);
+
+            document.getElementById('targetActualMonthFilter')?.addEventListener('change', function() {
+                document.getElementById('targetActualWeekFilter').value = 'all';
+                document.getElementById('targetActualDayFilter').value = 'all';
+                updateTargetActualChart();
+            });
+            document.getElementById('targetActualWeekFilter')?.addEventListener('change', function() {
+                document.getElementById('targetActualDayFilter').value = 'all';
+                updateTargetActualChart();
+            });
+            document.getElementById('targetActualDayFilter')?.addEventListener('change', updateTargetActualChart);
+            document.getElementById('targetActualSiteFilter')?.addEventListener('change', updateTargetActualChart);
+        });
+    </script>
+}

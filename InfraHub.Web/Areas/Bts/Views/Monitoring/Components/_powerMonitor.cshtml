@@ -1,0 +1,48 @@
+@model dynamic
+<div class="card">
+    <div class="card-header text-center">
+        <h5>Power Monitor</h5>
+    </div>
+
+    <div class="card-body">
+        <div class="power-grid">
+
+            <div id="pm-voltage" class="power-item power-voltage text-center">
+                <span id="val-voltage">@(Model?.GetType().GetProperty("voltage") != null ? Model.voltage : 0)</span> V
+            </div>
+
+            <div id="pm-ampere" class="power-item power-ampere text-center">
+                <span id="val-ampere">@(Model?.GetType().GetProperty("ampere") != null ? Model.ampere : 0)</span> A
+            </div>
+
+            <div id="pm-watt" class="power-item power-watt text-center">
+                <span id="val-watt">@(Model?.GetType().GetProperty("watt") != null ? Model.watt : 0)</span> W
+            </div>
+
+            <div id="pm-frequency" class="power-item power-frequency text-center">
+                <span id="val-frequency">@(Model?.GetType().GetProperty("frequency") != null ? Model.frequency : 0)</span> Hz
+            </div>
+
+            <div id="pm-energy" class="power-item power-energy text-center">
+                <span id="val-energy">@(Model?.GetType().GetProperty("energy") != null ? Model.energy : 0)</span> kWh
+            </div>
+
+            <div id="pm-powerfactor" class="power-item power-powerfactor text-center">
+                <span id="val-powerfactor">@(Model?.GetType().GetProperty("powerfactor") != null ? Model.powerfactor : 0)</span> PF
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function updatePowerMonitor(data) {
+        const powerFields = ['voltage', 'ampere', 'watt', 'frequency', 'energy', 'powerfactor'];
+        powerFields.forEach(field => {
+            const el = document.getElementById(`val-${field}`);
+            if (el) el.textContent = data[field] || 0;
+        });
+    }
+</script>
+
+

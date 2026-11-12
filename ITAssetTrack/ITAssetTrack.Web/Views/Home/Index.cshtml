@@ -1,0 +1,417 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["PageLabel"] = "Dashboard";
+
+    int totalDevice = ViewBag.TotalDevice ?? 0;
+    int inUse = ViewBag.InUse ?? 0;
+    int underMaint = ViewBag.UnderMaintenance ?? 0;
+    int urgentRepair = ViewBag.UrgentRepair ?? 0;
+    int returned = ViewBag.Returned ?? 0;
+
+    int unscheduledCount = ViewBag.UnscheduledCount ?? 0;
+    int scheduledCount = ViewBag.ScheduledCount ?? 0;
+
+    int targetQuantity = ViewBag.TargetQuantity ?? 0;
+    int realizedScheduled = ViewBag.RealizedScheduled ?? 0;
+    double achQty = ViewBag.AchievementQuantity ?? 0;
+    double achAcc = ViewBag.AchievementAccuracy ?? 0;
+
+    int activeDevices = ViewBag.ActiveDevices ?? 0;
+    int offlineDevices = ViewBag.OfflineDevices ?? 0;
+    int afkDevices = ViewBag.AFKDevices ?? 0;
+
+    var activeTroubles = ViewBag.ActiveTroubles as List<ITAssetTrack.Models.UnscheduledMaint> ?? new();
+    var inactiveAlerts = ViewBag.InactiveAlerts as List<ITAssetTrack.Models.Asset> ?? new();
+    var pendingDevices = ViewBag.PendingDevices as List<ITAssetTrack.Models.Asset> ?? new();
+}
+
+<!-- Row 1: Urgent Ops -->
+<div class="dashboard-grid" style="margin-bottom: 20px;">
+    <!-- Daftar Trouble Log Aktif (Wider Column) -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="bi bi-exclamation-triangle" style="color:var(--danger);margin-right:6px;"></i>Daftar Trouble Log Aktif</h3>
+            <a href="@Url.Action("UnscheduledList","Maintenance")" class="btn btn-sm btn-outline">
+                Lihat Semua
+            </a>
+        </div>
+        <div class="table-wrapper" style="max-height: 400px; overflow-y:auto;">
+            @if (activeTroubles.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tgl Masuk</th>
+                            <th>SN</th>
+                            <th>User</th>
+                            <th>Kategori</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in activeTroubles)
+                        {
+                            <tr style="@(u.Priority == "Urgent" ? "background-color: rgba(220, 53, 69, 0.05);" : "")">
+                                <td>@u.Tanggal.ToString("dd MMM")</td>
+                                <td style="font-weight:500;">
+                                    @u.SerialNumber
+                                    @if(u.Priority == "Urgent")
+                                    {
+                                        <span class="badge bg-danger" style="margin-left:4px;font-size:9px;">URGENT</span>
+                                    }
+                                </td>
+                                <td>@u.NamaUser</td>
+                                <td>@u.TroubleKategori</td>
+                                <td><span class="status-badge status-@u.Status.ToLower()">@u.Status</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="padding:20px; text-align:center; color:var(--text-muted);">
+                    <i class="bi bi-check-circle text-success" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                    Tidak ada tiket trouble log yang aktif.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Alerts & Pending (Narrow Column Stacked) -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+        <!-- Alerts Notification -->
+        <div class="card">
+            <div class="card-header" style="background-color:#ffe6e6; border-bottom: 2px solid #ff4d4d;">
+                <h3 style="color:#cc0000;"><i class="bi bi-bell-fill" style="color:#ff4d4d;margin-right:6px;"></i>Device Nonaktif Alerts</h3>
+            </div>
+            <div class="card-body" style="max-height: 180px; overflow-y: auto;">
+                @if (inactiveAlerts.Any())
+                {
+                    <ul style="padding-left: 15px; margin-bottom: 0;">
+                        @foreach (var alert in inactiveAlerts)
+                        {
+                            <li style="margin-bottom: 8px; font-size: 0.95rem;">
+                                <strong>@alert.SerialNumber</strong> <br/>
+                                <span style="font-size: 0.85rem; color:var(--text-muted);">(@alert.AssignedTo)</span><br/>
+                                <span style="font-size: 0.85rem; color:#cc0000;">Terakhir Online: @(alert.LastOnlineTime?.ToString("dd MMM yyyy") ?? "Tidak Diketahui")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Semua device terpantau aktif dalam 14 hari terakhir.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Pending Devices -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-pause-circle-fill" style="color:#E65100;margin-right:6px;"></i>Device Terjeda (Pending)</h3>
+            </div>
+            <div class="table-wrapper" style="max-height: 200px; overflow-y:auto;">
+                @if (pendingDevices.Any())
+                {
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>SN</th>
+                                <th>User</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in pendingDevices)
+                            {
+                                <tr>
+                                    <td>@d.SerialNumber</td>
+                                    <td>@d.AssignedTo</td>
+                                    <td><span class="status-badge status-@d.Status.ToLower()">@d.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div style="padding:15px; text-align:center; color:var(--text-muted);">Tidak ada device yang terjeda.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Monitoring & KPI -->
+<div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+    <!-- Left Column: Telemetry & Maintenance Logs -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+        <!-- Telemetry Summary -->
+        <div class="card" style="background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%); color:white;">
+            <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color:white;"><i class="bi bi-broadcast-pin" style="color:#00ffcc;margin-right:6px;"></i>Agent Telemetry</h3>
+            </div>
+            <div class="card-body">
+                <div class="maint-summary-grid">
+                    <div class="maint-summary-item" style="background: rgba(255,255,255,0.1);">
+                        <div class="msi-icon-bi" style="color:#00ffcc;"><i class="bi bi-laptop"></i></div>
+                        <div class="msi-label" style="color:rgba(255,255,255,0.8);">Active Online</div>
+                        <div class="msi-value" style="color:white;">@activeDevices</div>
+                    </div>
+                    <div class="maint-summary-item" style="background: rgba(255,255,255,0.1);">
+                        <div class="msi-icon-bi" style="color:#ffcc00;"><i class="bi bi-cup-hot"></i></div>
+                        <div class="msi-label" style="color:rgba(255,255,255,0.8);">AFK / Idle</div>
+                        <div class="msi-value" style="color:white;">@afkDevices</div>
+                    </div>
+                    <div class="maint-summary-item" style="background: rgba(255,255,255,0.1);">
+                        <div class="msi-icon-bi" style="color:#ff4d4d;"><i class="bi bi-wifi-off"></i></div>
+                        <div class="msi-label" style="color:rgba(255,255,255,0.8);">Offline (>14 Hari)</div>
+                        <div class="msi-value" style="color:white;">@offlineDevices</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maint Stats -->
+        <div class="card" style="flex:1;">
+            <div class="card-header">
+                <h3><i class="bi bi-tools" style="color:var(--infrahub-blue);margin-right:6px;"></i>Maintenance Logs</h3>
+            </div>
+            <div class="card-body">
+                <div class="maint-summary-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="maint-summary-item">
+                        <div class="msi-icon-bi" style="color:var(--infrahub-blue);"><i class="bi bi-calendar2-check"></i></div>
+                        <div class="msi-label">Total Scheduled PM</div>
+                        <div class="msi-value">@scheduledCount</div>
+                    </div>
+                    <div class="maint-summary-item">
+                        <div class="msi-icon-bi" style="color:#E65100;"><i class="bi bi-lightning-charge"></i></div>
+                        <div class="msi-label">Total Unscheduled</div>
+                        <div class="msi-value">@unscheduledCount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Achievement Summary -->
+    <div class="card" style="background: linear-gradient(135deg, var(--infrahub-blue) 0%, #0d235c 100%); color:white;">
+        <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <h3 style="color:white;"><i class="bi bi-award" style="color:var(--infrahub-yellow);margin-right:6px;"></i>Monthly PM Achievement</h3>
+        </div>
+        <div class="card-body">
+            <div class="maint-summary-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="maint-summary-item" style="background: rgba(255,255,255,0.1); padding: 30px 20px;">
+                    <div class="msi-icon-bi" style="color:rgba(255,255,255,0.7); font-size:32px;"><i class="bi bi-bullseye"></i></div>
+                    <div class="msi-label" style="color:rgba(255,255,255,0.8); font-size:14px;">Target PM</div>
+                    <div class="msi-value" style="color:white; font-size:36px;">@targetQuantity</div>
+                </div>
+                <div class="maint-summary-item" style="background: rgba(255,255,255,0.1); padding: 30px 20px;">
+                    <div class="msi-icon-bi" style="color:rgba(255,255,255,0.7); font-size:32px;"><i class="bi bi-clipboard2-check"></i></div>
+                    <div class="msi-label" style="color:rgba(255,255,255,0.8); font-size:14px;">Realized PM</div>
+                    <div class="msi-value" style="color:white; font-size:36px;">@realizedScheduled</div>
+                </div>
+                <div class="maint-summary-item" style="background: rgba(255,255,255,0.1); padding: 30px 20px;">
+                    <div class="msi-icon-bi" style="color:rgba(255,255,255,0.7); font-size:32px;"><i class="bi bi-percent"></i></div>
+                    <div class="msi-label" style="color:rgba(255,255,255,0.8); font-size:14px;">Ach. Quantity</div>
+                    <div class="msi-value" style="color:var(--infrahub-yellow); font-size:36px;">@achQty%</div>
+                </div>
+                <div class="maint-summary-item" style="background: rgba(255,255,255,0.1); padding: 30px 20px;">
+                    <div class="msi-icon-bi" style="color:rgba(255,255,255,0.7); font-size:32px;"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div class="msi-label" style="color:rgba(255,255,255,0.8); font-size:14px;">Ach. Accuracy</div>
+                    <div class="msi-value" style="color:var(--infrahub-yellow); font-size:36px;">@achAcc%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Monthly Trend + Asset Distribution -->
+<div class="dashboard-grid-3" style="margin-top:14px;">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="bi bi-graph-up" style="color:var(--infrahub-blue);margin-right:6px;"></i>Monthly Maintenance Trend</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:200px;">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="bi bi-graph-up-arrow" style="color:var(--infrahub-blue);margin-right:6px;"></i>Target vs Actual PM</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:200px;">
+                <canvas id="targetVsActualChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="bi bi-bar-chart-horizontal" style="color:var(--infrahub-blue);margin-right:6px;"></i>Asset Distribution by Site</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height:200px;">
+                <canvas id="assetDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Chart defaults
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#6C757D';
+
+// Monthly Trend (Line Chart)
+const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: @Html.Raw(ViewBag.MonthlyLabels ?? "[]"),
+        datasets: [
+            {
+                label: 'Scheduled PM',
+                data: @Html.Raw(ViewBag.MonthlyScheduled ?? "[]"),
+                borderColor: '#1565C0',
+                backgroundColor: 'rgba(21,101,192,0.08)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#1565C0',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                tension: 0.4,
+                fill: true
+            },
+            {
+                label: 'Unscheduled (Trouble)',
+                data: @Html.Raw(ViewBag.MonthlyUnscheduled ?? "[]"),
+                borderColor: '#E53935',
+                backgroundColor: 'rgba(229,57,53,0.06)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#E53935',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } }
+        },
+        scales: {
+            x: { grid: { display: false }, border: { display: false } },
+            y: { grid: { color: '#F1F3F5' }, border: { display: false }, beginAtZero: true, ticks: { stepSize: 10 } }
+        }
+    }
+});
+
+// Target vs Actual PM (Line Chart)
+const targetVsActualCtx = document.getElementById('targetVsActualChart').getContext('2d');
+new Chart(targetVsActualCtx, {
+    type: 'bar',
+    data: {
+        labels: @Html.Raw(ViewBag.TrendLabels ?? "[]"),
+        datasets: [
+            {
+                label: 'Target',
+                type: 'line',
+                data: @Html.Raw(ViewBag.TargetTrend ?? "[]"),
+                borderColor: '#E53935',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0,
+                fill: false
+            },
+            {
+                label: 'Actual',
+                type: 'bar',
+                data: @Html.Raw(ViewBag.ActualTrend ?? "[]"),
+                borderColor: '#1565C0',
+                backgroundColor: 'rgba(21,101,192,0.08)',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#1565C0',
+                pointBorderColor: '#fff',
+                tension: 0,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyleWidth: 8, padding: 16 } }
+        },
+        scales: {
+            x: { grid: { display: false }, border: { display: false } },
+            y: { grid: { color: '#F1F3F5' }, border: { display: false }, beginAtZero: true }
+        }
+    }
+});
+
+// Asset Distribution by Site (Horizontal Bar)
+const assetDistCtx = document.getElementById('assetDistChart').getContext('2d');
+new Chart(assetDistCtx, {
+    type: 'bar',
+    data: {
+        labels: @Html.Raw(ViewBag.SiteLabels ?? "[]"),
+        datasets: [{
+            label: 'Jumlah Aset',
+            data: @Html.Raw(ViewBag.SiteData ?? "[]"),
+            backgroundColor: [
+                'rgba(21,101,192,0.85)',
+                'rgba(251,192,45,0.85)',
+                'rgba(67,160,71,0.85)',
+                'rgba(0,172,193,0.85)',
+                'rgba(142,36,170,0.85)'
+            ],
+            borderRadius: 5,
+            borderSkipped: false,
+            barThickness: 18
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.raw} aset`
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: '#F1F3F5' },
+                border: { display: false },
+                beginAtZero: true,
+                ticks: { stepSize: 10 }
+            },
+            y: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { font: { weight: '600' } }
+            }
+        }
+    }
+});
+</script>
+}

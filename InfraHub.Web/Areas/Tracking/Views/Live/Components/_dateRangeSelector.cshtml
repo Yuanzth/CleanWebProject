@@ -1,0 +1,40 @@
+<div class="date-range-card" id="dateRangeCard">
+    <div class="date-range-header">
+        <i class="fa-solid fa-calendar-days" style="color: #D4952B;"></i>
+        <span class="date-range-title">Report Range</span>
+    </div>
+
+    <div class="date-range-body">
+        <div class="date-range-field">
+            <label for="reportDateStart">
+                <i class="fa-solid fa-calendar-arrow-down" style="margin-right: 4px; font-size: 10px;"></i>Dari Tanggal
+            </label>
+            <input type="date" id="reportDateStart">
+        </div>
+
+        <div class="date-range-separator">
+            <i class="fa-solid fa-arrow-down"></i>
+        </div>
+
+        <div class="date-range-field">
+            <label for="reportDateEnd">
+                <i class="fa-solid fa-calendar-arrow-up" style="margin-right: 4px; font-size: 10px;"></i>Sampai Tanggal
+            </label>
+            <input type="date" id="reportDateEnd">
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button class="date-range-reset" id="dateRangeReset" type="button" style="flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; padding: 9px 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 0; box-sizing: border-box;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+            <i class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i>Reset
+        </button>
+        <button class="date-range-submit" id="dateRangeSubmit" type="button" style="flex: 2; margin-top: 0; box-sizing: border-box;">
+            <i class="fa-solid fa-magnifying-glass-chart" style="margin-right: 6px;"></i>Terapkan
+        </button>
+    </div>
+
+    <div class="date-range-info" id="dateRangeInfo" style="display: none;">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="dateRangeInfoText">-</span>
+    </div>
+</div>

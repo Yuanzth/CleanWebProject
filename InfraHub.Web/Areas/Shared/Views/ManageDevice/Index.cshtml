@@ -1,0 +1,381 @@
+@{
+    ViewData["Title"] = "Manage Devices";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-tower-cell fa-2x text-primary me-3"></i>
+        <h2 class="mb-0 fw-bold">Manage Devices &amp; Assets</h2>
+    </div>
+    
+    <div class="manage-card card shadow-sm border-0 p-3">
+        <ul class="nav nav-tabs custom-tabs mb-4" id="manageTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-registered" type="button"><i class="fa-solid fa-list-check"></i> Registered Devices</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-unregistered" type="button">
+                    <i class="fa-solid fa-satellite-dish pulse-icon"></i> Unregistered (Discovery)
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-registered">
+                <div class="table-responsive">
+                    <table id="deviceTable" class="table table-hover w-100 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>S/N</th>
+                                <th>Device Name</th>
+                                <th>Phone/IMEI</th>
+                                <th>Site &amp; Zone</th>
+                                <th>Asset Type</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="tab-unregistered">
+                <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning-emphasis d-flex align-items-center mb-4">
+                    <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                    <div>
+                        <strong>Auto-Discovery Aktif!</strong> Perangkat di bawah ini terdeteksi memancarkan sinyal ke sistem namun belum terdaftar di Zona manapun.
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="unregTable" class="table table-hover w-100 align-middle">
+                        <thead class="table-light"><tr><th>Serial Number</th><th>Last Seen</th><th>Action</th></tr></thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* MODAL REGISTER DEVICE (dari Unregistered / Discovery) *@
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-success"><i class="fa-solid fa-satellite-dish"></i> Register New Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="registerForm">
+                <input type="hidden" id="unregistered_id" name="unregistered_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Serial Number <span class="badge bg-secondary ms-1">Auto</span></label>
+                            <input type="text" id="reg_serial_number" name="SerialNumber" class="form-control bg-light fw-bold" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">IMEI (4G Device)</label>
+                            <input type="text" id="reg_imei" name="Imei" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">GSM Number</label>
+                        <input type="text" id="reg_phone_number" name="PhoneNumber" class="form-control" placeholder="ex: 0812xxxx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Device Name <span class="text-danger">*</span></label>
+                        <input type="text" id="reg_device_name" name="DeviceName" class="form-control" placeholder="ex: Genset Utama Pit A" required>
+                    </div>
+                    
+                    <div class="mb-3" id="reg-tower-height-field" style="display:none;">
+                        <label class="form-label">Tower Height (meter) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" id="reg_asset_height" name="AssetHeight" class="form-control"
+                                placeholder="ex: 45" min="1" max="999" step="0.5">
+                            <span class="input-group-text">m</span>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="reg-network-area-field" style="display:none;">
+                        <label class="form-label">Network Area <span class="badge bg-secondary ms-1">Auto</span></label>
+                        <input type="text" id="reg_network_area" name="NetworkArea" class="form-control bg-light fw-semibold" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Asset Type <span class="text-danger">*</span></label>
+                        <select id="reg_asset_type_id" name="AssetTypeId" class="form-select" required>
+                            <option value="">-- Choose Asset Type --</option>
+                            @foreach(var type in ViewBag.AssetTypes) { <option value="@type.Id">@type.TypeName</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location (Zone) <span class="text-danger">*</span></label>
+                        <select id="reg_zone_id" name="ZoneId" class="form-select" required>
+                            <option value="">-- Choose Zone --</option>
+                            @foreach(var zone in ViewBag.AllZones) { <option value="@zone.Id">@zone.Site?.SiteCode - @zone.ZoneName</option> }
+                        </select>
+                    </div>
+                    <input type="hidden" name="IsActive" value="true">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check me-2"></i>Register Now</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* MODAL EDIT DEVICE *@
+<div class="modal fade" id="deviceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deviceModalTitle">Edit Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deviceForm">
+                <input type="hidden" id="device_id" name="id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Serial Number</label>
+                            <input type="text" id="serial_number" name="SerialNumber" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">IMEI (4G Device)</label>
+                            <input type="text" id="imei" name="Imei" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">GSM Number</label>
+                        <input type="text" id="phone_number" name="PhoneNumber" class="form-control" placeholder="ex: 0812xxxx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Device Name</label>
+                        <input type="text" id="device_name" name="DeviceName" class="form-control" required>
+                    </div>
+                    <div class="mb-3" id="tower-height-field" style="display:none;">
+                        <label class="form-label">Tower Height (meter) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" id="asset_height" name="AssetHeight" class="form-control"
+                                placeholder="ex: 45" min="1" max="999" step="0.5">
+                            <span class="input-group-text">m</span>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="network-area-field" style="display:none;">
+                        <label class="form-label">Network Area <span class="badge bg-secondary ms-1">Auto</span></label>
+                        <input type="text" id="network_area" name="NetworkArea" class="form-control bg-light fw-semibold" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Asset Type</label>
+                        <select id="asset_type_id" name="AssetTypeId" class="form-select" required>
+                            <option value="">-- Choose Asset Type --</option>
+                            @foreach(var type in ViewBag.AssetTypes) { <option value="@type.Id">@type.TypeName</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location (Zone)</label>
+                        <select id="zone_id_edit" name="ZoneId" class="form-select">
+                            <option value="">-- Choose Zone --</option>
+                            @foreach(var zone in ViewBag.AllZones) { <option value="@zone.Id">@zone.Site?.SiteCode - @zone.ZoneName</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select id="is_active" name="IsActive" class="form-select" required>
+                            <option value="true">Active</option>
+                            <option value="false">Down / Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary w-100">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script id="assetTypesData" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        ((List<InfraHub.Infrastructure.Data.Entities.AssetType>)ViewBag.AssetTypes).ToDictionary(t => t.Id, t => t.TypeName)
+    ))
+</script>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+    let tDevice, tUnreg;
+    const assetTypeMap = JSON.parse(document.getElementById('assetTypesData').textContent);
+
+    function isTowerType(assetTypeId) {
+        const name = assetTypeMap[assetTypeId] || '';
+        return name.toLowerCase().includes('tower');
+    }
+
+    $(document).ready(function() {
+        tDevice = $('#deviceTable').DataTable({ 
+            ajax: { url: "/Shared/ManageDevices/GetData", data: function(d) { d.type = 'registered'; } }, 
+            columns: [
+                {data: 'serialNumber', render: function(d) { return `<strong>${d}</strong>`; }}, 
+                {data: 'deviceName'}, 
+                {data: 'phoneNumber', render: function(d,t,r) { return `${d||'-'}<br><small class="text-muted">${r.imei||'-'}</small>`; }},
+                {data: 'siteCode', render: function(d,t,r) { return `${d} - ${r.zoneName}`; }}, 
+                {data: 'assetTypeName'}, 
+                {data: 'isActive', render: function(d) { return d ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Down</span>'; }}, 
+                {
+                    data: 'id', orderable: false, searchable: false, className: 'text-center',
+                    render: function(data) {
+                        return `<button class="btn btn-sm btn-outline-primary me-1 edit-device-btn" data-id="${data}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger delete-device-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true
+        });
+
+        tUnreg = $('#unregTable').DataTable({ 
+            ajax: { url: "/Shared/ManageDevices/GetData", data: function(d) { d.type = 'unregistered'; } }, 
+            columns: [
+                {data: 'serialNumber', render: function(d) { return `<span class="badge bg-warning text-dark">${d}</span>`; }}, 
+                {data: 'lastSeen'}, 
+                {
+                    data: 'id', orderable: false, searchable: false, className: 'text-center',
+                    render: function(data, type, row) {
+                        return `<button class="btn btn-sm btn-success register-btn" data-id="${data}" data-sn="${row.serialNumber}">Register</button>
+                                <button class="btn btn-sm btn-outline-danger delete-unreg-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true
+        });
+
+        // Forms
+        $('#deviceForm').submit(function(e) { 
+            e.preventDefault(); 
+            let id = $('#device_id').val(); 
+            executeAjax(`/Shared/ManageDevices/Device/${id}`, 'PUT', $(this).serialize(), 'deviceModal', [tDevice]); 
+        });
+
+        $('#registerForm').submit(function(e) { 
+            e.preventDefault(); 
+            executeAjax("/Shared/ManageDevices/Register", 'POST', $(this).serialize(), 'registerModal', [tDevice, tUnreg]); 
+        });
+
+        // Tower Height Toggles
+        $('#asset_type_id').on('change', function() { toggleTowerHeight($(this).val()); syncEditNetworkArea(); });
+        $('#reg_asset_type_id').on('change', function() { toggleRegTowerHeight($(this).val()); syncRegNetworkArea(); });
+        $('#asset_height').on('input', function() { syncEditNetworkArea(); });
+        $('#reg_asset_height').on('input', function() { syncRegNetworkArea(); });
+
+        // Edit Modal
+        $('body').on('click', '.edit-device-btn', function() { 
+            $.get(`/Shared/ManageDevices/Device/${$(this).data('id')}`, function(data) { 
+                $('#deviceModalTitle').text('Edit Device');
+                $('#device_id').val(data.id); 
+                $('#serial_number').val(data.serialNumber); 
+                $('#imei').val(data.imei);
+                $('#phone_number').val(data.phoneNumber);
+                $('#device_name').val(data.deviceName); 
+                $('#asset_type_id').val(data.assetTypeId);
+                $('#asset_height').val(data.assetHeight);
+                toggleTowerHeight(data.assetTypeId);
+                $('#network_area').val(data.networkArea || '');
+                syncEditNetworkArea();
+                $('#is_active').val(data.isActive ? "true" : "false"); 
+                $('#zone_id_edit').val(data.zoneId);
+                $('#deviceModal').modal('show'); 
+            }); 
+        });
+
+        // Register Modal
+        $('body').on('click', '.register-btn', function() { 
+            $('#registerForm')[0].reset();
+            $('#unregistered_id').val($(this).data('id')); 
+            $('#reg_serial_number').val($(this).data('sn'));
+            $('#reg-tower-height-field').hide();
+            $('#reg_asset_height').val('').removeAttr('required');
+            $('#reg-network-area-field').hide();
+            $('#reg_network_area').val('');
+            $('#registerModal').modal('show'); 
+        });
+
+        // Delete Buttons
+        $('body').on('click', '.delete-device-btn', function() { deleteData(`/Shared/ManageDevices/Device/${$(this).data('id')}`, tDevice); });
+        // NOTE: We do not actually implement the Delete for Unregistered from frontend in this sample, but button is provided
+    });
+
+    // Helper functions
+    function toggleTowerHeight(assetTypeId) {
+        if (isTowerType(assetTypeId)) {
+            $('#tower-height-field').slideDown(200);
+            $('#network-area-field').slideDown(200);
+        } else {
+            $('#tower-height-field').slideUp(200);
+            $('#network-area-field').slideUp(200);
+        }
+    }
+
+    function toggleRegTowerHeight(assetTypeId) {
+        if (isTowerType(assetTypeId)) {
+            $('#reg-tower-height-field').slideDown(200);
+            $('#reg-network-area-field').slideDown(200);
+        } else {
+            $('#reg-tower-height-field').slideUp(200);
+            $('#reg-network-area-field').slideUp(200);
+        }
+    }
+
+    function calculateNetworkArea(heightValue) {
+        const height = parseFloat(heightValue);
+        if (Number.isNaN(height)) return '';
+        return height <= 45 ? 'Open Area Network' : 'Campus Area Network';
+    }
+    function syncRegNetworkArea() {
+        if (!isTowerType($('#reg_asset_type_id').val())) { $('#reg_network_area').val(''); return; }
+        $('#reg_network_area').val(calculateNetworkArea($('#reg_asset_height').val()));
+    }
+    function syncEditNetworkArea() {
+        if (!isTowerType($('#asset_type_id').val())) { $('#network_area').val(''); return; }
+        $('#network_area').val(calculateNetworkArea($('#asset_height').val()));
+    }
+
+    function executeAjax(url, method, data, modalId, tables) { 
+        $.ajax({ 
+            url: url, type: method, data: data, 
+            success: function(res) { 
+                $(`#${modalId}`).modal('hide'); 
+                tables.forEach(t => t.ajax.reload(null, false)); 
+                Swal.fire('Success!', res.success, 'success'); 
+            }, 
+            error: function(xhr) { 
+                Swal.fire('Error', xhr.responseJSON?.message || 'Check your input', 'error'); 
+            } 
+        }); 
+    }
+
+    function deleteData(url, table) { 
+        Swal.fire({ 
+            title: 'Delete data?', text: 'Data will be permanently deleted!', icon: 'warning', 
+            showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, Delete!'
+        }).then((result) => { 
+            if (result.isConfirmed) { 
+                $.ajax({ 
+                    url: url, type: 'DELETE', 
+                    success: function(res) { 
+                        table.ajax.reload(null, false); 
+                        Swal.fire('Deleted', res.success, 'success'); 
+                    }, 
+                    error: function(xhr) { Swal.fire('Error', 'Delete failed', 'error'); } 
+                }); 
+            } 
+        }); 
+    }
+    </script>
+}

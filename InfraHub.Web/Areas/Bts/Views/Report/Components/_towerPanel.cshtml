@@ -1,0 +1,123 @@
+<div class="rpt-panel rpt-panel--tower" id="panelTower">
+    <div class="rpt-panel__header">
+        <div class="rpt-panel__title-group">
+            <div class="rpt-panel__icon-wrap rpt-panel__icon-wrap--tower">
+                <i class="fa-solid fa-tower-cell"></i>
+            </div>
+            <div>
+                <div class="rpt-panel__title">Tower Structural Health</div>
+            </div>
+        </div>
+        <div class="rpt-panel-controls">
+            <div class="rpt-resolution-toggle" id="towerResolutionToggle">
+                <button class="rpt-res-btn rpt-res-btn--active" onclick="setGlobalResolution('daily',   this)">Daily</button>
+                <button class="rpt-res-btn"                      onclick="setGlobalResolution('weekly',  this)">Weekly</button>
+                <button class="rpt-res-btn"                      onclick="setGlobalResolution('monthly', this)">Monthly</button>
+            </div>
+        </div>
+    </div>
+
+    @*  Compact KPI stat bar  *@
+    <div class="rpt-stat-bar">
+
+        <div class="rpt-stat-chip rpt-stat-chip--ok">
+            <span class="rpt-stat-chip__label">MIN TILT</span>
+            <span class="rpt-stat-chip__value" id="statTiltMin">— <small>°</small></span>
+        </div>
+
+        <div class="rpt-stat-chip @( ((double?)ViewBag.Report?["tower"]?["max_tilt"] ?? 0) < 1.0 ? "rpt-stat-chip--ok" : (((double?)ViewBag.Report?["tower"]?["max_tilt"] ?? 0) < 2.0 ? "rpt-stat-chip--warn" : "rpt-stat-chip--crit") )">
+            <span class="rpt-stat-chip__label">MAX TILT</span>
+            <span class="rpt-stat-chip__value" id="statTiltMax">@(ViewBag.Report?["tower"]?["max_tilt"]) <small>°</small></span>
+        </div>
+
+        <div class="rpt-stat-chip rpt-stat-chip--ok">
+            <span class="rpt-stat-chip__label">MIN EARTH RESISTANCE</span>
+            <span class="rpt-stat-chip__value" id="statGroundMin">— <small>Ω</small></span>
+        </div>
+
+        <div class="rpt-stat-chip @( ((double?)ViewBag.Report?["tower"]?["max_ground_resistance"] ?? 0) < 5.0 ? "rpt-stat-chip--ok" : "rpt-stat-chip--crit" )">
+            <span class="rpt-stat-chip__label">MAX EARTH RESISTANCE</span>
+            <span class="rpt-stat-chip__value" id="statGroundMax">@(ViewBag.Report?["tower"]?["max_ground_resistance"]) <small>Ω</small></span>
+        </div>
+
+        <div class="rpt-stat-chip @(((bool?)ViewBag.Report?["weather"]?["lightning_ok"] ?? false) ? "rpt-stat-chip--ok" : "rpt-stat-chip--crit")">
+            <span class="rpt-stat-chip__label">LIGHTNING</span>
+            <span class="rpt-stat-chip__value" id="statLightningStrikes">@(ViewBag.Report?["weather"]?["total_lightning"]) <small>strikes</small></span>
+        </div>
+
+        <div class="rpt-stat-chip rpt-stat-chip--blue">
+            <span class="rpt-stat-chip__label">MAX STRIKE</span>
+            <span class="rpt-stat-chip__value" id="statLightningkA">@(ViewBag.Report?["weather"]?["max_lightning_kA"]) <small>kA</small></span>
+        </div>
+
+    </div>
+
+    @*  Chart: Pole Tilt per Tower (full width)  *@
+    <div class="rpt-chart-section">
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-ruler-vertical" style="margin-right:5px;color:#9333ea;"></i>
+            <code>Pole Tilt</code> — <span id="rptTowerChartLabel">Today</span>
+            <span class="rpt-trend-limits">Warn ≥0.5° · Crit ≥1.0°</span>
+        </div>
+        <div class="rpt-chart-wrap rpt-chart-wrap--220">
+            <canvas id="chartTilt"></canvas>
+        </div>
+    </div>
+
+    @*  Chart: Earth Resistance per Tower (full width)  *@
+    <div class="rpt-chart-section">
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-earth-americas" style="margin-right:5px;color:#78716c;"></i>
+            <code>Earth Resistance</code> 
+            <span class="rpt-trend-limits">Warn ≥3.5 Ω · Crit ≥5.0 Ω</span>
+        </div>
+        <div class="rpt-chart-wrap rpt-chart-wrap--220">
+            <canvas id="chartGroundResistance"></canvas>
+        </div>
+    </div>
+
+    @*  Chart: Lightning Current per Tower (full width)  *@
+    <div class="rpt-chart-section">
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-bolt-lightning" style="margin-right:5px;color:#f59e0b;"></i>
+            <code>Lightning Current</code> 
+            <span class="rpt-trend-limits">Crit ≥@(ViewBag.Report?["tower"]?["lightning_limit_ka"]) kA</span>
+        </div>
+        <div class="rpt-chart-wrap rpt-chart-wrap--220">
+            <canvas id="chartLightningCurrent"></canvas>
+        </div>
+    </div>
+
+    @*  Attention list (full width)  *@
+    <div class="rpt-attention-list">
+        <div class="rpt-attention-list__heading">
+            <i class="fa-solid fa-circle-exclamation rpt-attention-list__heading-icon"></i>
+            Tower Perlu Perhatian — <code>tilt &gt; @(ViewBag.Report?["tower"]?["tilt_limit"])°</code>
+        </div>
+
+        @if(ViewBag.Report != null && ViewBag.Report["tower"] != null && ViewBag.Report["tower"]["attention_towers"] != null) {
+foreach(var t in ViewBag.Report["tower"]["attention_towers"]) {
+        <div class="rpt-attention-item">
+            <div class="rpt-attention-item__row">
+                <span class="rpt-attention-item__code">@(t?["site_code"])</span>
+                <span class="rpt-attention-item__tilt">@(t?["tilt"])°</span>
+            </div>
+            <div class="rpt-attention-item__note">@(t?["note"])</div>
+        </div>
+        }
+} else {
+        <div class="rpt-attention-empty">
+            <i class="fa-solid fa-circle-check"></i> Semua tower dalam batas aman
+        </div>
+        }
+    </div>
+
+</div>
+
+
+
+
+
+
+
+

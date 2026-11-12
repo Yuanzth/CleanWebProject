@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "ITAssetTrack — Audit Perangkat Baru (Unregistered)";
+}
+
+<div class="pulse-unregistered-container">
+    <!-- Header Title -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("Dashboard", "Pulse")" class="btn btn-sm btn-light border rounded-pill px-2 py-1 text-muted">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+                <h1 class="h4 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-plus text-warning"></i> Audit Perangkat Belum Terdaftar
+                </h1>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Staging deteksi otomatis komputer yang aktif mengirimkan telemetri namun belum terdata di Master Asset</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" onclick="reloadUnregisteredTable()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Tabel
+            </button>
+        </div>
+    </div>
+
+    <!-- ── KPI Metric Cards ── -->
+    <div class="row g-2 g-md-3 mb-3">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Menunggu Verifikasi</span>
+                    <span class="badge bg-warning rounded-circle p-1"><i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-warning mb-0">@ViewBag.PendingCount</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Komputer baru terdeteksi telemetri</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Sudah Didaftarkan</span>
+                    <span class="badge bg-success rounded-circle p-1"><i class="bi bi-check-circle-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-success mb-0">@ViewBag.RegisteredCount</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Berhasil sinkron ke master asset</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-secondary">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Total Riwayat Staging</span>
+                    <span class="badge bg-secondary rounded-circle p-1"><i class="bi bi-archive-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0">@ViewBag.TotalUnregistered</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">Seluruh komputer yang pernah terdeteksi</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Filter Toolbar ── -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size: 11px;">Status Staging</label>
+                <select id="filterStatus" class="form-select form-select-sm rounded-3" onchange="reloadUnregisteredTable()">
+                    <option value="All">Semua Status</option>
+                    <option value="Pending Review" selected>Pending Review</option>
+                    <option value="Registered">Registered (Sudah Terdaftar)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DataTables Server-Side AJAX Table (Responsive Touch-Scroll, Prioritize Hostname) ── -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+        <div class="table-responsive">
+            <table id="unregisteredTable" class="table table-hover align-middle w-100" style="font-size: 12px;">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Komputer / Hostname</th>
+                        <th>Serial Number</th>
+                        <th>User Login</th>
+                        <th>OS Version</th>
+                        <th>IP / SSID</th>
+                        <th>Terakhir Dilihat</th>
+                        <th>Frekuensi</th>
+                        <th>Status</th>
+                        <th class="text-center" style="width: 140px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Quick Register -->
+<div class="modal fade" id="quickRegisterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 px-4 py-3 rounded-top-4">
+                <h5 class="modal-title fw-bold text-white mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-laptop-fill"></i> Daftarkan ke Master Asset
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="quickRegisterForm">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Nama Komputer / Hostname</label>
+                        <input type="text" id="regHostname" class="form-control form-control-sm rounded-3" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Serial Number</label>
+                        <input type="text" id="regSN" class="form-control form-control-sm rounded-3 bg-light" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Model / Tipe Laptop</label>
+                        <input type="text" id="regModel" class="form-control form-control-sm rounded-3" value="Laptop (Auto-Detected)" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">Operating System</label>
+                        <input type="text" id="regOs" class="form-control form-control-sm rounded-3" required />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light border-0 px-4 py-2 rounded-bottom-4">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="submitQuickRegister()">
+                    <i class="bi bi-check2-circle me-1"></i> Simpan ke Master Asset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let unregDataTable = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initUnregisteredDataTable();
+    });
+
+    function initUnregisteredDataTable() {
+        unregDataTable = $('#unregisteredTable').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ordering: false,
+            pageLength: 10,
+            ajax: {
+                url: '/api/pulse/unregistered/datatables',
+                type: 'POST',
+                data: function (d) {
+                    d.statusFilter = $('#filterStatus').val();
+                }
+            },
+            columns: [
+                {
+                    data: 'computerName',
+                    render: function (data) {
+                        return `<strong class="text-primary d-flex align-items-center gap-1">
+                                    <i class="bi bi-laptop"></i> ${data}
+                                </strong>`;
+                    }
+                },
+                {
+                    data: 'serialNumber',
+                    render: function (data) {
+                        return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">${data}</span>`;
+                    }
+                },
+                { data: 'loggedInUser' },
+                {
+                    data: 'osVersion',
+                    render: function (data) {
+                        return `<span class="badge bg-light text-dark border">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'localIp',
+                    render: function (data, type, row) {
+                        return `<div>${data}</div><div class="text-muted small" style="font-size:10px;">${row.ssid}</div>`;
+                    }
+                },
+                {
+                    data: 'lastSeenAt',
+                    render: function (data) {
+                        return `<span class="text-muted small">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'reportCount',
+                    render: function (data) {
+                        return `<span class="badge bg-secondary rounded-pill px-2">${data}x snapshot</span>`;
+                    }
+                },
+                {
+                    data: 'status',
+                    render: function (data) {
+                        let cls = data === 'Registered' ? 'bg-success text-white' : 'bg-warning text-dark';
+                        return `<span class="badge ${cls} rounded-pill px-2">${data}</span>`;
+                    }
+                },
+                {
+                    data: null,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        if (row.status === 'Registered') {
+                            return `<span class="text-success small fw-semibold"><i class="bi bi-check-all me-1"></i>Terdaftar</span>`;
+                        }
+                        return `<button class="btn btn-sm btn-success rounded-pill px-3 py-1" style="font-size: 11px;" onclick="openRegisterModal('${row.serialNumber}', '${row.hostname}', '${row.osVersion}')">
+                                    <i class="bi bi-plus-circle me-1"></i> Daftarkan
+                                </button>`;
+                    }
+                }
+            ],
+            language: {
+                search: "Cari Komputer / SN / User:",
+                lengthMenu: "Tampil _MENU_ data",
+                info: "Menampilkan _START_ s/d _END_ dari _TOTAL_ komputer",
+                infoEmpty: "Tidak ada data",
+                zeroRecords: "Tidak ada komputer staging",
+                paginate: { first: "«", last: "»", next: "›", previous: "‹" }
+            }
+        });
+    }
+
+    function reloadUnregisteredTable() {
+        if (unregDataTable) unregDataTable.ajax.reload();
+    }
+
+    function openRegisterModal(sn, hostname, os) {
+        document.getElementById('regSN').value = sn;
+        document.getElementById('regHostname').value = hostname;
+        document.getElementById('regOs').value = os;
+        document.getElementById('regModel').value = 'Laptop (Auto-Detected)';
+
+        const modal = new bootstrap.Modal(document.getElementById('quickRegisterModal'));
+        modal.show();
+    }
+
+    function submitQuickRegister() {
+        const payload = {
+            serialNumber: document.getElementById('regSN').value,
+            hostname: document.getElementById('regHostname').value,
+            osVersion: document.getElementById('regOs').value,
+            model: document.getElementById('regModel').value
+        };
+
+        fetch('/api/pulse/unregistered/quick-register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            const modalEl = document.getElementById('quickRegisterModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            reloadUnregisteredTable();
+        })
+        .catch(err => {
+            Swal.fire('Error', 'Gagal mendaftarkan aset: ' + err, 'error');
+        });
+    }
+</script>
+}

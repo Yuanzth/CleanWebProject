@@ -1,0 +1,459 @@
+@model ITAssetTrack.Models.UnscheduledMaint
+
+@{
+    ViewData["Title"] = "Detail Tiket Perbaikan";
+    ViewData["PageLabel"] = "Maintenance / Unscheduled Detail";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4 shadow-sm border-0" style="background:#fff; border-radius:12px;">
+            <div class="card-body p-3 p-sm-4">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h5 class="fw-bold text-dark m-0">Tiket Perbaikan</h5>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="font-size:12px;">@Model.SerialNumber</span>
+                        </div>
+                        <p class="text-muted extra-small m-0" style="font-size:11.5px;">Dibuat: @Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</p>
+                    </div>
+                    <div class="flex-shrink-0 text-end">
+                        <a href="@Url.Action("UnscheduledList", "Maintenance")" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 text-nowrap" style="font-size:11.5px; font-weight:600;">
+                            <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+                        </a>
+                    </div>
+                </div>
+
+            <!-- Detail Info -->
+            <div style="background:var(--gray-50); padding:16px; border-radius:8px; margin-bottom:16px; border: 1px solid var(--gray-200);">
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Pelapor</span>
+                        <div style="font-weight:700;">@Model.NamaUser (@Model.Site)</div>
+                    </div>
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Kategori & Prioritas</span>
+                        <div style="font-weight:700;">@Model.TroubleKategori - <span class="text-danger font-weight-700">@Model.Priority</span></div>
+                    </div>
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Status Saat Ini</span>
+                        <div>
+                            @if (Model.Status == "Complete")
+                            {
+                                <span class="badge bg-success">@Model.Status</span>
+                            }
+                            else if (Model.Status == "WaitingSparepart")
+                            {
+                                <span class="badge bg-warning text-dark">@Model.Status</span>
+                            }
+                            else if (Model.Status == "InProgress")
+                            {
+                                <span class="badge bg-primary">In Progress</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">@Model.Status</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLA Waktu Pengerjaan -->
+                @{
+                    // Mulai kerja: pakai StartTime jika ada, fallback ke CreatedAt untuk tiket lama
+                    var displayStart = Model.StartTime != TimeSpan.Zero
+                        ? Model.StartTime
+                        : Model.CreatedAt.TimeOfDay;
+                    bool hasStart = Model.StartTime != TimeSpan.Zero || Model.CreatedAt != default;
+                }
+                <div class="row mb-2" style="border-top: 1px dashed var(--gray-300); padding-top: 10px; margin-top: 10px;">
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Mulai Kerja</span>
+                        <div style="font-weight:700; color: var(--infrahub-blue);">
+                            <i class="bi bi-clock-history"></i>
+                            @if (Model.StartTime != TimeSpan.Zero)
+                            {
+                                @DateTime.Today.Add(Model.StartTime).ToString("HH:mm")
+                                <span style="font-size:11px; font-weight:500; color:var(--gray-500); margin-left:4px;">(submit form)</span>
+                            }
+                            else if (Model.CreatedAt != default)
+                            {
+                                @Model.CreatedAt.ToString("HH:mm")
+                                <span style="font-size:11px; font-weight:500; color:var(--gray-500); margin-left:4px;">(dibuat)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fw-normal">-</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Selesai Kerja</span>
+                        <div style="font-weight:700; color: var(--infrahub-blue);">
+                            <i class="bi bi-calendar-check"></i>
+                            @if (Model.EndTime != TimeSpan.Zero)
+                            {
+                                @DateTime.Today.Add(Model.EndTime).ToString("HH:mm")
+                                <span style="font-size:11px; font-weight:500; color:var(--gray-500); margin-left:4px;">(TTD User)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fw-normal" style="font-size:12px;">
+                                    <i class="bi bi-pen me-1"></i>Dicatat saat User TTD
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Durasi Penyelesaian (SLA)</span>
+                        <div style="font-weight:700; color: var(--danger);">
+                            @if (!hasStart)
+                            {
+                                <span class="text-muted"><i class="bi bi-play-circle me-1"></i>Belum Dimulai</span>
+                            }
+                            else if (Model.EndTime != TimeSpan.Zero)
+                            {
+                                var duration = Model.EndTime - displayStart;
+                                if (duration.TotalMinutes < 0) duration = TimeSpan.Zero;
+                                <i class="bi bi-stopwatch me-1"></i>
+                                @($"{(int)duration.TotalHours} Jam {duration.Minutes} Menit")
+                            }
+                            else
+                            {
+                                var duration = DateTime.Now.TimeOfDay - displayStart;
+                                if (duration.TotalMinutes < 0) duration = TimeSpan.Zero;
+                                <i class="bi bi-stopwatch me-1" style="color:var(--warning);"></i>
+                                <span style="color:var(--warning);">@($"{(int)duration.TotalHours} Jam {duration.Minutes} Menit")</span>
+                                <span style="font-size:11px; font-weight:500; color:var(--gray-500);"> (Berjalan)</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-2" style="border-top: 1px dashed var(--gray-300); padding-top: 10px; margin-top: 10px;">
+                    <div class="col-12">
+                        <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Keluhan Kerusakan:</span>
+                        <div style="font-weight:500; margin-top:4px; padding:10px 12px; background:#fff; border-left:4px solid var(--danger); border-radius:4px; border-top: 1px solid var(--gray-100); border-right: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100);">
+                            @Model.Keluhan
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Remark))
+                {
+                    <div class="row">
+                        <div class="col-12">
+                            <span style="color:var(--gray-500); font-size:13px; font-weight:600;">Tindakan Perbaikan (Remark):</span>
+                            <div style="font-weight:500; margin-top:4px; padding:10px 12px; background:#fff; border-left:4px solid var(--success); border-radius:4px; border-top: 1px solid var(--gray-100); border-right: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100);">
+                                @Model.Remark
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Dokumentasi Foto -->
+            @{
+                var photos = ViewBag.Photos as List<ITAssetTrack.Models.MaintenancePhoto>;
+                if (photos != null && photos.Any())
+                {
+                    <h5 style="font-weight:700; margin-bottom:12px;">Dokumentasi Foto</h5>
+                    <div class="row mb-3">
+                        @foreach(var p in photos)
+                        {
+                            <div class="col-md-3 col-sm-4 mb-2">
+                                <a href="@p.FilePath" target="_blank">
+                                    <img src="@p.FilePath" class="img-fluid rounded shadow-sm" style="max-height: 120px; object-fit: cover; width: 100%; border: 1px solid var(--gray-200);" alt="Foto PM" />
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+
+            <hr style="margin:16px 0; border-color:var(--gray-200);" />
+
+            <h5 style="font-weight:700; margin-bottom:12px;">Update Status Tiket</h5>
+
+            <form asp-action="UpdateUnscheduledStatus" method="post" id="statusUpdateForm">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" id="userSigInput" name="userSignature" value="" />
+                <input type="hidden" id="techSigInput" name="techSignature" value="" />
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight:600;">Status Penanganan</label>
+                    <select name="status" class="form-select" style="border-radius:8px;" id="statusSelect">
+                        <option value="Open" selected="@(Model.Status == "Open")">Open (Belum Dikerjakan)</option>
+                        <option value="InProgress" selected="@(Model.Status == "InProgress")">In Progress (Sedang Dikerjakan)</option>
+                        <option value="WaitingSparepart" selected="@(Model.Status == "WaitingSparepart")">Waiting Sparepart (Menunggu Suku Cadang)</option>
+                        <option value="Complete" selected="@(Model.Status == "Complete")">Complete (Selesai &amp; Serah Terima)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight:600;">Catatan Tindakan Teknisi (Remark)</label>
+                    <textarea name="remark" class="form-control" rows="3" style="border-radius:8px;" placeholder="Tuliskan detail perbaikan...">@Model.Remark</textarea>
+                </div>
+
+                <!-- User Signature — muncul saat status = Complete -->
+                <div id="userSignatureSection" style="display:none; background:#f8faff; border:1.5px solid #bfdbfe; border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-person-check-fill" style="color:var(--infrahub-blue); font-size:18px;"></i>
+                        <div>
+                            <div style="font-weight:700; color:var(--infrahub-blue); font-size:14px;">Tanda Tangan Pemilik Device</div>
+                            <div style="font-size:12px; color:var(--gray-500);">Waktu selesai akan otomatis tercatat saat user menandatangani</div>
+                        </div>
+                    </div>
+                    <label class="form-label fw-semibold mb-2" style="font-size:13px;">Tanda Tangan <strong>@Model.NamaUser</strong> <span class="text-danger">*</span></label>
+                    <div style="border:1.5px solid #93c5fd; border-radius:10px; background:#fff; position:relative; cursor:crosshair;">
+                        <canvas id="userSigCanvas" style="width:100%; height:180px; display:block;"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <button type="button" id="btnClearUserSig" class="btn btn-outline-secondary btn-sm" style="border-radius:6px; font-size:12px;">
+                            <i class="bi bi-trash me-1"></i> Bersihkan
+                        </button>
+                        <span class="text-muted" style="font-size:11px;"><i class="bi bi-info-circle me-1"></i>Tanda tangan wajib sebelum status Complete disimpan</span>
+                    </div>
+                </div>
+
+                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator") || User.IsInRole("Technician"))
+                {
+                    <!-- Tech Signature — muncul saat status = Complete dan teknisi belum TTD -->
+                    <div id="techSignatureSection" style="display:none; background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:20px; margin-bottom:20px;">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-tools" style="color:#16a34a; font-size:18px;"></i>
+                            <div>
+                                <div style="font-weight:700; color:#16a34a; font-size:14px;">Tanda Tangan Teknisi Pelaksana</div>
+                                <div style="font-size:12px; color:var(--gray-500);">Tanda tangan sebagai bukti penyelesaian perbaikan oleh teknisi</div>
+                            </div>
+                        </div>
+                        <label class="form-label fw-semibold mb-2" style="font-size:13px;">Tanda Tangan Teknisi <span class="text-danger">*</span></label>
+                        <div style="border:1.5px solid #86efac; border-radius:10px; background:#fff; position:relative; cursor:crosshair;">
+                            <canvas id="techSigCanvas" style="width:100%; height:150px; display:block;"></canvas>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <button type="button" id="btnClearTechSig" class="btn btn-outline-secondary btn-sm" style="border-radius:6px; font-size:12px;">
+                                <i class="bi bi-trash me-1"></i> Bersihkan
+                            </button>
+                            <span class="text-muted" style="font-size:11px;"><i class="bi bi-info-circle me-1"></i>Wajib ditandatangani oleh teknisi sebelum menyimpan status Complete</span>
+                        </div>
+                    </div>
+                }
+
+                <hr style="margin:24px 0; border-color:var(--gray-200);" />
+
+                <!-- Bukti Serah Terima & Persetujuan -->
+                <h5 style="font-weight:700; margin-bottom:16px;">Bukti Serah Terima &amp; Persetujuan</h5>
+                <div class="row mb-4">
+                    <!-- TTD User -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; text-align: center; background: var(--gray-50); min-height: 180px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <span style="font-weight:600; display: block; margin-bottom: 12px; color: var(--gray-600); font-size:12px;">Tanda Tangan User</span>
+                            <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                                @if (!string.IsNullOrEmpty(Model.UserSignature))
+                                {
+                                    <img src="@Model.UserSignature" style="max-height: 80px; max-width: 100%; background: white; border: 1px solid var(--gray-300); border-radius: 4px; padding: 4px;" alt="Tanda Tangan User" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic">Belum TTD</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- TTD Teknisi -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; text-align: center; background: var(--gray-50); min-height: 180px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <span style="font-weight:600; display: block; margin-bottom: 12px; color: var(--gray-600); font-size:12px;">Tanda Tangan Teknisi</span>
+                            <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                                @if (!string.IsNullOrEmpty(Model.TechSignature))
+                                {
+                                    <img src="@Model.TechSignature" style="max-height: 80px; max-width: 100%; background: white; border: 1px solid var(--gray-300); border-radius: 4px; padding: 4px;" alt="Tanda Tangan Teknisi" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic">Belum TTD</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TTD PIC TEAM -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; text-align: center; background: var(--gray-50); min-height: 180px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <span style="font-weight:600; display: block; margin-bottom: 12px; color: var(--gray-600); font-size:12px;">PIC TEAM</span>
+                            <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                                @if (Model.LeaderApproved && !string.IsNullOrEmpty(Model.LeaderSignature))
+                                {
+                                    <img src="@Model.LeaderSignature" style="max-height: 80px; max-width: 100%; background: white; border: 1px solid var(--gray-300); border-radius: 4px; padding: 4px;" alt="Tanda Tangan PIC TEAM" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic">Belum Disetujui</span>
+                                }
+                            </div>
+                            @if (Model.LeaderApproved)
+                            {
+                                <div class="text-muted" style="font-size:10px; margin-top:8px;">Status: Disetujui</div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- TTD Section Head -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; text-align: center; background: var(--gray-50); min-height: 180px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <span style="font-weight:600; display: block; margin-bottom: 12px; color: var(--gray-600); font-size:12px;">Section Head</span>
+                            <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                                @if (Model.SectionHeadApproved && !string.IsNullOrEmpty(Model.SectionHeadSignature))
+                                {
+                                    <img src="@Model.SectionHeadSignature" style="max-height: 80px; max-width: 100%; background: white; border: 1px solid var(--gray-300); border-radius: 4px; padding: 4px;" alt="Tanda Tangan Dept Head" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted small italic">Belum Disetujui</span>
+                                }
+                            </div>
+                            @if (Model.SectionHeadApproved)
+                            {
+                                <div class="text-muted" style="font-size:10px; margin-top:8px;">Status: Disetujui</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary px-4" style="border-radius:8px; font-weight:600;">
+                        <i class="bi bi-save me-2"></i> Simpan &amp; Update Tiket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const statusSelect = document.getElementById('statusSelect');
+            const sigSection = document.getElementById('userSignatureSection');
+            const canvas = document.getElementById('userSigCanvas');
+            const hasUserSig = @(string.IsNullOrEmpty(Model.UserSignature) ? "false" : "true");
+            let sigPad = null;
+
+            const techSigSection = document.getElementById('techSignatureSection');
+            const techCanvas = document.getElementById('techSigCanvas');
+            const hasTechSig = @(string.IsNullOrEmpty(Model.TechSignature) ? "false" : "true");
+            let techSigPad = null;
+
+            // ---- User Signature Pad ----
+            function resizeCanvas() {
+                if (!canvas) return;
+                if (canvas.offsetWidth === 0) return;
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const tw = canvas.offsetWidth * ratio;
+                const th = canvas.offsetHeight * ratio;
+                if (canvas.width !== tw || canvas.height !== th) {
+                    let saved = (sigPad && !sigPad.isEmpty()) ? sigPad.toDataURL() : null;
+                    canvas.width = tw;
+                    canvas.height = th;
+                    canvas.getContext('2d').scale(ratio, ratio);
+                    if (sigPad) { sigPad.clear(); if (saved) sigPad.fromDataURL(saved); }
+                }
+            }
+
+            function initPad() {
+                if (!canvas || sigPad) return;
+                if (canvas.offsetWidth === 0) { setTimeout(initPad, 80); return; }
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext('2d').scale(ratio, ratio);
+                sigPad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)', penColor: 'rgb(15,23,42)' });
+            }
+
+            // ---- Tech Signature Pad ----
+            function resizeTechCanvas() {
+                if (!techCanvas) return;
+                if (techCanvas.offsetWidth === 0) return;
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const tw = techCanvas.offsetWidth * ratio;
+                const th = techCanvas.offsetHeight * ratio;
+                if (techCanvas.width !== tw || techCanvas.height !== th) {
+                    let saved = (techSigPad && !techSigPad.isEmpty()) ? techSigPad.toDataURL() : null;
+                    techCanvas.width = tw;
+                    techCanvas.height = th;
+                    techCanvas.getContext('2d').scale(ratio, ratio);
+                    if (techSigPad) { techSigPad.clear(); if (saved) techSigPad.fromDataURL(saved); }
+                }
+            }
+
+            function initTechPad() {
+                if (!techCanvas || techSigPad) return;
+                if (techCanvas.offsetWidth === 0) { setTimeout(initTechPad, 80); return; }
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                techCanvas.width = techCanvas.offsetWidth * ratio;
+                techCanvas.height = techCanvas.offsetHeight * ratio;
+                techCanvas.getContext('2d').scale(ratio, ratio);
+                techSigPad = new SignaturePad(techCanvas, { backgroundColor: 'rgba(255,255,255,0)', penColor: 'rgb(15,23,42)' });
+            }
+
+            function toggleSigSection() {
+                const isComplete = statusSelect && statusSelect.value === 'Complete';
+                // Show user sig section if Complete and not yet signed
+                if (isComplete && !hasUserSig) {
+                    if (sigSection) sigSection.style.display = 'block';
+                    setTimeout(initPad, 80);
+                } else {
+                    if (sigSection) sigSection.style.display = 'none';
+                }
+                // Show tech sig section if Complete and not yet signed (only for Technician/Admin/Coordinator)
+                if (isComplete && !hasTechSig && techSigSection) {
+                    techSigSection.style.display = 'block';
+                    setTimeout(initTechPad, 80);
+                } else if (techSigSection) {
+                    techSigSection.style.display = 'none';
+                }
+            }
+
+            if (statusSelect) {
+                statusSelect.addEventListener('change', toggleSigSection);
+                toggleSigSection();
+            }
+
+            document.getElementById('btnClearUserSig')?.addEventListener('click', function() { if (sigPad) sigPad.clear(); });
+            document.getElementById('btnClearTechSig')?.addEventListener('click', function() { if (techSigPad) techSigPad.clear(); });
+
+            document.getElementById('statusUpdateForm')?.addEventListener('submit', function(e) {
+                if (statusSelect && statusSelect.value === 'Complete') {
+                    // Validate and capture user signature
+                    if (!hasUserSig) {
+                        if (!sigPad || sigPad.isEmpty()) {
+                            e.preventDefault();
+                            Swal.fire({ icon: 'warning', title: 'Tanda Tangan User Diperlukan', text: 'Pemilik device harus menandatangani sebelum status Complete disimpan.', confirmButtonColor: '#1a4598' });
+                            return false;
+                        }
+                        document.getElementById('userSigInput').value = sigPad.toDataURL();
+                    }
+                    // Validate and capture tech signature
+                    if (!hasTechSig && techSigSection && techSigSection.style.display !== 'none') {
+                        if (!techSigPad || techSigPad.isEmpty()) {
+                            e.preventDefault();
+                            Swal.fire({ icon: 'warning', title: 'Tanda Tangan Teknisi Diperlukan', text: 'Teknisi harus menandatangani sebelum status Complete disimpan.', confirmButtonColor: '#16a34a' });
+                            return false;
+                        }
+                        document.getElementById('techSigInput').value = techSigPad.toDataURL();
+                    }
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                if (statusSelect && statusSelect.value === 'Complete') {
+                    if (!hasUserSig) resizeCanvas();
+                    if (!hasTechSig) resizeTechCanvas();
+                }
+            });
+        });
+    </script>
+}

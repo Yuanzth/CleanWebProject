@@ -1,0 +1,1254 @@
+:root {
+    --ups-bg-page: #0a0e1a;
+    --ups-text-header: #e2e8f0;
+    --ups-text-muted: #64748b;
+    --ups-card-bg: rgba(255, 255, 255, 0.04);
+    --ups-card-border: rgba(255, 255, 255, 0.06);
+    --ups-card-title-color: #cbd5e1;
+    --ups-card-value-color: #f1f5f9;
+    --ups-badge-bg: rgba(255, 255, 255, 0.06);
+    --ups-badge-border: rgba(255, 255, 255, 0.08);
+    --ups-badge-text: #e2e8f0;
+    --ups-badge-val: #f8fafc;
+    --ups-input-bg: rgba(15, 23, 42, 0.6);
+    --ups-input-border: rgba(148, 163, 184, 0.2);
+    --ups-input-text: #e2e8f0;
+    --ups-chart-bg: rgba(255, 255, 255, 0.03);
+    --ups-chart-border: rgba(255, 255, 255, 0.06);
+    --ups-chart-title: #cbd5e1;
+    --ups-card-gradient: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(139, 92, 246, 0.3) 30%,
+        rgba(99, 102, 241, 0.4) 50%,
+        rgba(139, 92, 246, 0.3) 70%,
+        transparent 100%
+    );
+    --ups-card-shadow: 0 8px 32px rgba(139, 92, 246, 0.08);
+    
+    --ups-good: #4ade80;
+    --ups-good-bg: rgba(34, 197, 94, 0.15);
+    --ups-good-border: rgba(34, 197, 94, 0.25);
+    --ups-warn: #fbbf24;
+    --ups-warn-bg: rgba(245, 158, 11, 0.15);
+    --ups-warn-border: rgba(245, 158, 11, 0.25);
+    --ups-crit: #f87171;
+    --ups-crit-bg: rgba(239, 68, 68, 0.15);
+    --ups-crit-border: rgba(239, 68, 68, 0.25);
+    --ups-err: #fca5a5;
+    --ups-err-bg: rgba(127, 29, 29, 0.2);
+    --ups-err-border: rgba(248, 113, 113, 0.28);
+    --ups-err-icon-bg: rgba(248, 113, 113, 0.16);
+
+    --ups-sub-bg: rgba(255, 255, 255, 0.03);
+    --ups-sub-border: rgba(255, 255, 255, 0.04);
+    --ups-sub-value: #e2e8f0;
+    --ups-bar-bg: rgba(255, 255, 255, 0.06);
+}
+
+.theme-light {
+    --ups-bg-page: #f8fafc;
+    --ups-text-header: #0f172a;
+    --ups-text-muted: #64748b;
+    --ups-card-bg: #ffffff;
+    --ups-card-border: rgba(148, 163, 184, 0.22);
+    --ups-card-title-color: #475569;
+    --ups-card-value-color: #0f172a;
+    --ups-badge-bg: #f1f5f9;
+    --ups-badge-border: rgba(148, 163, 184, 0.2);
+    --ups-badge-text: #334155;
+    --ups-badge-val: #0f172a;
+    --ups-input-bg: #ffffff;
+    --ups-input-border: rgba(148, 163, 184, 0.22);
+    --ups-input-text: #334155;
+    --ups-chart-bg: #ffffff;
+    --ups-chart-border: rgba(148, 163, 184, 0.22);
+    --ups-chart-title: #475569;
+    --ups-card-gradient: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(99, 102, 241, 0.15) 30%,
+        rgba(99, 102, 241, 0.25) 50%,
+        rgba(99, 102, 241, 0.15) 70%,
+        transparent 100%
+    );
+    --ups-card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    
+    --ups-good: #15803d;
+    --ups-good-bg: #dcfce7;
+    --ups-good-border: rgba(22, 163, 74, 0.25);
+    --ups-warn: #b45309;
+    --ups-warn-bg: #fef3c7;
+    --ups-warn-border: rgba(217, 119, 6, 0.25);
+    --ups-crit: #b91c1c;
+    --ups-crit-bg: #fee2e2;
+    --ups-crit-border: rgba(220, 38, 38, 0.25);
+    --ups-err: #b91c1c;
+    --ups-err-bg: #fee2e2;
+    --ups-err-border: rgba(220, 38, 38, 0.28);
+    --ups-err-icon-bg: rgba(220, 38, 38, 0.15);
+
+    --ups-sub-bg: rgba(15, 23, 42, 0.03);
+    --ups-sub-border: rgba(15, 23, 42, 0.08);
+    --ups-sub-value: #0f172a;
+    --ups-bar-bg: rgba(15, 23, 42, 0.08);
+}
+
+.ups-page .main-container,
+.ups-page {
+    background: var(--ups-bg-page);
+    min-height: 100vh;
+}
+
+.ups-page .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ups-page .page-header h1 {
+    color: var(--ups-text-header);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.ups-page .page-header p {
+    color: var(--ups-text-muted);
+    font-size: 14px;
+}
+
+.page-header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ups-page-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.96));
+    color: #dbeafe;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.25);
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+}
+
+.ups-page-action-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(96, 165, 250, 0.45);
+    box-shadow: 0 14px 26px rgba(15, 23, 42, 0.34);
+    color: #eff6ff;
+}
+
+.ups-page-action-btn i {
+    font-size: 0.9rem;
+}
+
+.ups-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.ups-filter-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.ups-filter-select {
+    background: var(--ups-input-bg);
+    border: 1px solid var(--ups-input-border);
+    color: var(--ups-input-text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ups-filter-select:focus {
+    border-color: rgba(129, 140, 248, 0.5);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+}
+
+.ups-filter-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ups-empty-state {
+    margin: 0 0 16px;
+    padding: 32px 24px;
+    border-radius: 16px;
+    background: var(--ups-sub-bg);
+    border: 1px solid var(--ups-sub-border);
+    text-align: center;
+}
+
+.ups-empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ups-card-value-color);
+    margin-bottom: 6px;
+}
+
+.ups-empty-subtitle {
+    font-size: 13px;
+    color: var(--ups-text-muted);
+}
+
+.ups-monitoring-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.ups-monitoring-content .ups-card-grid {
+    margin-bottom: 0;
+}
+
+.ups-hidden {
+    display: none;
+}
+
+/* Card Grid */
+.ups-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+/* Glass Card Base */
+.ups-glass-card {
+    background: var(--ups-card-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--ups-card-border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ups-glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--ups-card-gradient);
+}
+
+.ups-glass-card:hover {
+    background: var(--ups-card-bg);
+    border-color: var(--ups-card-border);
+    box-shadow: var(--ups-card-shadow);
+    transform: translateY(-2px);
+}
+
+.ups-glass-card--error {
+    border-color: var(--ups-err-border);
+    background: var(--ups-err-bg);
+    box-shadow: 0 10px 32px rgba(248, 113, 113, 0.1);
+}
+
+.ups-glass-card--error::before {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ups-err-border) 30%,
+        var(--ups-err) 50%,
+        var(--ups-err-border) 70%,
+        transparent 100%
+    );
+}
+
+.ups-glass-card--error .ups-card-title {
+    color: var(--ups-err);
+}
+
+.ups-glass-card--error .ups-card-icon--ground {
+    background: var(--ups-err-icon-bg);
+    color: var(--ups-err);
+}
+
+/* Card Header */
+.ups-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.ups-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.ups-card-icon--input {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+}
+
+.ups-card-icon--output {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.ups-card-icon--ground {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
+
+.ups-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ups-card-title-color);
+    letter-spacing: 0.02em;
+}
+
+/* Card Body (Value + Sparkline) */
+.ups-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.ups-card-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.ups-value-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--ups-card-value-color);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.ups-value-unit {
+    font-size: 16px;
+    font-weight: 400;
+    color: #64748b;
+}
+
+/* Sparkline */
+.ups-sparkline-container {
+    width: 100px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.ups-sparkline-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Badge */
+.ups-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ups-badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    background: var(--ups-badge-bg);
+    border: 1px solid var(--ups-badge-border);
+    color: var(--ups-badge-text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.ups-badge:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ups-badge .ups-badge-value {
+    font-weight: 700;
+    color: var(--ups-badge-val);
+}
+
+.ups-badge .ups-badge-unit {
+    color: #64748b;
+    font-weight: 400;
+    font-size: 12px;
+}
+
+/* ── Ground System — Improvisasi ── */
+.ups-ground-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ups-ground-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ups-ground-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ups-status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ups-status-badge--normal {
+    background: var(--ups-good-bg);
+    color: var(--ups-good);
+    border: 1px solid var(--ups-good-border);
+}
+
+.ups-status-badge--warning {
+    background: var(--ups-warn-bg);
+    color: var(--ups-warn);
+    border: 1px solid var(--ups-warn-border);
+}
+
+.ups-status-badge--critical {
+    background: var(--ups-crit-bg);
+    color: var(--ups-crit);
+    border: 1px solid var(--ups-crit-border);
+}
+
+.ups-status-badge--error {
+    background: var(--ups-err-bg);
+    color: var(--ups-err);
+    border: 1px solid var(--ups-err-border);
+}
+
+.ups-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: upsStatusPulse 2s ease-in-out infinite;
+}
+
+.ups-status-dot--normal {
+    background: var(--ups-good);
+    box-shadow: 0 0 8px var(--ups-good);
+}
+
+.ups-status-dot--warning {
+    background: var(--ups-warn);
+    box-shadow: 0 0 8px var(--ups-warn);
+}
+
+.ups-status-dot--critical {
+    background: var(--ups-crit);
+    box-shadow: 0 0 8px var(--ups-crit);
+}
+
+.ups-status-dot--error {
+    background: var(--ups-err);
+    box-shadow: 0 0 8px var(--ups-err);
+}
+
+@keyframes upsStatusPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* Threshold Bar */
+.ups-threshold-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    position: relative;
+    overflow: hidden;
+}
+
+.ups-threshold-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease;
+}
+
+.ups-threshold-fill--normal {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.ups-threshold-fill--warning {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.ups-threshold-fill--critical {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.ups-threshold-fill--error {
+    background: linear-gradient(90deg, #991b1b, #f87171);
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.35);
+}
+
+.ups-value-number--error {
+    color: #fca5a5;
+}
+
+.ups-threshold-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.ups-threshold-label {
+    font-size: 10px;
+    color: var(--ups-text-muted);
+    font-weight: 500;
+}
+
+/* Ground Extra Info */
+.ups-ground-extras {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.ups-ground-extra-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    background: var(--ups-sub-bg);
+    border-radius: 8px;
+    border: 1px solid var(--ups-sub-border);
+}
+
+.ups-ground-extra-label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.ups-ground-extra-value {
+    font-size: 13px;
+    color: var(--ups-sub-value);
+    font-weight: 600;
+}
+
+/* Card Icon Colors — New Cards */
+.ups-card-icon--battery {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.ups-card-icon--temp {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+.ups-card-icon--watt {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+/* Battery Card */
+.ups-battery-body {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.ups-battery-gauge {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.ups-battery-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ups-battery-ring-bg {
+    fill: none;
+    stroke: var(--ups-bar-bg);
+    stroke-width: 8;
+}
+
+.ups-battery-ring-fill {
+    fill: none;
+    stroke: #4ade80;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s ease, stroke 0.4s ease;
+}
+
+.ups-battery-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.ups-battery-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ups-sub-value);
+    line-height: 1;
+}
+
+.ups-battery-unit {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.ups-battery-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ups-battery-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    background: var(--ups-sub-bg);
+    border-radius: 6px;
+    border: 1px solid var(--ups-sub-border);
+}
+
+.ups-battery-info-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.ups-battery-info-value {
+    font-size: 12px;
+    color: var(--ups-sub-value);
+    font-weight: 600;
+}
+
+/* ── Temperature Card — Dual Sensor Design ── */
+.ups-temp-card .ups-card-header {
+    margin-bottom: 14px;
+}
+
+.ups-temp-status-group {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Dual readings row */
+.ups-temp-dual {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 8px;
+}
+
+.ups-temp-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    background: var(--ups-sub-bg);
+    border-radius: 10px;
+    border: 1px solid var(--ups-sub-border);
+    transition: border-color 0.3s ease;
+}
+
+.ups-temp-item:hover {
+    border-color: var(--ups-card-border);
+}
+
+.ups-temp-divider {
+    width: 12px;
+    flex-shrink: 0;
+}
+
+.ups-temp-item-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ups-temp-item-label i {
+    font-size: 10px;
+}
+
+.ups-temp-item-value {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+}
+
+.ups-temp-big {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--ups-sub-value);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    transition: color 0.3s ease;
+}
+
+.ups-temp-big-unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+/* Mini progress bar inside each temp item */
+.ups-temp-mini-bar {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--ups-bar-bg);
+    position: relative;
+    overflow: visible;
+    margin-top: 2px;
+}
+
+.ups-temp-mini-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #fbbf24 65%, #f87171 100%);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ups-temp-mini-marker {
+    position: absolute;
+    top: -4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 2px solid #818cf8;
+    box-shadow: 0 0 6px rgba(129, 140, 248, 0.5);
+    transform: translateX(-50%);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+.ups-temp-value {
+    transition: color 0.3s ease;
+}
+
+
+/* ── Main Chart Container ── */
+.ups-chart-container {
+    background: var(--ups-chart-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--ups-chart-border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    min-height: 360px;
+}
+
+.ups-chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(99, 102, 241, 0.3) 30%,
+        rgba(139, 92, 246, 0.4) 50%,
+        rgba(99, 102, 241, 0.3) 70%,
+        transparent 100%
+    );
+}
+
+.ups-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.ups-chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ups-chart-title);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ups-chart-title i {
+    color: #818cf8;
+    font-size: 13px;
+}
+
+.ups-chart-legend {
+    display: flex;
+    gap: 20px;
+}
+
+.ups-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.ups-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.ups-legend-dot--input {
+    background: #818cf8;
+    box-shadow: 0 0 6px rgba(129, 140, 248, 0.5);
+}
+
+.ups-legend-dot--output {
+    background: #f87171;
+    box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+}
+
+.ups-chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+.ups-chart-canvas-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+    .ups-card-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .ups-page .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header-actions {
+        width: 100%;
+    }
+
+    .ups-filter {
+        min-width: 0;
+        flex: 1;
+    }
+    .ups-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ups-value-number {
+        font-size: 28px;
+    }
+
+    .ups-chart-canvas-wrap {
+        height: 240px;
+    }
+
+    .ups-chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ups-glass-card {
+        padding: 18px 20px;
+    }
+
+    .ups-card-badges {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .ups-ground-extras {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Glassmorphism Offline / Error State Styling */
+.ups-monitoring-offline-overlay {
+    margin-bottom: 20px;
+    padding: 16px 24px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15), inset 0 0 15px rgba(239, 68, 68, 0.05);
+    animation: fadeInDown 0.3s ease-out;
+}
+
+.ups-offline-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.ups-offline-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f87171;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+.ups-offline-info {
+    flex: 1;
+    min-width: 250px;
+}
+
+.ups-offline-status-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #f87171;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.ups-offline-sub {
+    font-size: 0.82rem;
+    color: #94a3b8;
+}
+
+.ups-offline-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ups-offline-pill {
+    padding: 6px 14px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ups-offline-pill--downtime {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+.ups-glass-card--offline {
+    border-color: rgba(239, 68, 68, 0.35) !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+}
+
+.ups-glass-card--offline .ups-value-number {
+    color: #94a3b8 !important;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphism Dynamic Card Anomaly Glowing States */
+.ups-glass-card--warning {
+    border: 1.5px solid rgba(245, 158, 11, 0.75) !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25), inset 0 0 15px rgba(245, 158, 11, 0.08) !important;
+    animation: warningPulse 2.5s infinite ease-in-out;
+}
+
+.ups-glass-card--warning .ups-value-number {
+    color: #fbbf24 !important;
+}
+
+.ups-glass-card--critical {
+    border: 1.5px solid rgba(239, 68, 68, 0.85) !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(15, 23, 42, 0.85) 100%) !important;
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.35), inset 0 0 20px rgba(239, 68, 68, 0.1) !important;
+    animation: criticalPulse 1.8s infinite ease-in-out;
+}
+
+.ups-glass-card--critical .ups-value-number {
+    color: #f87171 !important;
+}
+
+@keyframes warningPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.2); }
+    50% { box-shadow: 0 0 26px rgba(245, 158, 11, 0.45); }
+}
+
+@keyframes criticalPulse {
+    0%, 100% { box-shadow: 0 0 18px rgba(239, 68, 68, 0.25); }
+    50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.55); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES — UPS MONITORING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Action Buttons */
+.theme-light .ups-page-action-btn {
+    background: linear-gradient(180deg, #ffffff, #f1f5f9);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #2563eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.theme-light .ups-page-action-btn:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    color: #1d4ed8;
+}
+
+/* Card Icons — make them lighter & more vivid for light bg */
+.theme-light .ups-card-icon--input {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+.theme-light .ups-card-icon--output {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+.theme-light .ups-card-icon--ground {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+.theme-light .ups-card-icon--battery {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+.theme-light .ups-card-icon--temp {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+.theme-light .ups-card-icon--watt {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+/* Value Unit */
+.theme-light .ups-value-unit {
+    color: #94a3b8;
+}
+
+/* Badge Hover */
+.theme-light .ups-badge:hover {
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(148, 163, 184, 0.3);
+}
+.theme-light .ups-badge .ups-badge-unit {
+    color: #94a3b8;
+}
+
+/* Threshold Bar background */
+.theme-light .ups-threshold-bar {
+    background: rgba(15, 23, 42, 0.08);
+}
+
+/* Ground Extra Labels */
+.theme-light .ups-ground-extra-label {
+    color: #64748b;
+}
+
+/* Battery Unit & Info Labels */
+.theme-light .ups-battery-unit {
+    color: #94a3b8;
+}
+.theme-light .ups-battery-info-label {
+    color: #64748b;
+}
+
+/* Temperature Labels & Units */
+.theme-light .ups-temp-item-label {
+    color: #64748b;
+}
+.theme-light .ups-temp-big-unit {
+    color: #94a3b8;
+}
+
+/* Chart Container gradient line */
+.theme-light .ups-chart-container::before {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(99, 102, 241, 0.15) 30%,
+        rgba(139, 92, 246, 0.2) 50%,
+        rgba(99, 102, 241, 0.15) 70%,
+        transparent 100%
+    );
+}
+
+/* Chart Title Icon */
+.theme-light .ups-chart-title i {
+    color: #6366f1;
+}
+
+/* Legend */
+.theme-light .ups-legend-item {
+    color: #64748b;
+}
+
+/* Glass Card Shadow on white bg */
+.theme-light .ups-glass-card {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.theme-light .ups-glass-card:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Glass Card :: before gradient lighter */
+.theme-light .ups-glass-card::before {
+    opacity: 0.5;
+}
+
+/* Error Number */
+.theme-light .ups-value-number--error {
+    color: #b91c1c;
+}
+
+/* ── Offline Overlay ── */
+.theme-light .ups-monitoring-offline-overlay {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(220, 38, 38, 0.35);
+    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.theme-light .ups-offline-icon-wrapper {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #dc2626;
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.12);
+}
+.theme-light .ups-offline-status-title {
+    color: #dc2626;
+}
+.theme-light .ups-offline-sub {
+    color: #64748b;
+}
+.theme-light .ups-offline-pill {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #475569;
+}
+.theme-light .ups-offline-pill--downtime {
+    background: #fef2f2;
+    border-color: rgba(220, 38, 38, 0.3);
+    color: #b91c1c;
+}
+
+/* ── Offline Card ── */
+.theme-light .ups-glass-card--offline {
+    border-color: rgba(220, 38, 38, 0.3) !important;
+    background: #fef2f2 !important;
+}
+.theme-light .ups-glass-card--offline .ups-value-number {
+    color: #94a3b8 !important;
+}
+
+/* ── Warning Card Light ── */
+.theme-light .ups-glass-card--warning {
+    border-color: rgba(217, 119, 6, 0.5) !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+    box-shadow: 0 0 20px rgba(217, 119, 6, 0.12), 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+.theme-light .ups-glass-card--warning .ups-value-number {
+    color: #b45309 !important;
+}
+
+/* ── Critical Card Light ── */
+.theme-light .ups-glass-card--critical {
+    border-color: rgba(220, 38, 38, 0.5) !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+    box-shadow: 0 0 24px rgba(220, 38, 38, 0.12), 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+.theme-light .ups-glass-card--critical .ups-value-number {
+    color: #b91c1c !important;
+}
+
+/* ── Error Card ── */
+.theme-light .ups-glass-card--error {
+    box-shadow: 0 10px 32px rgba(220, 38, 38, 0.06);
+}

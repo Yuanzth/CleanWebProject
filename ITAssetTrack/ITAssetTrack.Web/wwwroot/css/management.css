@@ -1,0 +1,1069 @@
+/* ==========================================================================
+   ITAssetTrack Asset Track - Management UI/UX CSS Design System
+   ========================================================================== */
+
+/* Page Header & Typography */
+.page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+/* Card Container */
+.management-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Status Filter Tabs / Pills */
+.filter-pill-group {
+    background: #f8fafc;
+    padding: 4px;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.filter-pill-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 16px;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.filter-pill-btn:hover {
+    color: #1e293b;
+    background: rgba(241, 245, 249, 0.8);
+}
+
+.filter-pill-btn.active {
+    background: #ffffff;
+    color: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+}
+
+/* Status Badges */
+.badge-status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.badge-available {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.badge-inuse {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-maintenance {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+/* Action Buttons */
+.btn-action-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-action-view {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+.btn-action-view:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+.btn-action-edit {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+.btn-action-edit:hover {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.btn-action-delete {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+.btn-action-delete:hover {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+/* ==========================================================================
+   DataTables Complete Bootstrap 5 Override
+   ========================================================================== */
+
+/* Wrapper layout */
+.dataTables_wrapper {
+    padding: 0;
+    font-size: 0.875rem;
+}
+
+/* Top row: length + search */
+.dataTables_wrapper .row:first-child {
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+/* Bottom row: info + pagination */
+.dataTables_wrapper .row:last-child {
+    margin-top: 1rem;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Length selector */
+.dataTables_wrapper .dataTables_length {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.dataTables_wrapper .dataTables_length label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 6px 32px 6px 12px;
+    font-size: 0.85rem;
+    color: #334155;
+    background-color: #fff;
+    min-width: 70px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dataTables_wrapper .dataTables_length select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+/* Search input */
+.dataTables_wrapper .dataTables_filter {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.dataTables_wrapper .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    padding: 7px 14px;
+    font-size: 0.875rem;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 220px;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Info text */
+.dataTables_wrapper .dataTables_info {
+    font-size: 0.82rem;
+    color: #64748b;
+    padding-top: 0;
+}
+
+/* Processing overlay */
+.dataTables_wrapper .dataTables_processing {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.75rem !important;
+    padding: 12px 24px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    font-size: 0.875rem;
+    color: #475569;
+    z-index: 10;
+}
+
+/* Pagination */
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .pagination {
+    margin-bottom: 0;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item .page-link {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem !important;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+    background-color: #fff;
+    min-width: 36px;
+    text-align: center;
+    line-height: 1.4;
+    transition: all 0.15s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item .page-link:hover {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+    color: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Remove default Bootstrap pagination border-radius overrides */
+.dataTables_wrapper .dataTables_paginate .page-item:first-child .page-link,
+.dataTables_wrapper .dataTables_paginate .page-item:last-child .page-link {
+    border-radius: 0.5rem !important;
+}
+
+/* ==========================================================================
+   Table Styles
+   ========================================================================== */
+
+.table.management-table {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table.management-table thead th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.table.management-table tbody td {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table.management-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Responsive table scrollbar */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: visible !important;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* ==========================================================================
+   Modal Overrides (Import Excel, etc.)
+   ========================================================================== */
+
+.modal-content {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #f1f5f9;
+    padding: 1rem 1.5rem;
+}
+
+/* ==========================================================================
+   Button Overrides
+   ========================================================================== */
+
+.btn {
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.01em;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.btn-outline-primary {
+    color: #2563eb;
+    border-color: #2563eb;
+}
+.btn-outline-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+.btn-success {
+    background-color: #16a34a;
+    border-color: #16a34a;
+}
+.btn-success:hover {
+    background-color: #15803d;
+    border-color: #15803d;
+}
+
+.btn-outline-warning {
+    color: #d97706;
+    border-color: #d97706;
+}
+.btn-outline-warning:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+    color: #fff;
+}
+
+/* ==========================================================================
+   SweetAlert Custom Styles
+   ========================================================================== */
+
+.swal2-popup {
+    border-radius: 1.25rem !important;
+    font-family: inherit !important;
+}
+
+.swal2-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+}
+
+/* ==========================================================================
+   Bootstrap Badge Overrides for consistency
+   ========================================================================== */
+
+.badge {
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+/* Font Monospace Helper */
+.font-monospace {
+    font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace !important;
+    font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   Mobile Responsive — Page Header Font
+   ========================================================================== */
+
+@media (max-width: 575.98px) {
+    .page-title { font-size: 1.1rem; }
+    .page-subtitle { font-size: 0.78rem; }
+}
+
+
+/* ==========================================================================
+   Asset Toolbar Layout
+   ========================================================================== */
+
+.asset-toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* Filter row: pills scrollable */
+.asset-pills-row {
+    flex: 1;
+    min-width: 0;
+}
+
+.asset-pills-row .filter-pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: #f8fafc;
+    padding: 4px;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+}
+
+.asset-action-btns {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Mobile Responsive — Asset Table Card Rows
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .asset-toolbar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .asset-action-btns {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+        justify-content: space-between !important;
+    }
+    .asset-action-btns .btn {
+        flex: 1 !important;
+        justify-content: center !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        font-size: 12px !important;
+        padding: 8px 10px !important;
+        white-space: nowrap !important;
+    }
+
+    .asset-pills-row {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Pills row: 2x2 grid on mobile so all 4 tabs (Semua, Available, In Use, Maintenance) are 100% visible */
+    .asset-pills-row .filter-pill-group {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
+        width: 100% !important;
+        background: #f8fafc !important;
+        padding: 6px !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-sizing: border-box !important;
+    }
+    .asset-pills-row .filter-pill-btn {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 6px 10px !important;
+        font-size: 11.5px !important;
+        border-radius: 8px !important;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+    }
+    .asset-pills-row .filter-pill-btn .badge {
+        margin-left: 6px !important;
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        border-radius: 10px !important;
+    }
+}
+
+/* ==========================================================================
+   Mobile Responsive — ALL Management Table Card Rows
+   Approach: block td with absolute-positioned label, content flows naturally
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+    /* ─── DataTables pagination — bottom, compact & clean on mobile ─── */
+    .dataTables_wrapper > .row:last-child {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .dataTables_wrapper .dataTables_info {
+        font-size: 11px !important;
+        color: #94a3b8;
+        text-align: center;
+        width: 100%;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 5px 9px !important;
+        font-size: 12px !important;
+        min-width: 30px !important;
+        border-radius: 6px !important;
+    }
+
+    /* ─── Common: hide thead, show rows as cards ─── */
+    #employeeTable thead,
+    #assetTable thead,
+    #assignmentTable thead,
+    #pmTable thead,
+    #approvalsTable thead,
+    #approvedTable thead {
+        display: none !important;
+    }
+
+    #employeeTable tbody tr,
+    #assetTable tbody tr,
+    #assignmentTable tbody tr,
+    #pmTable tbody tr,
+    #approvalsTable tbody tr,
+    #approvedTable tbody tr {
+        display: block !important;
+        margin-bottom: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
+        background: #fff;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+    }
+
+    /* Hide index '#' row on mobile cards */
+    #pmTable tbody td[data-label="#"],
+    #employeeTable tbody td[data-label="#"],
+    #assignmentTable tbody td[data-label="#"] {
+        display: none !important;
+    }
+
+    /* Each td: block layout, left padding reserves space for label */
+    #employeeTable tbody td,
+    #assetTable tbody td,
+    #assignmentTable tbody td,
+    #pmTable tbody td,
+    #approvalsTable tbody td,
+    #approvedTable tbody td,
+    #employeeTable tbody td.text-center,
+    #assetTable tbody td.text-center,
+    #assignmentTable tbody td.text-center,
+    #pmTable tbody td.text-center,
+    #approvalsTable tbody td.text-center,
+    #approvedTable tbody td.text-center {
+        display: block !important;
+        position: relative !important;
+        padding: 6px 8px 6px 78px !important;
+        font-size: 11.5px !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+        min-height: 28px;
+        text-align: right !important;
+        overflow: visible !important;
+        word-break: break-word !important;
+    }
+
+    #employeeTable tbody td:last-child,
+    #assetTable tbody td:last-child,
+    #assignmentTable tbody td:last-child,
+    #pmTable tbody td:last-child,
+    #approvalsTable tbody td:last-child,
+    #approvedTable tbody td:last-child {
+        border-bottom: none !important;
+        background: #f8fafc;
+        padding: 5px 8px 5px 78px !important;
+        min-height: 28px !important;
+    }
+
+    /* Label: absolutely positioned on the left */
+    #employeeTable tbody td::before,
+    #assetTable tbody td::before,
+    #assignmentTable tbody td::before,
+    #pmTable tbody td::before,
+    #approvalsTable tbody td::before,
+    #approvedTable tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #94a3b8;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        width: 65px;
+        text-align: left;
+    }
+
+    /* Content: constrained to right portion, allow wrapping */
+    #employeeTable tbody td > *,
+    #assetTable tbody td > *,
+    #assignmentTable tbody td > *,
+    #pmTable tbody td > *,
+    #approvalsTable tbody td > *,
+    #approvedTable tbody td > * {
+        max-width: 100%;
+        word-break: break-word !important;
+        white-space: normal !important;
+    }
+
+    /* ─── Tab Nav: Clean mobile fit ─── */
+    .tab-nav {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        padding: 10px !important;
+        gap: 10px !important;
+        box-sizing: border-box !important;
+    }
+    .tab-nav > .d-flex {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 4px !important;
+    }
+    .tab-btn {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        font-size: 11.5px !important;
+        padding: 6px 8px !important;
+        text-align: center !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: visible !important;
+    }
+    .tab-nav button,
+    .tab-nav a.btn {
+        width: 100% !important;
+        margin-top: 4px !important;
+        padding: 8px 16px !important;
+        font-size: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* ─── List Toolbar & Filter Form on Mobile ─── */
+    .list-toolbar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
+    }
+    .list-toolbar .search-input {
+        width: 100% !important;
+        min-width: unset !important;
+    }
+    .list-toolbar .filter-form {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 8px !important;
+        align-items: center !important;
+    }
+    .list-toolbar .filter-form select {
+        flex: 1 !important;
+        width: 50% !important;
+        min-width: 0 !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Management card & DataTables toolbar mobile optimization */
+    .management-card {
+        padding: 12px 10px !important;
+        margin: 0 !important;
+        border-radius: 12px !important;
+    }
+    .dataTables_wrapper {
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    .dataTables_wrapper .row:first-child {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    .dataTables_wrapper .col-sm-6 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        text-align: left !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    .dataTables_wrapper .dataTables_length label {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 11.5px !important;
+        margin-bottom: 0 !important;
+        color: #64748b !important;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        padding: 4px 24px 4px 8px !important;
+        font-size: 11.5px !important;
+        height: auto !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    .dataTables_wrapper .dataTables_filter {
+        text-align: left !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    .dataTables_wrapper .dataTables_filter label {
+        width: 100% !important;
+        display: block !important;
+        margin-bottom: 0 !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+        font-size: 12.5px !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+        box-sizing: border-box !important;
+        background-color: #fff !important;
+    }
+    .filter-input-btn-group {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+    .filter-input-btn-group input {
+        flex: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+        box-sizing: border-box !important;
+    }
+    .filter-input-btn-group .btn {
+        flex-shrink: 0 !important;
+        padding: 6px 12px !important;
+        font-size: 11.5px !important;
+        border-radius: 8px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Pills row: scrollable horizontally, no wrap */
+    .asset-pills-row .filter-pill-group {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .asset-pills-row .filter-pill-group::-webkit-scrollbar {
+        display: none;
+    }
+    .asset-pills-row .filter-pill-btn {
+        flex-shrink: 0;
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    /* management-card: remove extra padding on small screens */
+    .management-card.p-4 {
+        padding: 12px !important;
+    }
+
+    /* ── Return button: clean compact solid style on mobile ── */
+    .btn-return-asset {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        background: #f59e0b !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 4px 12px !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        white-space: nowrap;
+    }
+    .btn-return-asset i {
+        font-size: 11px;
+    }
+
+    /* ── Assignment Table Search & Length Filter Mobile Styling ── */
+    #assignmentTable_wrapper .row:first-child {
+        display: flex !important;
+        flex-direction: column-reverse !important;
+        gap: 10px !important;
+        margin-bottom: 14px !important;
+    }
+    #assignmentTable_wrapper .dataTables_filter label {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+    #assignmentTable_wrapper .filter-input-btn-group {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    #assignmentTable_wrapper .filter-input-btn-group input {
+        flex: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 12px !important;
+        padding: 8px 14px !important;
+        border-radius: 50px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    }
+    #assignmentTable_wrapper .filter-input-btn-group .btn {
+        flex-shrink: 0 !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 50px !important;
+        white-space: nowrap !important;
+    }
+    #assignmentTable_wrapper .dataTables_length {
+        width: 100% !important;
+        text-align: left !important;
+    }
+    #assignmentTable_wrapper .dataTables_length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 11.5px !important;
+        color: #64748b !important;
+        margin-bottom: 0 !important;
+    }
+    #assignmentTable_wrapper .dataTables_length select {
+        padding: 4px 22px 4px 8px !important;
+        font-size: 11.5px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
+    /* ─── Unscheduled Maintenance Card Row Status TTD Alignment ─── */
+    #approvedTable tbody td[data-label="Status TTD"],
+    #approvalsTable tbody td[data-label="Status TTD"] {
+        text-align: right !important;
+    }
+    #approvedTable tbody td[data-label="Status TTD"] > div,
+    #approvalsTable tbody td[data-label="Status TTD"] > div {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        text-align: right !important;
+        margin-left: auto !important;
+        width: fit-content !important;
+    }
+    #approvedTable tbody td[data-label="Status TTD"] div,
+    #approvalsTable tbody td[data-label="Status TTD"] div {
+        text-align: right !important;
+        justify-content: flex-end !important;
+    }
+}
+
+/* ==========================================================================
+   Tablet & iPad Responsiveness (Up to 1280px Width)
+   Targeting iPad Mini, iPad Air, iPad Pro (Portrait & Landscape) & Android Tablets
+   ========================================================================== */
+
+@media (max-width: 1280px) {
+    /* ─── Tablet Layout & Container Paddings ─── */
+    .container-fluid,
+    .main-content {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+
+    .management-card {
+        padding: 16px 18px !important;
+        border-radius: 14px !important;
+        overflow: hidden !important;
+    }
+
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        display: block !important;
+    }
+
+    /* ─── Toolbar Cards on Tablet ─── */
+    .card.shadow-sm {
+        padding: 10px 14px !important;
+    }
+
+    .tab-btn {
+        font-size: 11.5px !important;
+        padding: 6px 10px !important;
+        min-height: 32px !important;
+    }
+
+    /* ─── Table Cell Ergonomics for Tablet ─── */
+    .management-table th,
+    .management-table td {
+        padding: 7px 9px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+    }
+
+    .management-table td[data-label="Aksi"],
+    .management-table td[data-label="Aksi"] > div,
+    .management-table td[data-label="AKSI"],
+    .management-table td[data-label="AKSI"] > div,
+    .management-table th.text-end,
+    .management-table th:last-child {
+        text-align: right !important;
+        justify-content: flex-end !important;
+    }
+
+    /* ─── DataTables Toolbar Alignment on Tablet ─── */
+    .dataTables_wrapper .row:first-child {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        width: auto !important;
+        max-width: 100% !important;
+    }
+
+    .dataTables_wrapper .filter-input-btn-group {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        min-width: 150px !important;
+        max-width: 220px !important;
+        font-size: 11.5px !important;
+        height: 32px !important;
+    }
+
+    /* ─── Action Buttons & Form Controls ─── */
+    .btn-sm {
+        min-height: 32px !important;
+        font-size: 11.5px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .form-control-sm,
+    .form-select-sm {
+        min-height: 32px !important;
+        font-size: 11.5px !important;
+    }
+
+    /* ─── Signature Pad & File Upload Box Responsiveness ─── */
+    canvas.signature-pad,
+    .sig-canvas-container canvas {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}

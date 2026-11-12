@@ -1,0 +1,435 @@
+@model ITAssetTrack.Models.SerahTerima
+@{
+    Layout = null;
+    bool isPenyerahan = (Model.Tipe ?? "").Equals("Penyerahan", StringComparison.OrdinalIgnoreCase);
+    string docTitle = isPenyerahan ? "BERITA ACARA PENYERAHAN ASET IT" : "BERITA ACARA PENGEMBALIAN ASET IT";
+    var photos = ViewBag.Photos as List<ITAssetTrack.Models.SerahTerimaPhoto> ?? new List<ITAssetTrack.Models.SerahTerimaPhoto>();
+}
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@docTitle - @Model.NoDokumen</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <style>
+        @@page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px;
+            color: #1e293b;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .document-container {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #cbd5e1;
+        }
+
+        /* ── Official Header ── */
+        .doc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px double #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .doc-header-left img {
+            height: 48px;
+            width: auto;
+            object-fit: contain;
+        }
+        .doc-header-center {
+            text-align: center;
+            flex: 1;
+            padding: 0 15px;
+        }
+        .doc-header-center h1 {
+            font-size: 13px;
+            font-weight: 800;
+            margin: 0;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+        }
+        .doc-header-center h2 {
+            font-size: 15px;
+            font-weight: 800;
+            margin: 3px 0;
+            color: @(isPenyerahan ? "#0891b2" : "#d97706");
+            letter-spacing: 0.5px;
+        }
+        .doc-header-center .doc-no {
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        /* ── Section Tables ── */
+        .section-header {
+            background: @(isPenyerahan ? "#f0fdfe" : "#fffbeb");
+            color: @(isPenyerahan ? "#0e7490" : "#92400e");
+            border: 1px solid @(isPenyerahan ? "#cffafe" : "#fde68a");
+            font-weight: 700;
+            font-size: 11px;
+            padding: 6px 10px;
+            margin-top: 14px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .table-doc {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        .table-doc td {
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+            font-size: 11px;
+        }
+        .table-doc td.lbl {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+            width: 25%;
+        }
+        .table-doc td.val {
+            font-weight: 600;
+            color: #0f172a;
+            width: 25%;
+        }
+        .table-doc td.val-highlight {
+            background: @(isPenyerahan ? "#ecfeff" : "#fffbeb");
+            font-weight: 700;
+            color: @(isPenyerahan ? "#0891b2" : "#b45309");
+        }
+
+        /* ── Photos ── */
+        .photo-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .photo-item {
+            flex: 1;
+            min-width: 160px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fff;
+            text-align: center;
+        }
+        .photo-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-item .cap {
+            font-size: 10px;
+            color: #64748b;
+            padding: 4px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* ── Signatures ── */
+        .sig-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        .sig-table td {
+            width: 33.33%;
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .sig-role {
+            font-weight: 700;
+            font-size: 11px;
+            color: #0f172a;
+        }
+        .sig-subrole {
+            font-size: 10px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        .sig-img-wrap {
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 6px 0;
+        }
+        .sig-img-wrap img {
+            max-height: 80px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .sig-name {
+            font-weight: 700;
+            font-size: 11px;
+            color: #0f172a;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 4px;
+        }
+
+        /* ── Floating Action Bar ── */
+        .no-print-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 9999;
+        }
+        .btn-print-floating {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(6,182,212,0.4);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-print-floating:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6,182,212,0.5);
+        }
+
+        @@media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .document-container {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print-bar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Print Button -->
+    <div class="no-print-bar">
+        <button type="button" onclick="window.print()" class="btn-print-floating">
+            <i class="bi bi-printer-fill"></i> Cetak Document / Save PDF
+        </button>
+    </div>
+
+    <div class="document-container">
+
+        <!-- Header -->
+        <div class="doc-header">
+            <div class="doc-header-left">
+                <img src="~/images/LogooPama.png" alt="InfraHub Logo" />
+            </div>
+            <div class="doc-header-center">
+                <h1>PT InfraHubPERSADA NUSANTARA</h1>
+                <h2>@docTitle</h2>
+                <div class="doc-no">No. Dokumen: @Model.NoDokumen</div>
+            </div>
+            <div style="text-align:right;font-size:10px;color:#64748b;font-weight:600;">
+                <div>TANGGAL</div>
+                <div style="font-size:11px;color:#0f172a;font-weight:700;">@Model.Tanggal.ToString("dd MMMM yyyy")</div>
+            </div>
+        </div>
+
+        <!-- Section 1: Identitas User & Penerima -->
+        <div class="section-header">
+            <i class="bi bi-person-vcard-fill"></i> 1. Identitas User &amp; Penerima Aset
+        </div>
+        <table class="table-doc">
+            <tr>
+                <td class="lbl">Nama User / Penerima</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.NamaUser) ? "-" : Model.NamaUser)</td>
+                <td class="lbl">NRP Pengguna</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.NRP) ? "-" : Model.NRP)</td>
+            </tr>
+            <tr>
+                <td class="lbl">Site Operational</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.Site) ? "-" : Model.Site)</td>
+                <td class="lbl">Divisi / Departemen</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.Division) ? "-" : Model.Division)</td>
+            </tr>
+        </table>
+
+        <!-- Section 2: Spesifikasi Perangkat -->
+        <div class="section-header">
+            <i class="bi bi-laptop-fill"></i> 2. Identifikasi Perangkat Utama &amp; Spesifikasi
+        </div>
+        <table class="table-doc">
+            <tr>
+                <td class="lbl">Serial Number (SN)</td>
+                <td class="val val-highlight" style="font-family:monospace;">@Model.SerialNumber</td>
+                <td class="lbl">Tipe Perangkat</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.DeviceType) ? "-" : Model.DeviceType)</td>
+            </tr>
+            <tr>
+                <td class="lbl">Computer Name</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.ComputerName) ? "-" : Model.ComputerName)</td>
+                <td class="lbl">Series / Model</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.Series) ? "-" : Model.Series)</td>
+            </tr>
+            <tr>
+                <td class="lbl">RAM</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.Ram) ? "-" : Model.Ram)</td>
+                <td class="lbl">Storage</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.Storage) ? "-" : Model.Storage)</td>
+            </tr>
+            <tr>
+                <td class="lbl">Operating System</td>
+                <td class="val" colspan="3">@(string.IsNullOrEmpty(Model.OperatingSystem) ? "-" : Model.OperatingSystem)</td>
+            </tr>
+        </table>
+
+        <!-- Section 3: Aksesoris & Hardware Tambahan -->
+        <div class="section-header">
+            <i class="bi bi-keyboard-fill"></i> 3. Kelengkapan Aksesoris &amp; Hardware Tambahan
+        </div>
+        <table class="table-doc">
+            <tr>
+                <td class="lbl">Keyboard S.N</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.KeyboardSN) ? "-" : Model.KeyboardSN)</td>
+                <td class="lbl">Mouse S.N</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.MouseSN) ? "-" : Model.MouseSN)</td>
+            </tr>
+            <tr>
+                <td class="lbl">Monitor S.N</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.MonitorSN) ? "-" : Model.MonitorSN)</td>
+                <td class="lbl">Hardware Tambahan</td>
+                <td class="val">@(string.IsNullOrEmpty(Model.AdditionalHardware) ? "-" : Model.AdditionalHardware)</td>
+            </tr>
+        </table>
+
+        <!-- Section 4: Catatan & Remarks -->
+        @if (!string.IsNullOrEmpty(Model.Catatan) || !string.IsNullOrEmpty(Model.Remarks) || !string.IsNullOrEmpty(Model.Alasan))
+        {
+            <div class="section-header">
+                <i class="bi bi-chat-square-text-fill"></i> 4. Catatan / Alasan / Remarks
+            </div>
+            <table class="table-doc">
+                @if (!string.IsNullOrEmpty(Model.Alasan))
+                {
+                    <tr>
+                        <td class="lbl">Alasan Pengembalian</td>
+                        <td class="val" colspan="3">@Model.Alasan</td>
+                    </tr>
+                }
+                <tr>
+                    <td class="lbl">Catatan Tambahan</td>
+                    <td class="val" colspan="3">@(string.IsNullOrEmpty(Model.Catatan) ? Model.Remarks : Model.Catatan)</td>
+                </tr>
+            </table>
+        }
+
+        <!-- Section 5: Photos -->
+        @if (photos.Any())
+        {
+            <div class="section-header">
+                <i class="bi bi-camera-fill"></i> 5. Dokumentasi Foto Bukti Serah Terima
+            </div>
+            <div class="photo-row">
+                @foreach (var photo in photos)
+                {
+                    <div class="photo-item">
+                        <img src="@photo.FilePath" alt="@photo.Caption" />
+                        <div class="cap">@(string.IsNullOrEmpty(photo.Caption) ? "Dokumentasi Aset" : photo.Caption)</div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Section 6: Signatures -->
+        <div class="section-header">
+            <i class="bi bi-pen-fill"></i> Pengesahan Tanda Tangan Digital
+        </div>
+        <table class="sig-table">
+            <tr>
+                <td>
+                    <div class="sig-role">Diserahkan Oleh,</div>
+                    <div class="sig-subrole">SMO / IT Staff</div>
+                    <div class="sig-img-wrap">
+                        @if (!string.IsNullOrEmpty(Model.SignaturePenyerah))
+                        {
+                            <img src="@Model.SignaturePenyerah" alt="Signature Penyerah" />
+                        }
+                        else
+                        {
+                            <span style="font-size:10px;color:#94a3b8;font-style:italic;">Belum ditandatangani</span>
+                        }
+                    </div>
+                    <div class="sig-name">@(string.IsNullOrEmpty(Model.NamaPenyerah) ? "(.................................)" : Model.NamaPenyerah)</div>
+                </td>
+                <td>
+                    <div class="sig-role">Diterima Oleh,</div>
+                    <div class="sig-subrole">User / Karyawan</div>
+                    <div class="sig-img-wrap">
+                        @if (!string.IsNullOrEmpty(Model.SignaturePenerima))
+                        {
+                            <img src="@Model.SignaturePenerima" alt="Signature Penerima" />
+                        }
+                        else
+                        {
+                            <span style="font-size:10px;color:#94a3b8;font-style:italic;">Belum ditandatangani</span>
+                        }
+                    </div>
+                    <div class="sig-name">@(string.IsNullOrEmpty(Model.NamaPenerima) ? "(.................................)" : Model.NamaPenerima)</div>
+                </td>
+                <td>
+                    <div class="sig-role">Diketahui Oleh,</div>
+                    <div class="sig-subrole">SMO Leader / IT SITE</div>
+                    <div class="sig-img-wrap">
+                        @if (!string.IsNullOrEmpty(Model.SignatureDiketahui))
+                        {
+                            <img src="@Model.SignatureDiketahui" alt="Signature Diketahui" />
+                        }
+                        else
+                        {
+                            <span style="font-size:10px;color:#94a3b8;font-style:italic;">Belum ditandatangani</span>
+                        }
+                    </div>
+                    <div class="sig-name">@(string.IsNullOrEmpty(Model.NamaDiketahui) ? "(.................................)" : Model.NamaDiketahui)</div>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+</body>
+</html>

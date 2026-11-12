@@ -1,0 +1,968 @@
+@model List<ITAssetTrack.Models.ScheduledMaint>
+@{
+    ViewData["Title"] = (User.IsInRole("Approver1") || User.IsInRole("Approver2")) ? "Approval & TTD PM" : "PM Execution Dashboard";
+    ViewData["PageLabel"] = (User.IsInRole("Approver1") || User.IsInRole("Approver2")) ? "Approval PM" : "PM Execution";
+
+    string activeTab = ViewBag.ActiveTab as string ?? "today";
+    string activeMonthYear = ViewBag.ActiveMonthYear as string ?? DateTime.Today.ToString("yyyy-MM");
+    var availableMonths = ViewBag.AvailableMonths as List<string> ?? new List<string> { activeMonthYear };
+    var allPhotos = ViewBag.AllPhotos as List<ITAssetTrack.Models.MaintenancePhoto> ?? new List<ITAssetTrack.Models.MaintenancePhoto>();
+
+    int todayCount = ViewBag.TodayCount ?? 0;
+    int tomorrowCount = ViewBag.TomorrowCount ?? 0;
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int inProgressCount = ViewBag.InProgressCount ?? 0;
+    int doneCount = ViewBag.DoneCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    int unsignedCount = ViewBag.UnsignedCount ?? 0;
+    int signedHistoryCount = ViewBag.SignedHistoryCount ?? 0;
+    int allThisMonthCount = ViewBag.AllThisMonthCount ?? 0;
+    bool isApprover = User.IsInRole("Approver1") || User.IsInRole("Approver2");
+}
+
+@if (TempData["Success"] != null)
+{
+    <div id="tempDataSuccess" class="d-none">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div id="tempDataError" class="d-none">@TempData["Error"]</div>
+}
+
+<style>
+    @@media (max-width: 767.98px) {
+        .pm-execution-status-col,
+        .pm-execution-actions-col {
+            padding-left: 60px !important;
+            margin-top: 8px !important;
+        }
+    }
+</style>
+
+
+
+
+<!-- Toolbar Card -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius:14px; background:#fff; padding:10px 14px;">
+    <!-- Desktop & Tablet Layout -->
+    <div class="d-none d-md-flex align-items-center justify-content-between flex-wrap gap-2 gap-lg-3">
+        <div class="d-flex align-items-center gap-3">
+            <form method="get" id="monthForm" class="m-0 p-0">
+                <input type="hidden" name="tab" value="@activeTab" />
+                <div class="d-inline-flex align-items-center bg-light border rounded-pill px-3 py-1" style="font-size:12px; height:34px;">
+                    <i class="bi bi-funnel text-primary me-2"></i>
+                    <span class="text-muted me-1">Bulan:</span>
+                    <select name="monthYear" class="form-select form-select-sm fw-bold border-0 bg-transparent text-primary p-0 shadow-none" style="cursor: pointer; width: auto; font-size: 12px;" onchange="this.form.submit()">
+                        @foreach (var m in availableMonths)
+                        {
+                            <option value="@m" selected="@(m == activeMonthYear ? "selected" : null)">@m</option>
+                        }
+                    </select>
+                </div>
+            </form>
+
+            <div class="vr opacity-25" style="height:22px;"></div>
+
+            <div class="d-flex align-items-center gap-1.5">
+                @if (isApprover)
+                {
+                    <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "unsigned" })"
+                       class="tab-btn text-nowrap @(activeTab == "unsigned" ? "active" : "")" style="height:34px; padding:0 14px; font-size:12px; display:inline-flex; align-items:center;">
+                        <i class="bi bi-pen me-1.5"></i> Belum di TTD
+                        <span class="badge bg-warning text-dark ms-1.5">@unsignedCount</span>
+                    </a>
+                    <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "signed_history" })"
+                       class="tab-btn text-nowrap @(activeTab == "signed_history" || activeTab == "history" ? "active" : "")" style="height:34px; padding:0 14px; font-size:12px; display:inline-flex; align-items:center;">
+                        <i class="bi bi-clock-history me-1.5"></i> Riwayat TTD
+                        <span class="badge bg-success ms-1.5">@signedHistoryCount</span>
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "today" })"
+                       class="tab-btn text-nowrap @(activeTab == "today" ? "active" : "")" style="height:34px; padding:0 14px; font-size:12px; display:inline-flex; align-items:center;">
+                        <i class="bi bi-calendar-day me-1.5"></i> PM Hari Ini
+                        <span class="badge bg-primary ms-1.5">@todayCount</span>
+                    </a>
+                    <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "inprogress" })"
+                       class="tab-btn text-nowrap @(activeTab == "inprogress" ? "active" : "")" style="height:34px; padding:0 14px; font-size:12px; display:inline-flex; align-items:center;">
+                        <i class="bi bi-gear-wide-connected me-1.5"></i> Sedang PM
+                        <span class="badge bg-danger ms-1.5">@inProgressCount</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Layout (Clean 2-Row Structured Layout) -->
+    <div class="d-flex d-md-none flex-column gap-2 w-100">
+        <!-- Row 1: Month Filter (Full Width Pill) -->
+        <form method="get" id="monthFormMobile" class="m-0 p-0 w-100">
+            <input type="hidden" name="tab" value="@activeTab" />
+            <div class="d-flex align-items-center justify-content-between bg-light border rounded-pill px-3 py-1 w-100" style="font-size:12px; height:34px;">
+                <span class="text-muted fw-semibold"><i class="bi bi-funnel text-primary me-1.5"></i>Filter Bulan:</span>
+                <select name="monthYear" class="form-select form-select-sm fw-bold border-0 bg-transparent text-primary p-0 shadow-none text-end" style="cursor: pointer; width: auto; font-size: 12px;" onchange="this.form.submit()">
+                    @foreach (var m in availableMonths)
+                    {
+                        <option value="@m" selected="@(m == activeMonthYear ? "selected" : null)">@m</option>
+                    }
+                </select>
+            </div>
+        </form>
+
+        <!-- Row 2: Status Tabs (Equal 50% / 50% Width Pill Buttons) -->
+        <div class="d-flex align-items-center gap-1.5 w-100">
+            @if (isApprover)
+            {
+                <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "unsigned" })"
+                   class="tab-btn flex-fill text-nowrap text-center @(activeTab == "unsigned" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-pen me-1"></i> Belum TTD
+                    <span class="badge bg-warning text-dark ms-1">@unsignedCount</span>
+                </a>
+                <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "signed_history" })"
+                   class="tab-btn flex-fill text-nowrap text-center @(activeTab == "signed_history" || activeTab == "history" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-clock-history me-1"></i> Riwayat TTD
+                    <span class="badge bg-success ms-1">@signedHistoryCount</span>
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "today" })"
+                   class="tab-btn flex-fill text-nowrap text-center @(activeTab == "today" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-calendar-day me-1"></i> PM Hari Ini
+                    <span class="badge bg-primary ms-1">@todayCount</span>
+                </a>
+                <a href="@Url.Action("PmExecution", "Maintenance", new { monthYear = activeMonthYear, tab = "inprogress" })"
+                   class="tab-btn flex-fill text-nowrap text-center @(activeTab == "inprogress" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-gear-wide-connected me-1"></i> Sedang PM
+                    <span class="badge bg-danger ms-1">@inProgressCount</span>
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- PM Cards List -->
+<div class="row g-3 pb-5">
+    @if (Model != null && Model.Any())
+    {
+        foreach (var item in Model)
+        {
+            var itemPhotos = allPhotos.Where(p => p.MaintenanceId == item.Id).ToList();
+
+            // Clean up device brand/model to prevent duplicate brand display (e.g., "Dell Dell Inc.")
+            string deviceDisplayName = "";
+            if (!string.IsNullOrEmpty(item.Brand) && !string.IsNullOrEmpty(item.Model))
+            {
+                if (item.Model.StartsWith(item.Brand, StringComparison.OrdinalIgnoreCase))
+                {
+                    deviceDisplayName = item.Model;
+                }
+                else
+                {
+                    deviceDisplayName = $"{item.Brand} {item.Model}";
+                }
+            }
+            else
+            {
+                deviceDisplayName = item.Brand ?? item.Model ?? "-";
+            }
+
+            // Clean up location site/division to prevent trailing/leading slashes
+            var locationParts = new List<string>();
+            if (!string.IsNullOrEmpty(item.Site)) locationParts.Add(item.Site);
+            if (!string.IsNullOrEmpty(item.Division)) locationParts.Add(item.Division);
+            string locationText = locationParts.Any() ? string.Join(" / ", locationParts) : "-";
+
+            string statusClass = item.Status switch
+            {
+                "Planned" => "border-start border-4 border-secondary",
+                "Contacted" => "border-start border-4 border-info",
+                "Confirmed" => "border-start border-4 border-primary",
+                "InProgress" => "border-start border-4 border-danger",
+                "PmDone" => "border-start border-4 border-warning",
+                "Returned" => "border-start border-4 border-success",
+                "Completed" => "border-start border-4 border-success",
+                _ => "border-start border-4 border-secondary"
+            };
+            string statusBadge = item.Status switch
+            {
+                "Planned" => "badge-maintenance",
+                "Contacted" => "badge-inuse",
+                "Confirmed" => "badge-inuse",
+                "InProgress" => "bg-danger text-white",
+                "PmDone" => "bg-warning text-dark",
+                "Returned" => "badge-available",
+                "Completed" => "badge-available",
+                _ => "badge-maintenance"
+            };
+            string statusLabel = item.Status switch
+            {
+                "Planned" => "Belum Dihubungi",
+                "Contacted" => "Sudah Dihubungi",
+                "Confirmed" => "User Konfirmasi OK",
+                "InProgress" => "Sedang PM",
+                "PmDone" => "PM Selesai",
+                "Returned" => "Sudah Dikembalikan",
+                "Completed" => "Completed",
+                _ => item.Status
+            };
+
+            <div class="col-12">
+                <div class="management-card p-3 @statusClass">
+                    <div class="row align-items-center">
+                        <!-- Info Section -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;">
+                                        <i class="bi bi-laptop fs-5 text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                                        <span class="fw-bold text-dark mb-0 fs-6" style="letter-spacing: -0.01em;">@item.NamaUser</span>
+                                        <span class="badge-status @statusBadge" style="font-size:0.7rem;padding:3px 8px;">@statusLabel</span>
+                                    </div>
+                                    
+                                    <div class="mt-2 d-flex flex-column gap-1">
+                                        <!-- Row 1: SN & Computer Name -->
+                                        <div class="d-flex align-items-center gap-2 text-muted small">
+                                            <i class="bi bi-cpu text-primary text-opacity-75" style="width: 16px;"></i>
+                                            <span class="font-monospace fw-semibold text-dark">@item.SerialNumber</span>
+                                            @if (!string.IsNullOrEmpty(item.ComputerName))
+                                            {
+                                                <span class="text-secondary">(@item.ComputerName)</span>
+                                            }
+                                        </div>
+                                        
+                                        <!-- Row 2: Laptop Brand/Model & Location -->
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-2 text-muted small">
+                                            <span class="d-inline-flex align-items-center gap-2">
+                                                <i class="bi bi-laptop text-secondary" style="width: 16px;"></i>
+                                                <span class="text-dark">@deviceDisplayName</span>
+                                            </span>
+                                            <span class="text-black-50 d-none d-sm-inline">|</span>
+                                            <span class="d-inline-flex align-items-center gap-2">
+                                                <i class="bi bi-geo-alt text-danger text-opacity-75" style="width: 16px;"></i>
+                                                <span>@locationText</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Row 3: Plan Date & Contact Info -->
+                                        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-2 text-muted small">
+                                            <span class="d-inline-flex align-items-center gap-2 text-nowrap">
+                                                <i class="bi bi-calendar3 text-success" style="width: 16px;"></i>
+                                                <span>Plan: <strong class="text-dark text-nowrap">@(item.PlanDate?.ToString("dd MMM yyyy") ?? item.Tanggal.ToString("dd MMM yyyy"))</strong></span>
+                                            </span>
+                                            <span class="text-black-50 d-none d-sm-inline">|</span>
+                                            <span class="d-flex justify-content-between justify-content-sm-start align-items-center w-100 w-sm-auto">
+                                                <span class="d-inline-flex align-items-center gap-2 text-nowrap">
+                                                    <i class="bi bi-telephone text-info" style="width: 16px;"></i>
+                                                    <span class="text-dark text-nowrap">@(string.IsNullOrEmpty(item.ContactInfo) ? "-" : item.ContactInfo)</span>
+                                                </span>
+                                                @if (item.Status == "Planned" && !isApprover)
+                                                {
+                                                    <a href="javascript:void(0)" class="btn-contact text-info fw-semibold text-decoration-none ms-2 d-inline-flex align-items-center" data-id="@item.Id" data-user="@item.NamaUser" style="font-size: 0.75rem;">
+                                                        <i class="bi bi-telephone-fill me-1"></i>Hubungi User
+                                                    </a>
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Info -->
+                        <div class="col-md-3 pm-execution-status-col">
+                            @if (item.Status == "InProgress" && item.PmStartedAt.HasValue)
+                            {
+                                <div class="text-start text-md-center">
+                                    <div class="small text-muted">PM Dimulai</div>
+                                    <div class="fw-bold text-danger fs-6"><i class="bi bi-clock me-1"></i>@item.PmStartedAt.Value.ToString("HH:mm")</div>
+                                    <div class="small text-muted">Teknisi: @(item.PerformedBy ?? "-")</div>
+                                </div>
+                            }
+                            else if ((item.Status == "PmDone" || item.Status == "Returned" || item.Status == "Completed") && item.PmStartedAt.HasValue && item.PmCompletedAt.HasValue)
+                            {
+                                var dur = item.PmCompletedAt.Value - item.PmStartedAt.Value;
+                                <div class="text-start text-md-center">
+                                    <div class="small text-muted">Durasi PM</div>
+                                    <div class="fw-bold text-success fs-6">@((int)dur.TotalMinutes) menit</div>
+                                    <div class="small text-muted">@item.PmStartedAt.Value.ToString("HH:mm") → @item.PmCompletedAt.Value.ToString("HH:mm")</div>
+                                </div>
+                            }
+                            else if (item.Status == "Contacted" && item.ContactedAt.HasValue)
+                            {
+                                <div class="text-start text-md-center">
+                                    <div class="small text-muted">Dihubungi</div>
+                                    <div class="fw-semibold text-info small">@item.ContactedAt.Value.ToString("dd MMM HH:mm")</div>
+                                    <div class="small text-muted">via @(item.ContactMethod ?? "-") oleh @(item.ContactedBy ?? "-")</div>
+                                </div>
+                            }
+                            else if (item.Reschedule1Date.HasValue || item.Reschedule2Date.HasValue || item.Reschedule3Date.HasValue)
+                            {
+                                <div class="text-start text-md-center">
+                                    <div class="small text-warning fw-semibold"><i class="bi bi-arrow-repeat me-1"></i>Rescheduled</div>
+                                    @if (item.OriginalPlanDate.HasValue)
+                                    {
+                                        <div class="small text-muted">Asli: @item.OriginalPlanDate.Value.ToString("dd MMM yyyy")</div>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Photo thumbnails -->
+                            @if (itemPhotos.Any())
+                            {
+                                <div class="d-flex gap-1 mt-1 justify-content-start justify-content-md-center flex-wrap">
+                                    @foreach (var ph in itemPhotos.Take(3))
+                                    {
+                                        <img src="@ph.FilePath" alt="@ph.PhotoType" class="rounded border" style="width:32px;height:32px;object-fit:cover;cursor:pointer;" onclick="window.open('@ph.FilePath','_blank')" />
+                                    }
+                                    @if (itemPhotos.Count > 3)
+                                    {
+                                        <span class="badge bg-secondary align-self-center">+@(itemPhotos.Count - 3)</span>
+                                    }
+                                </div>
+                            }
+
+                            <!-- Signature status breakdown badge -->
+                            @if (item.Status == "InProgress" || item.Status == "PmDone" || item.Status == "Returned" || item.Status == "Completed")
+                            {
+                                bool hasExecSig = !string.IsNullOrEmpty(item.ExecBySignature);
+                                bool hasUserSig = !string.IsNullOrEmpty(item.UserHandoverSignature);
+                                bool hasLeaderSig = !string.IsNullOrEmpty(item.LeaderSignature);
+                                bool hasItosSig = !string.IsNullOrEmpty(item.ItosSectionHeadSignature);
+                                bool allSigned = hasExecSig && hasUserSig && hasLeaderSig && hasItosSig;
+
+                                <div class="mt-2 text-start text-md-center">
+                                    @if (allSigned)
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size:0.7rem;">
+                                            <i class="bi bi-check-circle-fill me-1"></i>TTD Lengkap (4/4)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50 px-2 py-1" style="font-size:0.7rem;" title="Teknisi: @(hasExecSig ? "✓" : "✗"), User: @(hasUserSig ? "✓" : "✗"), Leader: @(hasLeaderSig ? "✓" : "✗"), Sec. Head: @(hasItosSig ? "✓" : "✗")">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Belum TTD Lengkap
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-3 text-start text-md-end pm-execution-actions-col">
+                            <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-md-end align-items-center">
+                                @if (isApprover)
+                                {
+                                    bool isSignedByMe = (User.IsInRole("Approver1") && (item.LeaderApproved || !string.IsNullOrEmpty(item.LeaderSignature)))
+                                                     || (User.IsInRole("Approver2") && (item.SectionHeadApproved || !string.IsNullOrEmpty(item.ItosSectionHeadSignature)));
+
+                                    if (!isSignedByMe)
+                                    {
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold">
+                                            <i class="bi bi-pen-fill me-1"></i>Tanda Tangan & Approve
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Sudah di TTD Anda
+                                        </span>
+                                    }
+                                    <a href="@Url.Action("PrintScheduledPm", "Maintenance", new { id = item.Id })" target="_blank"
+                                       class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>Lihat PDF
+                                    </a>
+                                }
+                                else
+                                {
+
+                                    @if (item.Status == "Contacted")
+                                    {
+                                        <button class="btn btn-sm btn-primary rounded-pill px-3 btn-confirm" data-id="@item.Id" data-user="@item.NamaUser">
+                                            <i class="bi bi-check-lg me-1"></i>User Konfirmasi
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning rounded-pill px-3 btn-reschedule" data-id="@item.Id" data-user="@item.NamaUser">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Reschedule
+                                        </button>
+                                    }
+                                    @if (item.Status == "Confirmed")
+                                    {
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })" class="btn btn-sm btn-danger rounded-pill px-3">
+                                            <i class="bi bi-play-fill me-1"></i>Mulai PM
+                                        </a>
+                                    }
+                                    @if (item.Status == "InProgress")
+                                    {
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })" class="btn btn-sm btn-primary rounded-pill px-3">
+                                            <i class="bi bi-pencil-square me-1"></i>Lanjutkan PM
+                                        </a>
+                                    }
+                                    @if (item.Status == "PmDone" || item.Status == "Returned")
+                                    {
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })" class="btn btn-sm btn-warning rounded-pill px-3 text-dark">
+                                            <i class="bi bi-pencil-square me-1"></i>Lengkapi PM Form
+                                        </a>
+                                    }
+                                    @if (item.Status == "Completed")
+                                    {
+                                        <a href="@Url.Action("PrintScheduledPm", "Maintenance", new { id = item.Id })" target="_blank"
+                                           class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                            <i class="bi bi-printer me-1"></i>Export PDF
+                                        </a>
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })"
+                                           class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Edit Form PM">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="management-card p-5 text-center text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Tidak ada data PM untuk tab ini pada bulan <strong>@activeMonthYear</strong>.</p>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Hidden Camera Inputs -->
+<input type="file" accept="image/*" capture="environment" id="cameraInput" class="d-none" />
+
+<!-- ====== MODAL: Hubungi User ====== -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-telephone text-info me-2"></i>Hubungi User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="contactItemId" />
+                <p class="mb-3">Menghubungi <strong id="contactUserName"></strong> untuk PM besok/hari ini.</p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nama ITAssetTrack yang Menghubungi</label>
+                    <input type="text" id="contactedByInput" class="form-control form-control-sm" placeholder="Nama Anda..." required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Metode Kontak</label>
+                    <select id="contactMethodInput" class="form-select form-select-sm">
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Phone">Telepon</option>
+                        <option value="Email">Email</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-info text-white rounded-pill px-4" id="submitContact">
+                    <i class="bi bi-telephone me-1"></i>Konfirmasi Hubungi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODAL: Reschedule ====== -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-repeat text-warning me-2"></i>Reschedule PM</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rescheduleItemId" />
+                <p class="mb-3">User <strong id="rescheduleUserName"></strong> tidak bisa PM pada jadwal yang ditentukan.</p>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tanggal Baru</label>
+                    <input type="date" id="rescheduleNewDate" class="form-control form-control-sm" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Alasan Reschedule</label>
+                    <textarea id="rescheduleReason" class="form-control form-control-sm" rows="2" placeholder="Contoh: User sedang cuti / meeting..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning rounded-pill px-4" id="submitReschedule">
+                    <i class="bi bi-arrow-repeat me-1"></i>Simpan Reschedule
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODAL: Mulai PM ====== -->
+<div class="modal fade" id="startPmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-play-fill text-danger me-2"></i>Mulai PM</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="startPmItemId" />
+                <div class="alert alert-info border-0 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>Timer PM akan dimulai. Laptop <strong id="startPmSn"></strong> milik <strong id="startPmUserName"></strong>.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Pelaksana PM</label>
+                    <select id="performedByInput" class="form-select form-select-sm" required>
+                        <option value="">-- Pilih Teknisi --</option>
+                        <option value="Elyas">Elyas</option>
+                        <option value="Putra">Putra</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger rounded-pill px-4" id="submitStartPm">
+                    <i class="bi bi-play-fill me-1"></i>Start Timer PM
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODAL: Return Laptop ====== -->
+<div class="modal fade" id="returnModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-down text-primary me-2"></i>Return Laptop ke User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="returnItemId" />
+                <p class="mb-3">Mengembalikan laptop ke <strong id="returnUserName"></strong>.</p>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="userNotPresentCheck" />
+                    <label class="form-check-label fw-semibold" for="userNotPresentCheck">
+                        User Tidak Ada (laptop ditaruh di meja user)
+                    </label>
+                </div>
+
+                <!-- Signature pad (hidden when user not present) -->
+                <div id="returnSignatureSection">
+                    <label class="form-label fw-semibold">Tanda Tangan User (Terima Laptop)</label>
+                    <div class="border rounded p-2 bg-light mb-3">
+                        <canvas id="returnSigCanvas" style="width:100%;height:120px;"></canvas>
+                        <div class="text-end mt-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearReturnSig">
+                                <i class="bi bi-eraser me-1"></i>Hapus
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Catatan Return</label>
+                    <textarea id="returnNotesInput" class="form-control form-control-sm" rows="2" placeholder="Contoh: Laptop ditaruh di meja user lantai 3..."></textarea>
+                </div>
+
+                <!-- Camera for return evidence -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold"><i class="bi bi-camera me-1"></i>Foto Evidence Return</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="file" accept="image/*" capture="environment" id="returnPhotoInput" class="d-none" />
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="document.getElementById('returnPhotoInput').click()">
+                            <i class="bi bi-camera me-1"></i>Ambil Foto
+                        </button>
+                        <img id="returnPhotoPreview" class="rounded border d-none" style="width:60px;height:60px;object-fit:cover;" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="submitReturn">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Konfirmasi Return
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== MODAL: TTD & Complete ====== -->
+<div class="modal fade" id="completeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-success me-2"></i>Tandatangani & Selesaikan PM</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="completeItemId" />
+                <div class="alert alert-success border-0 small mb-3">
+                    <i class="bi bi-check-circle me-1"></i>PM untuk <strong id="completeUserName"></strong> (<strong id="completeSn"></strong>) siap diselesaikan.
+                </div>
+
+                <!-- Sign 1: TTD ITAssetTrack -->
+                <div class="border rounded p-3 mb-3">
+                    <label class="fw-bold d-block mb-1">1. Dibuat Oleh — ITAssetTrack / Manage Service</label>
+                    <small class="text-muted d-block mb-2">Tanda tangan digital teknisi pelaksana PM</small>
+                    <div class="border rounded bg-white p-1">
+                        <canvas id="completeSigCanvas" style="width:100%;height:100px;"></canvas>
+                    </div>
+                    <div class="text-end mt-1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearCompleteSig">
+                            <i class="bi bi-eraser me-1"></i>Hapus
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Keluhan & Remark -->
+                <div class="border rounded p-3 mb-3 bg-light">
+                    <label class="fw-bold d-block mb-2"><i class="bi bi-person-exclamation text-danger me-1"></i>Keluhan User</label>
+                    <textarea id="completeKeluhan" class="form-control form-control-sm mb-3" rows="2" placeholder="Keluhan atau kendala yang dilaporkan user (boleh kosong jika tidak ada)..."></textarea>
+                    <label class="fw-bold d-block mb-2"><i class="bi bi-tools text-primary me-1"></i>Remark / Tindakan Teknisi <span class="text-danger">*</span></label>
+                    <textarea id="completeRemark" class="form-control form-control-sm" rows="2" placeholder="Tindakan yang dilakukan, temuan teknis, hasil PM..."></textarea>
+                </div>
+
+                <!-- Sign 2: Checkbox Leader -->
+
+                <div class="border rounded p-3 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="leaderApprovedCheck" />
+                        <label class="form-check-label fw-bold" for="leaderApprovedCheck">
+                            2. Diketahui Oleh — Koordinator MS / IT Site (ITAssetTrack Leader)
+                        </label>
+                    </div>
+                    <div class="mt-2" id="leaderNameSection" style="display:none;">
+                        <input type="text" id="leaderNameInput" class="form-control form-control-sm" placeholder="Nama Koordinator MS / IT Site..." />
+                    </div>
+                </div>
+
+                <!-- Sign 3: Checkbox Section Head -->
+                <div class="border rounded p-3 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="sectionHeadApprovedCheck" />
+                        <label class="form-check-label fw-bold" for="sectionHeadApprovedCheck">
+                            3. Diketahui Oleh — ITOS & DC Sect. Head / Koordinator IT Site
+                        </label>
+                    </div>
+                    <div class="mt-2" id="sectionHeadNameSection" style="display:none;">
+                        <input type="text" id="sectionHeadNameInput" class="form-control form-control-sm" placeholder="Nama ITOS Section Head..." />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success rounded-pill px-4" id="submitComplete">
+                    <i class="bi bi-check-circle me-1"></i>Selesaikan & Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // ====== SweetAlert Feedback ======
+            var successMsg = document.getElementById('tempDataSuccess')?.textContent;
+            var errorMsg = document.getElementById('tempDataError')?.textContent;
+            if (successMsg) Swal.fire({ icon: 'success', title: 'Berhasil', text: successMsg, timer: 3000, showConfirmButton: false });
+            if (errorMsg) Swal.fire({ icon: 'error', title: 'Gagal', text: errorMsg });
+
+            // ====== Signature Pads ======
+            let returnSigPad = null;
+            let completeSigPad = null;
+
+            function initSigPad(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return null;
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                return new SignaturePad(canvas, {
+                    backgroundColor: 'rgba(255,255,255,0)',
+                    penColor: 'rgb(15,23,42)'
+                });
+            }
+
+            // Init return sig pad when modal opens
+            document.getElementById('returnModal')?.addEventListener('shown.bs.modal', function () {
+                if (!returnSigPad) returnSigPad = initSigPad('returnSigCanvas');
+            });
+            document.getElementById('clearReturnSig')?.addEventListener('click', function () {
+                if (returnSigPad) returnSigPad.clear();
+            });
+
+            // Init complete sig pad when modal opens
+            document.getElementById('completeModal')?.addEventListener('shown.bs.modal', function () {
+                if (!completeSigPad) completeSigPad = initSigPad('completeSigCanvas');
+            });
+            document.getElementById('clearCompleteSig')?.addEventListener('click', function () {
+                if (completeSigPad) completeSigPad.clear();
+            });
+
+            // Toggle user not present
+            document.getElementById('userNotPresentCheck')?.addEventListener('change', function () {
+                document.getElementById('returnSignatureSection').style.display = this.checked ? 'none' : 'block';
+            });
+
+            // Toggle leader name input
+            document.getElementById('leaderApprovedCheck')?.addEventListener('change', function () {
+                document.getElementById('leaderNameSection').style.display = this.checked ? 'block' : 'none';
+            });
+            document.getElementById('sectionHeadApprovedCheck')?.addEventListener('change', function () {
+                document.getElementById('sectionHeadNameSection').style.display = this.checked ? 'block' : 'none';
+            });
+
+            // Return photo preview
+            document.getElementById('returnPhotoInput')?.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const preview = document.getElementById('returnPhotoPreview');
+                    preview.src = URL.createObjectURL(file);
+                    preview.classList.remove('d-none');
+                }
+            });
+
+            // ====== AJAX Helper ======
+            function ajaxPost(url, data) {
+                return $.post(url, data);
+            }
+
+            function reloadPage() {
+                location.reload();
+            }
+
+            // ====== 1. CONTACT USER ======
+            $(document).on('click', '.btn-contact', function () {
+                $('#contactItemId').val($(this).data('id'));
+                $('#contactUserName').text($(this).data('user'));
+                new bootstrap.Modal(document.getElementById('contactModal')).show();
+            });
+
+            $('#submitContact').on('click', function () {
+                var id = $('#contactItemId').val();
+                var contactedBy = $('#contactedByInput').val();
+                var method = $('#contactMethodInput').val();
+                if (!contactedBy) { Swal.fire('Peringatan', 'Nama ITAssetTrack wajib diisi.', 'warning'); return; }
+
+                ajaxPost('@Url.Action("ContactUser", "Maintenance")', { id, contactedBy, contactMethod: method })
+                    .done(function (r) {
+                        if (r.success) {
+                            Swal.fire({ icon: 'success', title: 'Berhasil', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                        } else {
+                            Swal.fire('Gagal', r.message, 'error');
+                        }
+                    }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+            });
+
+            // ====== 2. CONFIRM USER ======
+            $(document).on('click', '.btn-confirm', function () {
+                var id = $(this).data('id');
+                var user = $(this).data('user');
+                Swal.fire({
+                    title: 'User Konfirmasi OK?',
+                    text: `${user} setuju untuk PM pada jadwal yang ditentukan.`,
+                    icon: 'question', showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-check-lg"></i> Ya, Konfirmasi',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        ajaxPost('@Url.Action("ConfirmUser", "Maintenance")', { id })
+                            .done(function (r) {
+                                if (r.success) Swal.fire({ icon: 'success', title: 'Berhasil', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                                else Swal.fire('Gagal', r.message, 'error');
+                            }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+                    }
+                });
+            });
+
+            // ====== 3. RESCHEDULE ======
+            $(document).on('click', '.btn-reschedule', function () {
+                $('#rescheduleItemId').val($(this).data('id'));
+                $('#rescheduleUserName').text($(this).data('user'));
+                // Default to tomorrow
+                var tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                $('#rescheduleNewDate').val(tomorrow.toISOString().split('T')[0]);
+                new bootstrap.Modal(document.getElementById('rescheduleModal')).show();
+            });
+
+            $('#submitReschedule').on('click', function () {
+                var id = $('#rescheduleItemId').val();
+                var newDate = $('#rescheduleNewDate').val();
+                var reason = $('#rescheduleReason').val();
+                if (!newDate || !reason) { Swal.fire('Peringatan', 'Tanggal dan alasan wajib diisi.', 'warning'); return; }
+
+                ajaxPost('@Url.Action("RescheduleUser", "Maintenance")', { id, newDate, reason })
+                    .done(function (r) {
+                        if (r.success) Swal.fire({ icon: 'success', title: 'Berhasil', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                        else Swal.fire('Gagal', r.message, 'error');
+                    }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+            });
+
+            // ====== 4. START PM ======
+            $(document).on('click', '.btn-start-pm', function () {
+                $('#startPmItemId').val($(this).data('id'));
+                $('#startPmUserName').text($(this).data('user'));
+                $('#startPmSn').text($(this).data('sn'));
+                new bootstrap.Modal(document.getElementById('startPmModal')).show();
+            });
+
+            $('#submitStartPm').on('click', function () {
+                var id = $('#startPmItemId').val();
+                var performedBy = $('#performedByInput').val();
+                if (!performedBy) { Swal.fire('Peringatan', 'Nama teknisi wajib diisi.', 'warning'); return; }
+
+                ajaxPost('@Url.Action("StartPm", "Maintenance")', { id, performedBy })
+                    .done(function (r) {
+                        if (r.success) Swal.fire({ icon: 'success', title: 'PM Dimulai!', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                        else Swal.fire('Gagal', r.message, 'error');
+                    }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+            });
+
+            // ====== 5. END PM ======
+            $(document).on('click', '.btn-end-pm', function () {
+                var id = $(this).data('id');
+                var user = $(this).data('user');
+                Swal.fire({
+                    title: 'Selesai PM?',
+                    text: `PM untuk ${user} akan ditandai selesai. Timer akan dihentikan.`,
+                    icon: 'question', showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-stop-fill"></i> Ya, Selesai PM',
+                    confirmButtonColor: '#059669',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        ajaxPost('@Url.Action("EndPm", "Maintenance")', { id })
+                            .done(function (r) {
+                                if (r.success) Swal.fire({ icon: 'success', title: 'PM Selesai!', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                                else Swal.fire('Gagal', r.message, 'error');
+                            }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+                    }
+                });
+            });
+
+            // ====== 6. RETURN LAPTOP ======
+            $(document).on('click', '.btn-return', function () {
+                $('#returnItemId').val($(this).data('id'));
+                $('#returnUserName').text($(this).data('user'));
+                $('#userNotPresentCheck').prop('checked', false);
+                $('#returnSignatureSection').show();
+                $('#returnNotesInput').val('');
+                $('#returnPhotoPreview').addClass('d-none');
+                if (returnSigPad) returnSigPad.clear();
+                new bootstrap.Modal(document.getElementById('returnModal')).show();
+            });
+
+            $('#submitReturn').on('click', function () {
+                var id = $('#returnItemId').val();
+                var userNotPresent = $('#userNotPresentCheck').is(':checked');
+                var returnNotes = $('#returnNotesInput').val();
+                var userSignature = '';
+
+                if (!userNotPresent && returnSigPad && !returnSigPad.isEmpty()) {
+                    userSignature = returnSigPad.toDataURL();
+                }
+
+                // Upload return photo if any
+                var returnPhotoFile = document.getElementById('returnPhotoInput').files[0];
+                if (returnPhotoFile) {
+                    var formData = new FormData();
+                    formData.append('maintId', id);
+                    formData.append('photoType', 'ReturnLaptop');
+                    formData.append('photo', returnPhotoFile);
+                    $.ajax({ url: '@Url.Action("UploadPmPhoto", "Maintenance")', type: 'POST', data: formData, processData: false, contentType: false });
+                }
+
+                ajaxPost('@Url.Action("ReturnLaptop", "Maintenance")', { id, userSignature, userNotPresent, returnNotes })
+                    .done(function (r) {
+                        if (r.success) Swal.fire({ icon: 'success', title: 'Berhasil', text: r.message, timer: 2000, showConfirmButton: false }).then(reloadPage);
+                        else Swal.fire('Gagal', r.message, 'error');
+                    }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+            });
+
+            // ====== 7. COMPLETE PM ======
+            $(document).on('click', '.btn-complete', function () {
+                $('#completeItemId').val($(this).data('id'));
+                $('#completeUserName').text($(this).data('user'));
+                $('#completeSn').text($(this).data('sn'));
+                $('#leaderApprovedCheck').prop('checked', false);
+                $('#sectionHeadApprovedCheck').prop('checked', false);
+                $('#leaderNameSection').hide();
+                $('#sectionHeadNameSection').hide();
+                if (completeSigPad) completeSigPad.clear();
+                new bootstrap.Modal(document.getElementById('completeModal')).show();
+            });
+
+            $('#submitComplete').on('click', function () {
+                var id = $('#completeItemId').val();
+                var execSignature = '';
+                if (completeSigPad && !completeSigPad.isEmpty()) {
+                    execSignature = completeSigPad.toDataURL();
+                }
+                var leaderApproved = $('#leaderApprovedCheck').is(':checked');
+                var leaderApprovedBy = $('#leaderNameInput').val();
+                var sectionHeadApproved = $('#sectionHeadApprovedCheck').is(':checked');
+                var sectionHeadApprovedBy = $('#sectionHeadNameInput').val();
+                var keluhan = $('#completeKeluhan').val();
+                var remark = $('#completeRemark').val();
+
+                if (!remark.trim()) {
+                    Swal.fire('Peringatan', 'Remark / tindakan teknisi wajib diisi sebelum menyelesaikan PM.', 'warning');
+                    return;
+                }
+
+                ajaxPost('@Url.Action("CompletePm", "Maintenance")', {
+                    id, execSignature, leaderApproved, leaderApprovedBy, sectionHeadApproved, sectionHeadApprovedBy, keluhan, remark
+                }).done(function (r) {
+                    if (r.success) Swal.fire({ icon: 'success', title: 'PM Completed!', text: r.message, timer: 2500, showConfirmButton: false }).then(reloadPage);
+                    else Swal.fire('Gagal', r.message, 'error');
+                }).fail(function () { Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'); });
+            });
+
+            // ====== CAMERA BUTTONS (Evidence Photos) ======
+            var currentCameraId = null;
+            var currentCameraType = null;
+
+            $(document).on('click', '.btn-camera', function () {
+                currentCameraId = $(this).data('id');
+                currentCameraType = $(this).data('type');
+                document.getElementById('cameraInput').click();
+            });
+
+            document.getElementById('cameraInput')?.addEventListener('change', function (e) {
+                var file = e.target.files[0];
+                if (file && currentCameraId && currentCameraType) {
+                    var formData = new FormData();
+                    formData.append('maintId', currentCameraId);
+                    formData.append('photoType', currentCameraType);
+                    formData.append('photo', file);
+
+                    $.ajax({
+                        url: '@Url.Action("UploadPmPhoto", "Maintenance")',
+                        type: 'POST', data: formData, processData: false, contentType: false
+                    }).done(function (r) {
+                        if (r.success) {
+                            Swal.fire({ icon: 'success', title: 'Foto Diupload', text: r.message, timer: 1500, showConfirmButton: false }).then(reloadPage);
+                        } else {
+                            Swal.fire('Gagal', r.message, 'error');
+                        }
+                    }).fail(function () { Swal.fire('Error', 'Gagal upload foto.', 'error'); });
+                }
+                // Reset input so same file can be selected again
+                this.value = '';
+            });
+        });
+    </script>
+}

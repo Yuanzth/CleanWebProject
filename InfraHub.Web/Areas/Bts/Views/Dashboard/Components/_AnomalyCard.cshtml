@@ -1,0 +1,218 @@
+@{
+    var type = ViewData["type"] as string ?? "";
+    var rawType = type.Trim().ToLower();
+    var normalizedType = (new[] { "sensor", "sensor_mati", "sensor_issue" }).Contains(rawType) ? "sensor_dead" : rawType;
+
+    var valueObj = ViewData["value"];
+    var sensorDeadSources = new List<string>();
+    
+    if (valueObj is IEnumerable<string> stringList)
+    {
+        sensorDeadSources = stringList.ToList();
+    }
+    else if (valueObj is string valueStr)
+    {
+        sensorDeadSources = valueStr.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(v => v.Trim()).ToList();
+    }
+    else if (valueObj != null)
+    {
+        sensorDeadSources = new List<string> { valueObj.ToString() };
+    }
+    sensorDeadSources = sensorDeadSources.Where(v => !string.IsNullOrEmpty(v)).ToList();
+
+    int sensorMaxShow = 2;
+    int sensorTotal = sensorDeadSources.Count;
+    int sensorRemaining = Math.Max(0, sensorTotal - sensorMaxShow);
+    string sensorDeadDisplay = "";
+    
+    if (sensorTotal == 0)
+    {
+        sensorDeadDisplay = "No Data";
+    }
+    else if (sensorRemaining <= 0)
+    {
+        sensorDeadDisplay = string.Join(", ", sensorDeadSources);
+    }
+    else
+    {
+        var sensorShown = sensorDeadSources.Take(sensorMaxShow);
+        sensorDeadDisplay = string.Join(", ", sensorShown) + ", dan " + sensorRemaining + "+ lainnya";
+    }
+
+    var zone_id = ViewData["zone_id"] as string;
+    var cardTag = !string.IsNullOrEmpty(zone_id) ? "a" : "div";
+    var monitorUrl = !string.IsNullOrEmpty(zone_id) ? "/monitoring?zone_id=" + zone_id : null;
+
+    var status = ViewData["status"] as string ?? "warning";
+    var cardStatusClass = status == "critical" ? "db-anomaly-card--critical" : "db-anomaly-card--warning";
+
+    var clickableAttr = monitorUrl != null 
+        ? $"href=\"{monitorUrl}\" style=\"text-decoration:none;color:inherit;cursor:pointer;pointer-events:auto;position:relative;\"" 
+        : "style=\"position:relative;\"";
+
+    var canAck = ViewData["canAcknowledge"] as bool? ?? false;
+    var anomalyId = ViewData["anomaly_id"] as string;
+    var isAcked = ViewData["acknowledged"] as bool? ?? false;
+    var anomalyPanel = ViewData["panel"] as string;
+
+    var ackActionId = "ack-action-" + (anomalyId ?? Guid.NewGuid().ToString("N"));
+    var ackMenuId = "ack-menu-" + (anomalyId ?? Guid.NewGuid().ToString("N"));
+    var actionsClass = "db-anm-actions" + (canAck && !string.IsNullOrEmpty(anomalyId) ? " db-anm-actions--has-menu" : "");
+    var ackRibbonClass = status == "critical" ? "db-ack-ribbon--critical" : "db-ack-ribbon--warning";
+    
+    var site = ViewData["site"] as string ?? "SITE";
+    var name = ViewData["name"] as string ?? "ID";
+    var meta = ViewData["meta"] as dynamic;
+}
+
+<@cardTag class="db-anomaly-card @cardStatusClass @(!string.IsNullOrEmpty(anomalyPanel) ? "db-anomaly-card--panel-" + anomalyPanel.ToLower() : "") @(monitorUrl != null ? "db-anomaly-card--clickable" : "") @(isAcked ? "db-anomaly-card--acked" : "")" @Html.Raw(clickableAttr)>
+
+    <div class="db-anomaly-card__header">
+        <div class="db-anomaly-card__site-info">
+            <span class="db-anm-site" data-auto-shrink="true">@site</span>
+            <span class="db-anm-name" data-auto-shrink="true">@name</span>
+        </div>
+        <div class="@actionsClass">
+            <div class="db-badge db-badge--@(status.ToLower()) db-badge--xs">
+                @(char.ToUpper(status[0]) + status.Substring(1).ToLower())
+            </div>
+
+            @if(canAck && !string.IsNullOrEmpty(anomalyId))
+            {
+                <div class="db-anm-menu" id="@ackMenuId">
+                    <button type="button" class="db-anm-menu__trigger" onclick="dbToggleAnomalyMenu(event, '@ackMenuId')" title="Actions">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+
+                    <div class="db-anm-menu__dropdown is-hidden">
+                        @if(isAcked)
+                        {
+                            <button type="button" id="@ackActionId" class="db-ack-action db-ack-action--done" data-ack-done="1" disabled onclick="event.stopPropagation();event.preventDefault();" title="Already acknowledged">
+                                <i class="fa-solid fa-circle-check"></i> Acknowledged
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" id="@ackActionId" class="db-ack-action" onclick="dbPromptAcknowledge(event, '@anomalyId', '@ackActionId', '@ackMenuId', '@(zone_id ?? "")', '@(anomalyPanel ?? "")', '@normalizedType')" title="Acknowledge anomaly">
+                                <i class="fa-regular fa-circle-check"></i> Acknowledge
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="db-anomaly-card__body">
+
+        @if(normalizedType == "fuel_gauge")
+        {
+            var valDouble = 0.0;
+            if (valueObj != null) double.TryParse(valueObj.ToString(), out valDouble);
+
+            <div class="db-anm-gauge">
+                <div class="db-anm-gauge__circle" style="background: conic-gradient(from 270deg at 50% 100%, @(status == "critical" ? "#ef4444" : "#f59e0b") @(valDouble * 1.8)deg, #e2e8f0 @(valDouble * 1.8)deg 180deg, transparent 180deg);">
+                    <div class="db-anm-gauge__mask"></div>
+                    <span class="db-anm-gauge__val">@valDouble%</span>
+                </div>
+                <span class="db-anm-gauge__label">Fuel Level</span>
+            </div>
+        }
+        else if(normalizedType == "fuel_bar")
+        {
+            <div class="db-anm-bar-wrap">
+                <div class="db-anm-bar-bg">
+                    <div class="db-anm-bar-fill @(status == "critical" ? "bg-red" : "bg-orange")" style="width: @valueObj%;"></div>
+                </div>
+                <div class="db-anm-bar__text">Fuel Level : @valueObj%</div>
+            </div>
+        }
+        else if(normalizedType == "electrical")
+        {
+            var voltageStatus = meta?.voltage_status?.ToString() ?? "normal";
+            var freqStatus = meta?.freq_status?.ToString() ?? "normal";
+            bool badVolt = voltageStatus == "warning" || voltageStatus == "critical";
+            bool badFreq = freqStatus == "warning" || freqStatus == "critical";
+
+            <div class="db-anm-elec" style="display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:8px;">
+                <i class="fa-solid fa-bolt db-anm-icon @(status == "critical" ? "text-red" : "text-orange")" style="font-size:1.6rem;flex-shrink:0;"></i>
+                <div class="db-anm-elec__details">
+                    <div class="db-anm-elec__row @(badVolt ? "text-red" : "")" style="@(badVolt ? "font-weight:700;" : "")" data-auto-shrink="true">
+                        Tegangan: @(meta?.voltage ?? 0)V
+                    </div>
+                    <div class="db-anm-elec__row @(badFreq ? "text-red" : "")" style="@(badFreq ? "font-weight:700;" : "")" data-auto-shrink="true">
+                        Frekuensi: @(meta?.frequency ?? 50)Hz
+                    </div>
+                </div>
+            </div>
+        }
+        else if(normalizedType == "weather")
+        {
+            var valLower = (valueObj?.ToString() ?? "").ToLower();
+            var iconClass = (valLower.Contains("wind") || valLower.Contains("temperature")) ? "fa-wind" : (valLower.Contains("dust") ? "fa-smog" : "fa-cloud-bolt");
+
+            <div class="db-anm-center">
+                <i class="fa-solid @iconClass db-anm-icon-lg @(status == "critical" ? "text-red" : "text-orange")"></i>
+                <div class="db-anm-text-lg">@(valueObj ?? "Bad Weather")</div>
+            </div>
+        }
+        else if(normalizedType == "tower")
+        {
+            <div class="db-anm-center">
+                <i class="fa-solid fa-tower-broadcast db-anm-icon-lg @(status == "critical" ? "text-red" : "text-orange")"></i>
+                <div class="db-anm-val-lg" data-auto-shrink="true">@(valueObj ?? 0)&deg;</div>
+            </div>
+        }
+        else if(normalizedType == "spd")
+        {
+            <div class="db-anm-center">
+                <i class="fa-solid fa-shield-halved db-anm-icon-lg @(status == "critical" ? "text-red" : "text-orange")"></i>
+                <div class="db-anm-text-lg" data-auto-shrink="true">SPD @(valueObj ?? "Unknown")</div>
+            </div>
+        }
+        else if(normalizedType == "earth")
+        {
+            <div class="db-anm-center">
+                <i class="fa-solid fa-layer-group db-anm-icon-lg @(status == "critical" ? "text-red" : "text-orange")"></i>
+                <div class="db-anm-val-lg" data-auto-shrink="true">
+                    @(valueObj ?? 0)
+                    <span style="font-size:0.8em;font-weight:normal;">Ohm</span>
+                </div>
+            </div>
+        }
+        else if(normalizedType == "lightning")
+        {
+            <div class="db-anm-center">
+                <i class="fa-solid fa-bolt db-anm-icon-lg @(status == "critical" ? "text-red" : "text-orange")"></i>
+                <div class="db-anm-text-lg" data-auto-shrink="true">Lightning @(valueObj ?? "Active")</div>
+            </div>
+        }
+        else if(normalizedType == "sensor_dead")
+        {
+            <div class="db-anm-center">
+                <div class="db-anm-sensor-icon-box">
+                    <i class="fa-solid fa-satellite-dish text-red db-anm-sensor-icon-dish"></i>
+                    <i class="fa-solid fa-slash text-red db-anm-sensor-icon-slash"></i>
+                </div>
+                <div class="db-anm-text-lg text-red" style="font-weight:700;" data-auto-shrink="true">
+                    SENSOR MATI
+                </div>
+                <div class="db-anm-sensor-sources">@sensorDeadDisplay</div>
+            </div>
+        }
+
+    </div>
+
+    @if(isAcked)
+    {
+        <div class="db-ack-ribbon @ackRibbonClass">
+            <div class="db-ack-ribbon__track">
+                <span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span>
+                <span class="db-ack-ribbon__text">UNDER REVIEW • UNDER REVIEW • UNDER REVIEW • UNDER REVIEW •</span>
+            </div>
+        </div>
+    }
+
+</@cardTag>
+
+

@@ -1,0 +1,1036 @@
+@{
+    ViewData["Title"] = "Tracking Report Log - Hourly Site Performance";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/assets/css/tracking.css" />
+    <style>
+        .report-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .report-loading-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+}
+
+<style>
+    /* Styling matched 100% with global InfraHub app theme */
+    .rpt-container {
+        padding: 24px 32px;
+        min-height: calc(100vh - 68px);
+        position: relative;
+    }
+    .rpt-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        transition: box-shadow 0.2s ease;
+    }
+    .rpt-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .rpt-kpi-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .rpt-kpi-val {
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+        letter-spacing: -0.02em;
+    }
+    .rpt-section-header {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .diag-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 14px 16px;
+    }
+    .diag-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .diag-text {
+        font-size: 0.8rem;
+        color: #475569;
+        margin: 0;
+        line-height: 1.5;
+    }
+    .param-tab-btn {
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 6px 14px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+    .param-tab-btn.active, .param-tab-btn:hover {
+        background: #D4952B;
+        color: #ffffff;
+        border-color: #D4952B;
+        box-shadow: 0 2px 6px rgba(212, 149, 43, 0.3);
+    }
+    .threshold-legend {
+        display: flex;
+        gap: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 6px 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
+<div class="rpt-container">
+    <!-- Loading Overlay (Matching Live Tracking animated dish spinner) -->
+    <div class="report-loading-overlay" id="reportLoadingOverlay">
+        <div class="map-loading-content">
+            <div class="map-loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <i class="fa-solid fa-satellite-dish spinner-icon"></i>
+            </div>
+            <div class="map-loading-text" id="reportLoadingText">Memuat Laporan Telemetri...</div>
+            <div class="map-loading-subtext" id="reportLoadingSubtext">Mengambil data log sinyal site dari server</div>
+        </div>
+    </div>
+
+    <!-- Top Filter & Title Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h4 class="fw-bold mb-1" style="color: #0f172a;">
+                <i class="fa-solid fa-chart-line text-warning me-2" style="color: #D4952B !important;"></i>Tracking Report Log
+            </h4>
+            <p class="text-muted small mb-0">Analisis Per Jam Parameter Sinyal RF (RSRP, RSSI, RSRQ, SINR) & Batas Threshold Operasional</p>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <!-- Site Selector -->
+            <div class="d-flex align-items-center bg-white px-3 py-1.5 rounded-3 border" style="box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <i class="fa-solid fa-location-dot me-2 text-warning" style="color: #D4952B !important;"></i>
+                <select id="reportSiteSelect" class="form-select form-select-sm border-0 shadow-none bg-transparent" style="min-width: 160px; font-weight: 600; cursor: pointer; color: #0f172a;">
+                    <option value="" disabled selected>-- Pilih Site --</option>
+                </select>
+            </div>
+
+            <!-- Date Selector -->
+            <div class="d-flex align-items-center bg-white px-3 py-1.5 rounded-3 border" style="box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <i class="fa-regular fa-calendar me-2 text-warning" style="color: #D4952B !important;"></i>
+                <input type="date" id="reportDatePicker" class="form-control form-control-sm border-0 shadow-none bg-transparent" style="font-weight: 600; cursor: pointer; color: #0f172a;" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <button id="btnLoadReport" class="btn btn-sm btn-warning px-3 fw-semibold rounded-3 text-white" style="background-color: #D4952B; border-color: #D4952B;">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Muat Ulang
+            </button>
+
+            <button id="btnExportExcel" class="btn btn-sm btn-outline-success px-3 fw-semibold rounded-3">
+                <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Empty State Placeholder (shown when no site is selected) -->
+    <div id="reportEmptyState" class="rpt-card text-center py-5 my-4 border-0 shadow-sm" style="background: #ffffff; border-radius: 16px;">
+        <div class="py-5">
+            <div class="mb-3">
+                <span class="d-inline-flex align-items-center justify-content-center bg-warning-subtle text-warning rounded-circle p-4" style="width: 84px; height: 84px; background-color: #FEF3C7 !important;">
+                    <i class="fa-solid fa-location-dot fs-1" style="color: #D4952B !important;"></i>
+                </span>
+            </div>
+            <h5 class="fw-bold text-dark mb-2">Silakan Pilih Site Terlebih Dahulu</h5>
+            <p class="text-muted small mb-0" style="max-width: 500px; margin: 0 auto; line-height: 1.6;">
+                Pilih site pada filter dropdown di bagian atas untuk menampilkan Laporan Telemetri Log Per Jam, Diagnostik Sinyal RF, dan Analisis Performa Fleet.
+            </p>
+        </div>
+    </div>
+
+    <!-- Report Content Wrapper (hidden until site selected & report loaded) -->
+    <div id="reportContentWrapper" style="display: none;">
+
+    <!-- Executive Diagnostic Summary Panel -->
+    <div class="rpt-card mb-4 border-start border-4 border-warning" style="border-left-color: #D4952B !important;">
+        <div class="rpt-section-header mb-3">
+            <i class="fa-solid fa-clipboard-check text-warning" style="color: #D4952B !important;"></i>
+            <span>Ringkasan Diagnostik Sinyal RF Site (Executive Summary)</span>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="diag-box">
+                    <div class="diag-title"><i class="fa-solid fa-signal text-primary"></i> RSRP (Cakupan Daya LTE)</div>
+                    <p id="diagCoverage" class="diag-text">Memuat analisis RSRP...</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="diag-box">
+                    <div class="diag-title"><i class="fa-solid fa-bolt text-success"></i> SINR (Kejelasan Data Link)</div>
+                    <p id="diagClarity" class="diag-text">Memuat analisis SINR...</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="diag-box">
+                    <div class="diag-title"><i class="fa-solid fa-tower-cell text-warning"></i> RSRQ (Kepadatan BTS)</div>
+                    <p id="diagCongestion" class="diag-text">Memuat analisis RSRQ...</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="diag-box">
+                    <div class="diag-title"><i class="fa-solid fa-truck-monster text-info"></i> Operasional Armada</div>
+                    <p id="diagFleet" class="diag-text">Memuat analisis armada...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Overview Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="rpt-card border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="rpt-kpi-title">Avg RSRP Site</span>
+                    <div id="kpiRsrpBadgeContainer"><span class="badge bg-secondary">--</span></div>
+                </div>
+                <div id="kpiRsrp" class="rpt-kpi-val text-primary">-- dBm</div>
+                <span class="text-muted small" style="font-size: 11px;">Daya sinyal murni LTE</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="rpt-card border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="rpt-kpi-title">Avg RSSI / SINR</span>
+                    <i class="fa-solid fa-tower-cell text-success"></i>
+                </div>
+                <div id="kpiRssiSinr" class="rpt-kpi-val text-success">-- / --</div>
+                <span class="text-muted small" style="font-size: 11px;">Total Power (dBm) & Kejelasan (dB)</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="rpt-card border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="rpt-kpi-title">Peak Active Fleet</span>
+                    <i class="fa-solid fa-truck-monster text-warning"></i>
+                </div>
+                <div id="kpiPeakUnits" class="rpt-kpi-val text-warning">0 Unit</div>
+                <span class="text-muted small" style="font-size: 11px;">Jumlah armada tertinggi dalam 1 jam</span>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="rpt-card border-start border-4 border-danger">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="rpt-kpi-title">Low Coverage Hours</span>
+                    <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                </div>
+                <div id="kpiLowCoverage" class="rpt-kpi-val text-danger">0 Jam</div>
+                <span class="text-muted small" style="font-size: 11px;">Jam dengan RSRP < -105 dBm</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parameter View Selection Tabs -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-2">
+        <h6 class="fw-bold mb-0 text-slate-800" style="color: #0f172a;">
+            <i class="fa-solid fa-sliders text-warning me-1" style="color: #D4952B !important;"></i> Grafik Trend Parameter RF (Area/Line Curves & Threshold Lines)
+        </h6>
+
+        <div class="threshold-legend">
+            <span><i class="fa-solid fa-circle me-1" style="color:#3b82f6;"></i> Excellent</span>
+            <span><i class="fa-solid fa-circle me-1" style="color:#22c55e;"></i> Good</span>
+            <span><i class="fa-solid fa-circle me-1" style="color:#eab308;"></i> Fair</span>
+            <span><i class="fa-solid fa-circle me-1" style="color:#ef4444;"></i> Poor</span>
+            <span><i class="fa-solid fa-circle me-1" style="color:#a855f7;"></i> Very Poor</span>
+        </div>
+
+        <div class="btn-group gap-1">
+            <button class="param-tab-btn active" data-view="grid"><i class="fa-solid fa-border-all me-1"></i> Grid (Semua 2x2)</button>
+            <button class="param-tab-btn" data-view="rsrp"><i class="fa-solid fa-signal me-1"></i> RSRP</button>
+            <button class="param-tab-btn" data-view="rssi"><i class="fa-solid fa-wifi me-1"></i> RSSI</button>
+            <button class="param-tab-btn" data-view="rsrq"><i class="fa-solid fa-tower-cell me-1"></i> RSRQ</button>
+            <button class="param-tab-btn" data-view="sinr"><i class="fa-solid fa-bolt me-1"></i> SINR</button>
+        </div>
+    </div>
+
+    <!-- Individual Parameter Charts Grid Container -->
+    <div class="row g-3 mb-4" id="paramChartsGrid">
+        <!-- 1. Individual RSRP Area Chart -->
+        <div class="col-12 col-xl-6 param-chart-box" id="boxChartRsrp">
+            <div class="rpt-card h-100 border-top border-4" style="border-top-color: #3b82f6 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="rpt-section-header" style="color:#3b82f6;">
+                        <i class="fa-solid fa-signal"></i>
+                        <span>RSRP (Reference Signal Received Power)</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Mengukur daya sinyal utama LTE. Sinyal < -105 dBm adalah zona rawan deadzone.</p>
+                <div id="chartIndivRsrp" style="min-height: 280px;"></div>
+            </div>
+        </div>
+
+        <!-- 2. Individual RSSI Area Chart -->
+        <div class="col-12 col-xl-6 param-chart-box" id="boxChartRssi">
+            <div class="rpt-card h-100 border-top border-4" style="border-top-color: #06b6d4 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="rpt-section-header" style="color:#06b6d4;">
+                        <i class="fa-solid fa-wifi"></i>
+                        <span>RSSI (Received Signal Strength Indicator)</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Total daya energi frekuensi yang diterima modul modem di lapangan.</p>
+                <div id="chartIndivRssi" style="min-height: 280px;"></div>
+            </div>
+        </div>
+
+        <!-- 3. Individual RSRQ Line Chart -->
+        <div class="col-12 col-xl-6 param-chart-box" id="boxChartRsrq">
+            <div class="rpt-card h-100 border-top border-4" style="border-top-color: #D4952B !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="rpt-section-header" style="color:#D4952B;">
+                        <i class="fa-solid fa-tower-cell"></i>
+                        <span>RSRQ (Reference Signal Received Quality)</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Mengukur kualitas sinyal & beban trafik BTS. Nilai < -12 dB = BTS padat/interferensi.</p>
+                <div id="chartIndivRsrq" style="min-height: 280px;"></div>
+            </div>
+        </div>
+
+        <!-- 4. Individual SINR Area Chart -->
+        <div class="col-12 col-xl-6 param-chart-box" id="boxChartSinr">
+            <div class="rpt-card h-100 border-top border-4" style="border-top-color: #10b981 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="rpt-section-header" style="color:#10b981;">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>SINR (Signal-to-Interference-plus-Noise Ratio)</span>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Rasio kebersihan data link. SINR > 13 dB = transfer data sangat jernih dan tanpa loss.</p>
+                <div id="chartIndivSinr" style="min-height: 280px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fleet Activity & Quality Distribution -->
+    <div class="row g-3 mb-4">
+        <!-- Fleet Activity & Speed -->
+        <div class="col-12 col-xl-7">
+            <div class="rpt-card h-100">
+                <div class="rpt-section-header mb-1">
+                    <i class="fa-solid fa-truck-line text-warning" style="color: #D4952B !important;"></i>
+                    <span>Aktivitas Armada Aktif & Kecepatan Rata-Rata</span>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Jumlah unit beroperasi per jam (Bar) vs Kecepatan Rata-Rata (Line km/h).</p>
+                <div id="chartFleetSpeed" style="min-height: 280px;"></div>
+            </div>
+        </div>
+
+        <!-- Quality Level Distribution -->
+        <div class="col-12 col-xl-5">
+            <div class="rpt-card h-100">
+                <div class="rpt-section-header mb-1">
+                    <i class="fa-solid fa-chart-column text-primary"></i>
+                    <span>Distribusi Kategori Kualitas Sinyal</span>
+                </div>
+                <p class="text-muted small mb-2" style="font-size: 11px;">Jumlah titik sinyal berdasarkan tingkatan kualitas per jam.</p>
+                <div id="chartQualityDistribution" style="min-height: 280px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hourly Data Breakdown Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="rpt-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="rpt-section-header mb-0">
+                        <i class="fa-solid fa-table text-primary"></i>
+                        <span>Tabel Detail Agregasi Per Jam Berwarna Threshold (00:00 - 23:00)</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="tblHourlyReport" class="table table-hover table-striped align-middle mb-0" style="font-size: 13px;">
+                        <thead class="table-light">
+                            <tr class="text-secondary" style="border-bottom: 2px solid #cbd5e1;">
+                                <th class="fw-bold">Jam</th>
+                                <th class="fw-bold">Unit Aktif</th>
+                                <th class="fw-bold">Total Titik</th>
+                                <th class="fw-bold">Avg RSRP (dBm)</th>
+                                <th class="fw-bold">Avg RSSI (dBm)</th>
+                                <th class="fw-bold">Avg RSRQ (dB)</th>
+                                <th class="fw-bold">Avg SINR (dB)</th>
+                                <th class="fw-bold">Avg Speed (km/h)</th>
+                                <th class="fw-bold">Status Dominan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tblHourlyBody">
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">Silakan pilih Site dan tanggal untuk memuat laporan.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- End #reportContentWrapper -->
+</div>
+
+<!-- ApexCharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- SheetJS (XLSX) CDN for Excel Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+    // Unified Signal Quality Threshold Rules matching Tracking 100%
+    const QUALITY_COLORS = {
+        excellent: '#3b82f6', // 🔵 Blue
+        good:      '#22c55e', // 🟢 Green
+        fair:      '#eab308', // 🟡 Yellow
+        poor:      '#ef4444', // 🔴 Red
+        verypoor:  '#a855f7'  // 🟣 Purple
+    };
+
+    const QUALITY_LABELS = {
+        excellent: 'Excellent',
+        good:      'Good',
+        fair:      'Fair',
+        poor:      'Poor',
+        verypoor:  'Very Poor'
+    };
+
+    function getSignalLevel(val, param = 'rsrp') {
+        if (val === null || val === undefined || isNaN(Number(val))) return 'unknown';
+        const v = Number(val);
+        const p = (param || 'rsrp').toLowerCase();
+
+        if (p === 'rsrp') {
+            if (v >= -85) return 'excellent';
+            if (v >= -100) return 'good';
+            if (v >= -105) return 'fair';
+            if (v >= -115) return 'poor';
+            return 'verypoor';
+        } else if (p === 'rssi') {
+            if (v >= -65) return 'excellent';
+            if (v >= -75) return 'good';
+            if (v >= -85) return 'fair';
+            if (v >= -95) return 'poor';
+            return 'verypoor';
+        } else if (p === 'rsrq') {
+            if (v >= -8) return 'excellent';
+            if (v >= -11) return 'good';
+            if (v >= -14) return 'fair';
+            if (v >= -17) return 'poor';
+            return 'verypoor';
+        } else if (p === 'sinr') {
+            if (v >= 15) return 'excellent';
+            if (v >= 10) return 'good';
+            if (v >= 3) return 'fair';
+            if (v >= 0) return 'poor';
+            return 'verypoor';
+        }
+        return 'unknown';
+    }
+
+    function getSignalBadgeHtml(val, param = 'rsrp') {
+        if (val === null || val === undefined || isNaN(Number(val))) {
+            return '<span class="badge bg-secondary">No Data</span>';
+        }
+        const level = getSignalLevel(val, param);
+        const color = QUALITY_COLORS[level] || '#64748b';
+        const label = QUALITY_LABELS[level] || 'N/A';
+        const textColor = level === 'fair' ? '#0f172a' : '#ffffff';
+        return `<span class="badge" style="background-color:${color};color:${textColor};font-weight:600;">${label}</span>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        let chartRsrp = null;
+        let chartRssi = null;
+        let chartRsrq = null;
+        let chartSinr = null;
+        let distributionChart = null;
+        let fleetSpeedChart = null;
+        let currentReportData = null;
+
+        loadSitesList();
+
+        document.getElementById('btnLoadReport').addEventListener('click', fetchHourlyReport);
+        document.getElementById('btnExportExcel').addEventListener('click', exportReportToExcel);
+        document.getElementById('reportSiteSelect').addEventListener('change', fetchHourlyReport);
+        document.getElementById('reportDatePicker').addEventListener('change', fetchHourlyReport);
+
+        // Parameter Tab Button Toggle Logic
+        document.querySelectorAll('.param-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.param-tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const view = this.getAttribute('data-view');
+                const boxes = document.querySelectorAll('.param-chart-box');
+
+                if (view === 'grid') {
+                    boxes.forEach(b => {
+                        b.style.display = 'block';
+                        b.className = 'col-12 col-xl-6 param-chart-box';
+                    });
+                } else {
+                    boxes.forEach(b => b.style.display = 'none');
+                    const target = document.getElementById(`boxChart${view.charAt(0).toUpperCase() + view.slice(1)}`);
+                    if (target) {
+                        target.style.display = 'block';
+                        target.className = 'col-12 param-chart-box';
+                    }
+                }
+            });
+        });
+
+        // Fetch sites dropdown list
+        async function loadSitesList() {
+            try {
+                const res = await fetch('/Tracking/Api/GetSitesWithUnits');
+                const data = await res.json();
+                const select = document.getElementById('reportSiteSelect');
+                
+                const sitesList = data.data || data.sites || [];
+
+                if (data && data.status === 'success' && Array.isArray(sitesList) && sitesList.length > 0) {
+                    select.innerHTML = '<option value="" disabled selected>-- Pilih Site --</option>';
+                    sitesList.forEach(s => {
+                        const opt = document.createElement('option');
+                        const siteCode = s.code || s.site_code;
+                        const siteName = s.name || s.site_name || siteCode;
+                        opt.value = siteCode;
+                        opt.textContent = `${siteName} (${siteCode})`;
+                        select.appendChild(opt);
+                    });
+
+                    // Keep unselected by default - user must select a site to view report
+                    document.getElementById('reportEmptyState').style.display = 'block';
+                    document.getElementById('reportContentWrapper').style.display = 'none';
+                } else {
+                    select.innerHTML = '<option value="" disabled selected>Tidak ada site aktif</option>';
+                }
+            } catch (err) {
+                console.error('Failed to load sites dropdown:', err);
+                const select = document.getElementById('reportSiteSelect');
+                select.innerHTML = '<option value="" disabled selected>Gagal memuat site</option>';
+            }
+        }
+
+        async function fetchHourlyReport() {
+            const selectEl = document.getElementById('reportSiteSelect');
+            const siteCode = selectEl ? selectEl.value : '';
+            const date = document.getElementById('reportDatePicker').value;
+
+            if (!siteCode) {
+                document.getElementById('reportEmptyState').style.display = 'block';
+                document.getElementById('reportContentWrapper').style.display = 'none';
+                return;
+            }
+
+            const overlay = document.getElementById('reportLoadingOverlay');
+            const loadingText = document.getElementById('reportLoadingText');
+            const loadingSubtext = document.getElementById('reportLoadingSubtext');
+
+            if (loadingText) loadingText.textContent = `Memuat Laporan ${siteCode}...`;
+            if (loadingSubtext) loadingSubtext.textContent = `Mengambil data sinyal per jam tanggal ${date}`;
+            if (overlay) overlay.classList.add('active');
+
+            try {
+                const url = `/Tracking/Api/GetHourlySiteReport?siteCode=${encodeURIComponent(siteCode)}&date=${encodeURIComponent(date)}`;
+                const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error(`Server merespon dengan status HTTP ${res.status}`);
+                }
+
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    throw new Error('Respon dari server bukan format JSON yang valid');
+                }
+
+                const data = await res.json();
+
+                if (data && data.status === 'success') {
+                    currentReportData = data;
+
+                    // Hide empty state placeholder and display report content cards
+                    document.getElementById('reportEmptyState').style.display = 'none';
+                    document.getElementById('reportContentWrapper').style.display = 'block';
+
+                    updateKPIOverview(data.kpi);
+                    updateExecutiveDiagnostic(data);
+                    renderRsrpChart(data.hourly_data);
+                    renderRssiChart(data.hourly_data);
+                    renderRsrqChart(data.hourly_data);
+                    renderSinrChart(data.hourly_data);
+                    renderQualityDistributionChart(data.hourly_data);
+                    renderFleetSpeedChart(data.hourly_data);
+                    renderHourlyTable(data.hourly_data);
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('Error', data.message || 'Gagal memuat laporan.', 'error');
+                    } else {
+                        alert(data.message || 'Gagal memuat laporan.');
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching hourly report:', err);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Gagal Memuat Laporan', err.message || 'Terjadi kesalahan saat memuat data laporan.', 'error');
+                } else {
+                    alert('Gagal memuat laporan: ' + err.message);
+                }
+            } finally {
+                if (overlay) overlay.classList.remove('active');
+            }
+        }
+
+        function updateKPIOverview(kpi) {
+            if (!kpi) return;
+
+            const rsrpEl = document.getElementById('kpiRsrp');
+            const rsrpBadgeContainer = document.getElementById('kpiRsrpBadgeContainer');
+            const rssiSinrEl = document.getElementById('kpiRssiSinr');
+            const peakUnitsEl = document.getElementById('kpiPeakUnits');
+            const lowCoverageEl = document.getElementById('kpiLowCoverage');
+
+            if (rsrpEl) {
+                rsrpEl.textContent = (kpi.avg_rsrp !== null && kpi.avg_rsrp !== undefined) ? `${kpi.avg_rsrp} dBm` : '-- dBm';
+            }
+            if (rsrpBadgeContainer) {
+                rsrpBadgeContainer.innerHTML = (kpi.avg_rsrp !== null && kpi.avg_rsrp !== undefined) ? getSignalBadgeHtml(kpi.avg_rsrp, 'rsrp') : '<span class="badge bg-secondary">--</span>';
+            }
+            if (rssiSinrEl) {
+                rssiSinrEl.textContent = `${kpi.avg_rssi ?? '--'} / ${kpi.avg_sinr ?? '--'}`;
+            }
+            if (peakUnitsEl) {
+                peakUnitsEl.textContent = `${kpi.peak_units ?? 0} Unit`;
+            }
+            if (lowCoverageEl) {
+                lowCoverageEl.textContent = `${kpi.low_coverage_hours ?? 0} Jam`;
+            }
+        }
+
+        function updateExecutiveDiagnostic(data) {
+            const kpi = data.kpi || {};
+
+            const diagCov = document.getElementById('diagCoverage');
+            if (diagCov) {
+                if (kpi.avg_rsrp !== null && kpi.avg_rsrp !== undefined) {
+                    if (kpi.avg_rsrp >= -95) {
+                        diagCov.innerHTML = `<span class="text-primary font-semibold">Cakupan Sangat Baik (Blue)</span>. Rata-rata RSRP ${kpi.avg_rsrp} dBm. Deadzone: ${kpi.low_coverage_hours} jam.`;
+                    } else if (kpi.avg_rsrp >= -105) {
+                        diagCov.innerHTML = `<span class="text-warning font-semibold">Cakupan Moderat (Yellow)</span>. Rata-rata RSRP ${kpi.avg_rsrp} dBm. Disarankan tambah Repeater/BTS.`;
+                    } else {
+                        diagCov.innerHTML = `<span class="text-danger font-semibold">Risiko Sinyal Lemah (Red)</span>. Rata-rata RSRP ${kpi.avg_rsrp} dBm. Terdeteksi ${kpi.low_coverage_hours} jam sinyal drop.`;
+                    }
+                } else {
+                    diagCov.textContent = 'Tidak ada data riwayat sinyal RSRP.';
+                }
+            }
+
+            const diagClr = document.getElementById('diagClarity');
+            if (diagClr) {
+                if (kpi.avg_sinr !== null && kpi.avg_sinr !== undefined) {
+                    if (kpi.avg_sinr >= 12) {
+                        diagClr.innerHTML = `<span class="text-primary font-semibold">Sangat Jernih</span>. SINR ${kpi.avg_sinr} dB. Data telemetry terbebas dari noise.`;
+                    } else if (kpi.avg_sinr >= 5) {
+                        diagClr.innerHTML = `<span class="text-success font-semibold">Kualitas Normal</span>. SINR ${kpi.avg_sinr} dB. Komunikasi data stabil.`;
+                    } else {
+                        diagClr.innerHTML = `<span class="text-danger font-semibold">Noise Tinggi</span>. SINR ${kpi.avg_sinr} dB. Berpotensi packet loss pada data tracking.`;
+                    }
+                } else {
+                    diagClr.textContent = 'Tidak ada data SINR.';
+                }
+            }
+
+            const diagCng = document.getElementById('diagCongestion');
+            if (diagCng) {
+                if (kpi.avg_rsrq !== null && kpi.avg_rsrq !== undefined) {
+                    if (kpi.avg_rsrq >= -10) {
+                        diagCng.innerHTML = `<span class="text-success font-semibold">Beban BTS Normal</span>. RSRQ ${kpi.avg_rsrq} dB. Tidak ada pilot pollution.`;
+                    } else {
+                        diagCng.innerHTML = `<span class="text-warning font-semibold">Indikasi Padat</span>. RSRQ ${kpi.avg_rsrq} dB. Terjadi overlap frekuensi antar tower.`;
+                    }
+                } else {
+                    diagCng.textContent = 'Tidak ada data RSRQ.';
+                }
+            }
+
+            const diagFlt = document.getElementById('diagFleet');
+            if (diagFlt) {
+                diagFlt.innerHTML = `Total <b>${kpi.total_devices || 0} unit</b> terdaftar. Peak tertinggi <b>${kpi.peak_units || 0} unit</b> beroperasi bersamaan.`;
+            }
+        }
+
+        // 1. Dedicated Smooth RSRP Area Chart with Shaded Threshold Bands
+        function renderRsrpChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const dataVals = hourlyData.map(d => d.avg_rsrp);
+
+            const options = {
+                series: [{ name: 'RSRP (dBm)', data: dataVals }],
+                chart: { type: 'area', height: 280, background: 'transparent', foreColor: '#64748b', toolbar: { show: false } },
+                colors: ['#0284c7'],
+                stroke: { curve: 'smooth', width: 2.5 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
+                annotations: {
+                    yaxis: [
+                        {
+                            y: -85, y2: 0, fillColor: '#3b82f6', opacity: 0.08, borderColor: '#3b82f6',
+                            label: { borderColor: '#3b82f6', style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 'bold' }, text: 'Excellent (>= -85 dBm)' }
+                        },
+                        {
+                            y: -100, y2: -85, fillColor: '#22c55e', opacity: 0.08, borderColor: '#22c55e',
+                            label: { borderColor: '#22c55e', style: { color: '#fff', background: '#22c55e', fontSize: '11px', fontWeight: 'bold' }, text: 'Good (-85 s/d -100 dBm)' }
+                        },
+                        {
+                            y: -105, y2: -100, fillColor: '#eab308', opacity: 0.12, borderColor: '#eab308',
+                            label: { borderColor: '#eab308', style: { color: '#0f172a', background: '#eab308', fontSize: '11px', fontWeight: 'bold' }, text: 'Fair (-100 s/d -105 dBm)' }
+                        },
+                        {
+                            y: -140, y2: -105, fillColor: '#ef4444', opacity: 0.08, borderColor: '#ef4444',
+                            label: { borderColor: '#ef4444', style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 'bold' }, text: 'Zona Deadzone (< -105 dBm)' }
+                        }
+                    ]
+                },
+                xaxis: { categories: categories },
+                yaxis: { title: { text: 'RSRP (dBm)' } },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: function(val) {
+                            if (val === null || val === undefined) return '-';
+                            const lvl = getSignalLevel(val, 'rsrp');
+                            return `${val} dBm (${QUALITY_LABELS[lvl] || 'N/A'})`;
+                        }
+                    }
+                },
+                grid: { borderColor: '#e2e8f0' }
+            };
+
+            if (chartRsrp) chartRsrp.destroy();
+            chartRsrp = new ApexCharts(document.querySelector("#chartIndivRsrp"), options);
+            chartRsrp.render();
+        }
+
+        // 2. Dedicated Smooth RSSI Area Chart with Shaded Threshold Bands
+        function renderRssiChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const dataVals = hourlyData.map(d => d.avg_rssi);
+
+            const options = {
+                series: [{ name: 'RSSI (dBm)', data: dataVals }],
+                chart: { type: 'area', height: 280, background: 'transparent', foreColor: '#64748b', toolbar: { show: false } },
+                colors: ['#06b6d4'],
+                stroke: { curve: 'smooth', width: 2.5 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
+                annotations: {
+                    yaxis: [
+                        {
+                            y: -65, y2: 0, fillColor: '#3b82f6', opacity: 0.08, borderColor: '#3b82f6',
+                            label: { borderColor: '#3b82f6', style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 'bold' }, text: 'Excellent (>= -65 dBm)' }
+                        },
+                        {
+                            y: -75, y2: -65, fillColor: '#22c55e', opacity: 0.08, borderColor: '#22c55e',
+                            label: { borderColor: '#22c55e', style: { color: '#fff', background: '#22c55e', fontSize: '11px', fontWeight: 'bold' }, text: 'Good (-65 s/d -75 dBm)' }
+                        },
+                        {
+                            y: -85, y2: -75, fillColor: '#eab308', opacity: 0.12, borderColor: '#eab308',
+                            label: { borderColor: '#eab308', style: { color: '#0f172a', background: '#eab308', fontSize: '11px', fontWeight: 'bold' }, text: 'Fair (-75 s/d -85 dBm)' }
+                        },
+                        {
+                            y: -130, y2: -85, fillColor: '#ef4444', opacity: 0.08, borderColor: '#ef4444',
+                            label: { borderColor: '#ef4444', style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 'bold' }, text: 'Poor (< -85 dBm)' }
+                        }
+                    ]
+                },
+                xaxis: { categories: categories },
+                yaxis: { title: { text: 'RSSI (dBm)' } },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: function(val) {
+                            if (val === null || val === undefined) return '-';
+                            const lvl = getSignalLevel(val, 'rssi');
+                            return `${val} dBm (${QUALITY_LABELS[lvl] || 'N/A'})`;
+                        }
+                    }
+                },
+                grid: { borderColor: '#e2e8f0' }
+            };
+
+            if (chartRssi) chartRssi.destroy();
+            chartRssi = new ApexCharts(document.querySelector("#chartIndivRssi"), options);
+            chartRssi.render();
+        }
+
+        // 3. Dedicated Smooth RSRQ Line Chart with Shaded Threshold Bands
+        function renderRsrqChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const dataVals = hourlyData.map(d => d.avg_rsrq);
+
+            const options = {
+                series: [{ name: 'RSRQ (dB)', data: dataVals }],
+                chart: { type: 'line', height: 280, background: 'transparent', foreColor: '#64748b', toolbar: { show: false } },
+                colors: ['#D4952B'],
+                stroke: { curve: 'smooth', width: 3 },
+                annotations: {
+                    yaxis: [
+                        {
+                            y: -8, y2: 0, fillColor: '#3b82f6', opacity: 0.08, borderColor: '#3b82f6',
+                            label: { borderColor: '#3b82f6', style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 'bold' }, text: 'Excellent (>= -8 dB)' }
+                        },
+                        {
+                            y: -11, y2: -8, fillColor: '#22c55e', opacity: 0.08, borderColor: '#22c55e',
+                            label: { borderColor: '#22c55e', style: { color: '#fff', background: '#22c55e', fontSize: '11px', fontWeight: 'bold' }, text: 'Good (-8 s/d -11 dB)' }
+                        },
+                        {
+                            y: -14, y2: -11, fillColor: '#eab308', opacity: 0.12, borderColor: '#eab308',
+                            label: { borderColor: '#eab308', style: { color: '#0f172a', background: '#eab308', fontSize: '11px', fontWeight: 'bold' }, text: 'Fair (-11 s/d -14 dB)' }
+                        },
+                        {
+                            y: -30, y2: -14, fillColor: '#ef4444', opacity: 0.08, borderColor: '#ef4444',
+                            label: { borderColor: '#ef4444', style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 'bold' }, text: 'Congested (< -14 dB)' }
+                        }
+                    ]
+                },
+                xaxis: { categories: categories },
+                yaxis: { title: { text: 'RSRQ (dB)' } },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: function(val) {
+                            if (val === null || val === undefined) return '-';
+                            const lvl = getSignalLevel(val, 'rsrq');
+                            return `${val} dB (${QUALITY_LABELS[lvl] || 'N/A'})`;
+                        }
+                    }
+                },
+                grid: { borderColor: '#e2e8f0' }
+            };
+
+            if (chartRsrq) chartRsrq.destroy();
+            chartRsrq = new ApexCharts(document.querySelector("#chartIndivRsrq"), options);
+            chartRsrq.render();
+        }
+
+        // 4. Dedicated Smooth SINR Area Chart with Shaded Threshold Bands
+        function renderSinrChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const dataVals = hourlyData.map(d => d.avg_sinr);
+
+            const options = {
+                series: [{ name: 'SINR (dB)', data: dataVals }],
+                chart: { type: 'area', height: 280, background: 'transparent', foreColor: '#64748b', toolbar: { show: false } },
+                colors: ['#10b981'],
+                stroke: { curve: 'smooth', width: 2.5 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
+                annotations: {
+                    yaxis: [
+                        {
+                            y: 15, y2: 50, fillColor: '#3b82f6', opacity: 0.08, borderColor: '#3b82f6',
+                            label: { borderColor: '#3b82f6', style: { color: '#fff', background: '#3b82f6', fontSize: '11px', fontWeight: 'bold' }, text: 'Excellent / High Speed (>= 15 dB)' }
+                        },
+                        {
+                            y: 10, y2: 15, fillColor: '#22c55e', opacity: 0.08, borderColor: '#22c55e',
+                            label: { borderColor: '#22c55e', style: { color: '#fff', background: '#22c55e', fontSize: '11px', fontWeight: 'bold' }, text: 'Good (10 s/d 15 dB)' }
+                        },
+                        {
+                            y: 3, y2: 10, fillColor: '#eab308', opacity: 0.12, borderColor: '#eab308',
+                            label: { borderColor: '#eab308', style: { color: '#0f172a', background: '#eab308', fontSize: '11px', fontWeight: 'bold' }, text: 'Fair (3 s/d 10 dB)' }
+                        },
+                        {
+                            y: -20, y2: 3, fillColor: '#ef4444', opacity: 0.08, borderColor: '#ef4444',
+                            label: { borderColor: '#ef4444', style: { color: '#fff', background: '#ef4444', fontSize: '11px', fontWeight: 'bold' }, text: 'Noise Tinggi / Packet Loss (< 3 dB)' }
+                        }
+                    ]
+                },
+                xaxis: { categories: categories },
+                yaxis: { title: { text: 'SINR (dB)' } },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: function(val) {
+                            if (val === null || val === undefined) return '-';
+                            const lvl = getSignalLevel(val, 'sinr');
+                            return `${val} dB (${QUALITY_LABELS[lvl] || 'N/A'})`;
+                        }
+                    }
+                },
+                grid: { borderColor: '#e2e8f0' }
+            };
+
+            if (chartSinr) chartSinr.destroy();
+            chartSinr = new ApexCharts(document.querySelector("#chartIndivSinr"), options);
+            chartSinr.render();
+        }
+
+        function renderQualityDistributionChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const series = [
+                { name: 'Excellent', data: hourlyData.map(d => d.excellent) },
+                { name: 'Good', data: hourlyData.map(d => d.good) },
+                { name: 'Fair', data: hourlyData.map(d => d.fair) },
+                { name: 'Poor', data: hourlyData.map(d => d.poor) },
+                { name: 'Very Poor', data: hourlyData.map(d => d.verypoor) }
+            ];
+
+            const options = {
+                series: series,
+                chart: {
+                    type: 'bar',
+                    height: 290,
+                    stacked: true,
+                    background: 'transparent',
+                    foreColor: '#64748b',
+                    toolbar: { show: false }
+                },
+                colors: ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#a855f7'],
+                xaxis: { categories: categories },
+                tooltip: { theme: 'light' },
+                grid: { borderColor: '#e2e8f0' },
+                legend: { position: 'top' }
+            };
+
+            if (distributionChart) distributionChart.destroy();
+            distributionChart = new ApexCharts(document.querySelector("#chartQualityDistribution"), options);
+            distributionChart.render();
+        }
+
+        function renderFleetSpeedChart(hourlyData) {
+            const categories = hourlyData.map(d => d.hour);
+            const activeUnits = hourlyData.map(d => d.active_units);
+            const avgSpeed = hourlyData.map(d => d.avg_speed);
+
+            const options = {
+                series: [
+                    { name: 'Unit Aktif', type: 'column', data: activeUnits },
+                    { name: 'Kecepatan Rata-Rata (km/h)', type: 'line', data: avgSpeed }
+                ],
+                chart: {
+                    height: 290,
+                    type: 'line',
+                    background: 'transparent',
+                    foreColor: '#64748b',
+                    toolbar: { show: false }
+                },
+                stroke: { width: [0, 3], curve: 'smooth' },
+                colors: ['#D4952B', '#0284c7'],
+                xaxis: { categories: categories },
+                yaxis: [
+                    { title: { text: 'Jumlah Unit Aktif' } },
+                    { opposite: true, title: { text: 'Kecepatan (km/h)' } }
+                ],
+                tooltip: { theme: 'light' },
+                grid: { borderColor: '#e2e8f0' }
+            };
+
+            if (fleetSpeedChart) fleetSpeedChart.destroy();
+            fleetSpeedChart = new ApexCharts(document.querySelector("#chartFleetSpeed"), options);
+            fleetSpeedChart.render();
+        }
+
+        function renderHourlyTable(hourlyData) {
+            const tbody = document.getElementById('tblHourlyBody');
+            if (!Array.isArray(hourlyData) || hourlyData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Tidak ada data riwayat untuk tanggal ini.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            hourlyData.forEach(d => {
+                const rsrpBadge = getSignalBadgeHtml(d.avg_rsrp, 'rsrp');
+                const rssiBadge = getSignalBadgeHtml(d.avg_rssi, 'rssi');
+                const rsrqBadge = getSignalBadgeHtml(d.avg_rsrq, 'rsrq');
+                const sinrBadge = getSignalBadgeHtml(d.avg_sinr, 'sinr');
+                const mainBadge = getSignalBadgeHtml(d.avg_rsrp, 'rsrp');
+
+                html += `<tr>` +
+                    `<td class="fw-semibold text-primary">${d.hour_label || d.hour}</td>` +
+                    `<td><span class="badge bg-light text-dark border" style="border-color: #D4952B !important;">${d.active_units} Unit</span></td>` +
+                    `<td>${d.total_points.toLocaleString('id-ID')}</td>` +
+                    `<td>${d.avg_rsrp !== null ? `<b>${d.avg_rsrp} dBm</b> ${rsrpBadge}` : '-'}</td>` +
+                    `<td>${d.avg_rssi !== null ? `<b>${d.avg_rssi} dBm</b> ${rssiBadge}` : '-'}</td>` +
+                    `<td>${d.avg_rsrq !== null ? `<b>${d.avg_rsrq} dB</b> ${rsrqBadge}` : '-'}</td>` +
+                    `<td>${d.avg_sinr !== null ? `<b>${d.avg_sinr} dB</b> ${sinrBadge}` : '-'}</td>` +
+                    `<td>${d.avg_speed} km/h</td>` +
+                    `<td>${mainBadge}</td>` +
+                    `</tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function exportReportToExcel() {
+            if (!currentReportData || !currentReportData.hourly_data) {
+                if (typeof Swal !== 'undefined') Swal.fire('Info', 'Belum ada data laporan yang dapat diexport.', 'info');
+                return;
+            }
+
+            const siteCode = document.getElementById('reportSiteSelect').value || 'SITE';
+            const date = document.getElementById('reportDatePicker').value || 'DATE';
+
+            const exportData = currentReportData.hourly_data.map(d => ({
+                'Jam': d.hour_label || d.hour,
+                'Unit Aktif': d.active_units,
+                'Total Titik Sinyal': d.total_points,
+                'Rata-Rata RSRP (dBm)': d.avg_rsrp ?? '-',
+                'Rata-Rata RSSI (dBm)': d.avg_rssi ?? '-',
+                'Rata-Rata RSRQ (dB)': d.avg_rsrq ?? '-',
+                'Rata-Rata SINR (dB)': d.avg_sinr ?? '-',
+                'Kecepatan Rata-Rata (km/h)': d.avg_speed,
+                'Excellent Count': d.excellent,
+                'Good Count': d.good,
+                'Fair Count': d.fair,
+                'Poor Count': d.poor,
+                'Very Poor Count': d.verypoor
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Hourly_Report");
+            XLSX.writeFile(wb, `Tracking_Hourly_Report_${siteCode}_${date}.xlsx`);
+        }
+    });
+</script>

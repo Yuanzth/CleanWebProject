@@ -1,0 +1,65 @@
+@*
+    Component: panel-output.blade.php
+    Props: $report (stats)
+    Charts: chartOutputAvg, chartOutputPhaseR/S/T, chartOutputFreq
+*@
+<div class="ups-rpt-panel" id="panelOutput">
+
+    @* Header *@
+    <div class="ups-rpt-panel__header">
+        <div class="ups-rpt-panel__title-group">
+            <div class="ups-rpt-panel__icon-wrap ups-rpt-panel__icon-wrap--green">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-panel__title">Tegangan Output</div>
+                <div class="ups-rpt-panel__sub">Tegangan, arus & frekuensi output per device</div>
+                @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_period-badge.cshtml")
+            </div>
+        </div>
+
+        <div class="ups-rpt-stat-bar">
+            <div class="ups-rpt-stat-chip" id="chipVoutAvg">
+                <span class="ups-rpt-stat-chip__label">AVG Output Voltage</span>
+                <span class="ups-rpt-stat-chip__value" id="statVoutAvg">—</span>
+            </div>
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG Frequency</span>
+                <span class="ups-rpt-stat-chip__value" id="statFreqOut">—</span>
+            </div>
+        </div>
+    </div>
+
+    @* Tab Navigation *@
+    <div class="ups-rpt-tabs">
+        <button class="ups-rpt-tab-btn active" data-target="out-avg">Output Voltage</button>
+        <button class="ups-rpt-tab-btn" data-target="out-freq">Frequency</button>
+    </div>
+
+    <div class="ups-rpt-tab-content">
+        @* Avg Output Voltage (all phases combined / 1:1) *@
+        <div class="ups-rpt-chart-section active" id="tab-out-avg">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-bolt" style="color:var(--ups-icon-green-color);margin-right:5px;"></i>
+                <code>Avg Output Voltage</code> — Semua Device
+                <span class="ups-rpt-trend-limits">Normal 217–223 V · Warn 215–225 V · Crit &lt;215 / &gt;225 V</span>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartOutputAvg"></canvas>
+            </div>
+        </div>
+
+        @* Frequency Out *@
+        <div class="ups-rpt-chart-section" id="tab-out-freq">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-wave-square" style="color:var(--ups-icon-green-color);margin-right:5px;"></i>
+                <code>Output Frequency</code> — Semua Device
+                <span class="ups-rpt-trend-limits">Normal 47–53 Hz</span>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartOutputFreq"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+

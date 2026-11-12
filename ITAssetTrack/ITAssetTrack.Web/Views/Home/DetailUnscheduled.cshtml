@@ -1,0 +1,142 @@
+@using ITAssetTrack.Models
+@{
+    ViewData["Title"] = "Detail Total Unscheduled Log";
+    ViewData["PageLabel"] = "Detail Unscheduled Log";
+
+    int totalCount = ViewBag.TotalCount ?? 0;
+    int activeCount = ViewBag.ActiveCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    int urgentCount = ViewBag.UrgentCount ?? 0;
+    var list = ViewBag.UnscheduledList as List<UnscheduledMaint> ?? new();
+}
+
+<!-- Page Header Bar -->
+<div class="detail-header-bar">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <a href="@Url.Action("MaintenanceDashboard","Home")" class="btn btn-sm btn-outline" style="font-size:12px; white-space:nowrap;">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+        <div>
+            <div style="font-size:15px; font-weight:700; color:var(--text-primary);">
+                <i class="bi bi-clipboard2-pulse-fill me-2" style="color:#f0abfc;"></i>Detail Total Unscheduled Log
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px;">Semua trouble log termasuk aktif dan selesai</div>
+        </div>
+    </div>
+    <!-- Stat pills (horizontal swipe on mobile) -->
+    <div class="detail-stat-pills">
+        <span style="background:#701a75; color:#f5d0fe; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+            Total: @totalCount Tiket
+        </span>
+        <span style="background:#fee2e2; color:#991b1b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+            <i class="bi bi-exclamation-circle me-1"></i>@activeCount Aktif
+        </span>
+        <span style="background:#dcfce7; color:#166534; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">
+            <i class="bi bi-check-circle-fill me-1"></i>@completedCount Selesai
+        </span>
+        @if (urgentCount > 0)
+        {
+            <span style="background:#fef9c3; color:#854d0e; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+                <i class="bi bi-lightning-fill me-1"></i>@urgentCount Urgent
+            </span>
+        }
+    </div>
+</div>
+
+<!-- Mobile Table Scroll Hint -->
+<div class="d-block d-sm-none mb-1 px-1 text-end" style="font-size:10px; color:#64748b;">
+    <i class="bi bi-arrow-left-right me-1 text-primary"></i>Geser tabel ke samping <i class="bi bi-chevron-right ms-0.5"></i>
+</div>
+
+<!-- Table -->
+<div class="card">
+
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:14px;"><i class="bi bi-journal-text me-2 text-danger"></i>Semua Unscheduled Trouble Log</h3>
+        <span style="font-size:11px; color:var(--muted);">Total @totalCount tiket</span>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Serial Number</th>
+                    <th>User</th>
+                    <th>Kategori</th>
+                    <th class="text-center">Priority</th>
+                    <th class="text-center">Tgl Masuk</th>
+                    <th class="text-center">Durasi</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int no = 1;
+                    foreach (var u in list)
+                    {
+                        var end = u.UpdatedAt ?? u.Tanggal;
+                        double durJam = Math.Round((end - u.Tanggal).TotalHours, 1);
+                        bool isActive = u.Status != "Complete";
+                        string statusStyle = u.Status switch
+                        {
+                            "Complete" => "background:#dcfce7; color:#166534;",
+                            "InProgress" => "background:#dbeafe; color:#1e40af;",
+                            "Open" => "background:#fef9c3; color:#854d0e;",
+                            _ => "background:#f1f5f9; color:#64748b;"
+                        };
+                        <tr style="@(u.Priority == "Urgent" && isActive ? "background:rgba(239,68,68,0.04);" : "")">
+                            <td style="color:var(--muted); font-size:11px;">@no</td>
+                            <td>
+                                <strong class="font-monospace" style="font-size:12px;">@u.SerialNumber</strong>
+                                @if (u.Priority == "Urgent" && isActive)
+                                {
+                                    <span class="badge" style="background:#ef4444; color:#fff; font-size:9px; margin-left:4px;">URGENT</span>
+                                }
+                            </td>
+                            <td style="font-size:12px;">@u.NamaUser</td>
+                            <td><span style="font-size:11px; color:var(--muted);">@u.TroubleKategori</span></td>
+                            <td class="text-center">
+                                @if (u.Priority == "Urgent")
+                                {
+                                    <span style="color:#ef4444; font-size:11px; font-weight:700;"><i class="bi bi-lightning-fill"></i> Urgent</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--muted); font-size:11px;">Normal</span>
+                                }
+                            </td>
+                            <td class="text-center" style="font-size:11px; color:var(--muted);">@u.Tanggal.ToString("dd MMM yyyy")</td>
+                            <td class="text-center">
+                                @if (u.Status == "Complete")
+                                {
+                                    <span style="font-family:'Courier New',monospace; font-size:12px; font-weight:700; color:@(durJam <= 24 ? "var(--success)" : "#ef4444");">
+                                        @durJam j
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:11px; color:var(--muted);">Aktif</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span style="@statusStyle padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600;">
+                                    @u.Status
+                                </span>
+                            </td>
+                        </tr>
+                        no++;
+                    }
+                }
+                @if (!list.Any())
+                {
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding:32px; color:var(--muted);">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>Tidak ada unscheduled trouble log.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

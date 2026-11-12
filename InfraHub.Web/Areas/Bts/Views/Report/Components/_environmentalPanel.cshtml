@@ -1,0 +1,58 @@
+<div class="rpt-panel" id="panelEnvironmental">
+    <div class="rpt-panel__header">
+        <div class="rpt-panel__title">Environmental &amp; Weather Conditions</div>
+        <div class="rpt-panel__actions">
+            <!-- Filter or Actions -->
+            <button class="rpt-btn-icon"><i class="fa-solid fa-expand"></i></button>
+        </div>
+    </div>
+    
+    <div class="rpt-panel__content">
+        
+        <!-- Summary Cards Row -->
+        <div class="rpt-kpi-sub-row">
+            
+            <div class="rpt-kpi-sub-card">
+                <div class="rpt-kpi-sub-label">Wind Speed</div>
+                <div class="rpt-kpi-sub-value" id="valWindAvg">@(ViewBag.Report?["weather"]?["avg_wind_speed"]) <small>km/h (avg)</small></div>
+            </div>
+            
+            <div class="rpt-kpi-sub-card">
+                <div class="rpt-kpi-sub-label">Rainfall</div>
+                <div class="rpt-kpi-sub-value" id="valRainAvg">@(ViewBag.Report?["weather"]?["avg_rainfall"]) <small>mm/h (avg)</small></div>
+            </div>
+
+            <div class="rpt-kpi-sub-card" style="flex: 1.5; background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="rpt-kpi-sub-label">Status Lingkungan</div>
+                @{
+                    bool windOk = (bool?)ViewBag.Report?["weather"]?["wind_ok"] ?? true;
+                    bool rainOk = (bool?)ViewBag.Report?["weather"]?["rainfall_ok"] ?? true;
+                    bool lightOk = (bool?)ViewBag.Report?["weather"]?["lightning_ok"] ?? true;
+                    bool envOk = windOk && rainOk && lightOk;
+                }
+                <div class="rpt-kpi-sub-value" style="display: flex; align-items: center; justify-content: space-between;">
+                    <span id="rptWeatherStatus" class="rpt-sev @(envOk ? "rpt-sev--info" : "rpt-sev--crit")">
+                        <i class="fa-solid fa-@(envOk ? "circle-check" : "circle-exclamation")"></i>
+                        @(envOk ? "Aman" : "Siaga Bencana")
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Chart Area -->
+        <div class="rpt-chart-area" style="height: 280px; margin-top: 20px;">
+            <canvas id="chartWeather"></canvas>
+        </div>
+
+        <div class="rpt-chart-legend">
+            <span class="legend-item"><span class="legend-color" style="background-color: #3b82f6;"></span> Curah Hujan (mm/h)</span>
+            <span class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> Wind Speed (km/h)</span>
+            <span class="legend-item"><span class="legend-color" style="background-color: #ef4444; border-radius: 50%;"></span> Lightning Strike</span>
+        </div>
+
+    </div>
+</div>
+
+
+
+

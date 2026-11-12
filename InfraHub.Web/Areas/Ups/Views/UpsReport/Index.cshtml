@@ -1,0 +1,113 @@
+@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+@{ ViewData["Title"] = "UPS Report & Analytics"; }
+
+@section styles {
+    <link rel="stylesheet" href="/assets/css/ups-dashboard.css" asp-append-version="true">
+    <link rel="stylesheet" href="/assets/css/ups-report.css" asp-append-version="true">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <style>
+        body            { background: var(--ups-bg-page, #060a14) !important; min-height: 100% !important; }
+        .main-container { min-height: auto !important; }
+    </style>
+}
+
+<div class="ups-rpt-page" id="upsReportApp">
+
+    @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_filter-bar.cshtml")
+
+    <div class="ups-rpt-empty-state" id="upsReportEmptyState">
+        <div class="ups-rpt-empty-state__icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="ups-rpt-empty-state__title">Pilih Site Terlebih Dahulu</div>
+        <div class="ups-rpt-empty-state__sub">
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <span class="text-red-500 font-bold">Terjadi Kesalahan: @ViewBag.ErrorMessage</span>
+            }
+            else
+            {
+                <text>Report grafik UPS akan ditampilkan setelah Anda memilih site pada filter di atas.</text>
+            }
+        </div>
+    </div>
+
+    <div class="ups-rpt-loading" id="upsRptLoading" style="display:none;">
+        <div class="ups-rpt-loading__spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        <div>Memuat data...</div>
+    </div>
+
+    <div id="upsReportContent" style="display:none; flex-direction:column; gap:32px;">
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-dcpi.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-comparison.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-input.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-output.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-ground.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-battery.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-load.cshtml")
+        @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-temperature.cshtml")
+    </div>
+
+    @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_panel-komparasi.cshtml")
+</div>
+
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+@section scripts {
+    <script>
+        window.UPS_REPORT_DATA    = @Html.Raw(ViewBag.Report ?? "null");
+        window.UPS_REPORT_API_URL = "/api/ups/report/summary";
+        window.CSRF_TOKEN         = "@requestToken";
+        window.UPS_RPT_RESOLUTION = "@(ViewBag.Resolution ?? "daily")";
+        window.UPS_RPT_SITE_ID    = "@(ViewBag.SiteId ?? "")";
+    </script>
+    <script src="/assets/js/ups/report.js?v=@(DateTime.Now.Ticks)" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const header = document.querySelector('.main-header');
+            if (header) header.classList.add('header-ups');
+            
+            // Fallback inline handler in case report.js is cached by browser
+            var data = window.UPS_REPORT_DATA;
+            var siteId = window.UPS_RPT_SITE_ID;
+            var empty = document.getElementById('upsReportEmptyState');
+            var content = document.getElementById('upsReportContent');
+            var komparasi = document.getElementById('upsReportKomparasi');
+            var cat = (document.getElementById('upsRptCategoryFilter') || {}).value || 'ALL';
+            var del = document.getElementById('upsRptDeviceCount');
+            
+            if (siteId) {
+                var totalDevices = (data && data.meta) ? (data.meta.total_devices || 0) : 0;
+                
+                if (del) del.textContent = totalDevices;
+                
+                if (data && data.meta) {
+                    document.querySelectorAll('.ups-rpt-period-text').forEach(function(el) {
+                        el.textContent = data.meta.period_label || '';
+                    });
+                }
+
+                if (totalDevices > 0) {
+                    if (empty) empty.style.display = 'none';
+                    if (cat === 'KOMPARASI') {
+                        if (content) content.style.display = 'none';
+                        if (komparasi) komparasi.style.display = 'flex';
+                    } else {
+                        if (content) content.style.display = 'flex';
+                        if (komparasi) komparasi.style.display = 'none';
+                    }
+                } else {
+                    if (empty) empty.style.display = '';
+                    if (content) content.style.display = 'none';
+                    if (komparasi) komparasi.style.display = 'none';
+                }
+            }
+        });
+    </script>
+}
+
+

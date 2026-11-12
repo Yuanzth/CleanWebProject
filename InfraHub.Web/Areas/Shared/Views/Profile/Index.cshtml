@@ -1,0 +1,146 @@
+@model InfraHub.Infrastructure.Data.Entities.User
+
+@{
+    ViewData["Title"] = "Profile";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/assets/css/profile.css">
+}
+
+@{
+    var initials = "U";
+    if (!string.IsNullOrEmpty(Model.Name))
+    {
+        var words = Model.Name.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        initials = "";
+        foreach (var w in words.Take(2))
+        {
+            initials += w.Substring(0, 1).ToUpper();
+        }
+    }
+}
+
+<div class="container-fluid" style="padding: 0;">
+    
+    <div class="profile-header">
+        <div class="profile-avatar-large">
+            @initials
+        </div>
+        <div class="profile-info">
+            <h1>@(Model.Name ?? "User")</h1>
+            <div class="profile-role-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+                @(Model.Role?.RoleName ?? "Administrator")
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <!-- Personal Information Card -->
+        <div class="profile-card">
+            <div class="profile-card-header">
+                <i class="fa-solid fa-address-card text-primary"></i>
+                Account Details
+            </div>
+            <div class="profile-card-body">
+                <div class="info-list">
+                    <div class="info-item">
+                        <span class="info-label">Full Name</span>
+                        <span class="info-value">
+                            <i class="fa-solid fa-user"></i>
+                            @Model.Name
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email Address</span>
+                        <span class="info-value">
+                            <i class="fa-solid fa-envelope"></i>
+                            @Model.Email
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Access Role</span>
+                        <span class="info-value">
+                            <i class="fa-solid fa-user-lock"></i>
+                            @(Model.Role?.RoleName ?? "Administrator")
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Registered Since</span>
+                        <span class="info-value">
+                            <i class="fa-solid fa-calendar-check"></i>
+                            @Model.CreatedAt.ToString("dd MMM yyyy, HH:mm")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile placeholder -->
+        <div class="profile-card">
+            <div class="profile-card-header">
+                <i class="fa-solid fa-user-pen text-primary"></i>
+                Profile Settings
+            </div>
+            <div class="profile-card-body">
+                <form action="#" method="POST" onsubmit="event.preventDefault(); Swal.fire('Coming Soon', 'Profile update feature is under development.', 'info');">
+                    
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-3">
+                            <label class="info-label mb-0">Name</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="text" class="custom-input" value="@Model.Name" placeholder="Enter full name">
+                        </div>
+                    </div>
+
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-3">
+                            <label class="info-label mb-0">Email</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="email" class="custom-input" value="@Model.Email" placeholder="Enter email address" disabled style="opacity: 0.7; cursor: not-allowed;">
+                            <small class="text-muted mt-1 d-block"><i class="fa-solid fa-circle-info"></i> Email address cannot be changed.</small>
+                        </div>
+                    </div>
+
+                    <hr style="border-color: #e2e8f0; margin: 30px 0;">
+
+                    <h5 class="mb-4" style="font-size: 1rem; font-weight: 600; color: #1e293b;">Change Password</h5>
+
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-3">
+                            <label class="info-label mb-0">Current</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="password" class="custom-input" placeholder="Current Password">
+                        </div>
+                    </div>
+                    <div class="row align-items-center mb-3">
+                        <div class="col-md-3">
+                            <label class="info-label mb-0">New</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="password" class="custom-input" placeholder="New Password">
+                        </div>
+                    </div>
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-3">
+                            <label class="info-label mb-0">Confirm</label>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="password" class="custom-input" placeholder="Confirm New Password">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-2">
+                        <button type="submit" class="btn-primary-custom">
+                            <i class="fa-solid fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,96 @@
+<div class="rpt-panel rpt-panel--incident" id="panelIncidents">
+    <div class="rpt-panel__header">
+        <div class="rpt-panel__title-group">
+            <div class="rpt-panel__icon-wrap rpt-panel__icon-wrap--incident">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <div>
+                <div class="rpt-panel__title">Incident Analytics</div>
+                <div class="rpt-panel__meta">
+                    <span id="rptIncidentScope">@(ViewBag.Report?["meta"]?["period_label"])</span>
+                    &bull;
+                    <span id="rptIncidentTotal">@(ViewBag.Report?["incidents"]?["total"])</span> total insiden
+                </div>
+            </div>
+        </div>
+
+        @*  Badge: total critical & warning (semua status)  *@
+        <div class="rpt-panel-badges">
+            <span class="rpt-sev rpt-sev--crit" id="rptTotalCrit">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                @(ViewBag.Report?["incidents"]?["total_critical"]) Critical
+            </span>
+            <span class="rpt-sev rpt-sev--warn" id="rptTotalWarn">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                @(ViewBag.Report?["incidents"]?["total_warning"]) Warning
+            </span>
+        </div>
+    </div>
+
+    @*  Horizontal bar chart dengan tooltip hover  *@
+    <div>
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-chart-bar rpt-icon--red"></i>
+            Incidents by Category
+        </div>
+
+        @*  Tooltip element (shared, moved by JS)  *@
+        <div class="rpt-inc-tooltip" id="rptIncTooltip">
+            <div class="rpt-inc-tooltip__category" id="rptIncTtCategory"></div>
+            <div class="rpt-inc-tooltip__row">
+                <span class="rpt-inc-tooltip__dot rpt-inc-tooltip__dot--crit"></span>
+                <span>Critical: </span><strong id="rptIncTtCrit"></strong>
+            </div>
+            <div class="rpt-inc-tooltip__row">
+                <span class="rpt-inc-tooltip__dot rpt-inc-tooltip__dot--warn"></span>
+                <span>Warning: </span><strong id="rptIncTtWarn"></strong>
+            </div>
+
+        </div>
+
+        <div class="rpt-incident-bars" id="rptIncidentBars">
+            @{ var maxTotal = 100; }
+            @if(ViewBag.Report != null && ViewBag.Report["incidents"] != null && ViewBag.Report["incidents"]["by_category"] != null) {
+foreach(var cat in ViewBag.Report["incidents"]["by_category"]) {
+            <div class="rpt-inc-bar-row"
+                 data-category="@(cat?["category"])"
+                 data-critical="@(cat?["critical"] ?? 0)"
+                 data-warning="@(cat?["warning"] ?? 0)"
+                 onmouseenter="showIncTooltip(event, this)"
+                 onmouseleave="hideIncTooltip()">
+                <div class="rpt-inc-bar-label" title="@(cat?["column"])">
+                    @(cat?["category"])
+                </div>
+                <div class="rpt-inc-bar-track">
+                    @{
+                        int catTotal = (int)(cat?["total"] ?? 0);
+                        int critCount = (int)(cat?["critical"] ?? 0);
+                        int warnCount = (int)(cat?["warning"] ?? 0);
+                        int critWidth = catTotal > 0 ? (int)Math.Round((double)critCount / maxTotal * 100) : 0;
+                        int warnWidth = catTotal > 0 ? (int)Math.Round((double)warnCount / maxTotal * 100) : 0;
+                    }
+                    @*  Critical segment  *@
+                    <div class="rpt-inc-bar-fill rpt-inc-bar-fill--crit"
+                         style="width:@(critWidth)%">
+                    </div>
+                    @*  Warning segment  *@
+                    <div class="rpt-inc-bar-fill rpt-inc-bar-fill--warn"
+                         style="width:@(warnWidth)%">
+                    </div>
+                </div>
+                <div class="rpt-inc-bar-count">@(cat?["total"])</div>
+            </div>
+            }
+}
+        </div>
+    </div>
+
+</div>
+
+
+
+
+
+
+
+

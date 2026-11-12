@@ -1,0 +1,215 @@
+@{ Layout = "_Layout";
+   ViewData["Title"] = "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="~/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-server fa-2x me-3" style="color: #D4952B;"></i>
+        <h2 class="mb-0 fw-bold" style="color: #D4952B;">Manage Asset Location</h2>
+    </div>
+    
+    <div class="manage-card">
+        <ul class="nav nav-tabs custom-tabs mb-4" id="manageTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-site" type="button" role="tab"><i class="fa-solid fa-location-dot"></i> Site (District)</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-zone" type="button" role="tab"><i class="fa-solid fa-layer-group"></i> Zone</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-site" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('site')"><i class="fa-solid fa-plus"></i> Add Site</button>
+                </div>
+                <table id="siteTable" class="table table-hover w-100 align-middle">
+                    <thead class="table-light"><tr><th>No</th><th>Site Code</th><th>Site Name</th><th>Coordinate</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+
+            <div class="tab-pane fade" id="tab-zone" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('zone')"><i class="fa-solid fa-plus"></i> Add Zone</button>
+                </div>
+                <table id="zoneTable" class="table table-hover w-100 align-middle">
+                    <thead class="table-light"><tr><th>No</th><th>Site Code</th><th>Zone Name</th><th>Description</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-tracking');
+        }
+    });
+</script>
+}
+
+@* MODAL SITE *@
+<div class="modal fade" id="siteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="siteModalTitle">Form Site</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="siteForm">
+                <input type="hidden" id="site_id" name="site_id">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Site Code (District)</label><input type="text" id="site_code" name="site_code" class="form-control" required placeholder="ex: SITE_L"></div>
+                    <div class="mb-3"><label class="form-label">Site Name</label><input type="text" id="site_name" name="site_name" class="form-control" placeholder="Full Name Site"></div>
+                    <div class="row">
+                        <div class="col-6 mb-3"><label class="form-label">Latitude</label><input type="number" step="any" id="latitude" name="latitude" class="form-control"></div>
+                        <div class="col-6 mb-3"><label class="form-label">Longitude</label><input type="number" step="any" id="longitude" name="longitude" class="form-control"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* MODAL ZONE *@
+<div class="modal fade" id="zoneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="zoneModalTitle">Form Zone</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="zoneForm">
+                <input type="hidden" id="zone_id_input" name="zone_id_input">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Site</label>
+                        <select name="site_id" id="site_id_select" class="form-select" required>
+                            <option value="">-- Choose Site --</option>
+                            @foreach(var site in ViewBag.Sites) { <option value="@site.id">@site.site_code</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Zone Code <span class="text-danger">*</span></label>
+                        <input type="text" id="zone_code" name="zone_code" class="form-control" required placeholder="ex: SITE_L-A">
+                        <div class="form-text text-muted">Kode unik zona, contoh: SITE_C-A, SITE_L-B</div>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Zone Name</label><input type="text" id="zone_name" name="zone_name" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Description</label><input type="text" id="zone_desc" name="description" class="form-control"></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+<script>
+let tSite, tZone;
+
+$(document).ready(function() {
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
+
+    // Inisialisasi DataTables
+    tSite = $('#siteTable').DataTable({
+        serverSide: true, ajax: { url: "@Url.Action("Index", "ManageAreaSite", new { area = "Tracking" })", data: { type: 'site' } },
+        columns: [{data: 'DT_RowIndex'}, {data: 'site_code'}, {data: 'site_name'}, {data: 'coordinates', orderable: false, searchable: false}, {data: 'action', orderable: false, searchable: false}]
+    });
+
+    tZone = $('#zoneTable').DataTable({
+        serverSide: true, ajax: { url: "@Url.Action("Index", "ManageAreaSite", new { area = "Tracking" })", data: { type: 'zone' } },
+        columns: [{data: 'DT_RowIndex'}, {data: 'site_code'}, {data: 'zone_name'}, {data: 'description'}, {data: 'action', orderable: false, searchable: false}]
+    });
+
+    // Submit Site
+    $('#siteForm').submit(function(e) {
+        e.preventDefault();
+        let id = $('#site_id').val();
+        let url = id ? "@Url.Action("Update", "ManageSite", new { area = "Tracking" })/:id".replace(':id', id) : "@Url.Action("Store", "ManageSite", new { area = "Tracking" })";
+        executeAjax(url, id ? 'PUT' : 'POST', $(this).serialize(), 'siteModal', [tSite, tZone]);
+    });
+
+    // Submit Zone
+    $('#zoneForm').submit(function(e) {
+        e.preventDefault();
+        let id = $('#zone_id_input').val();
+        let url = id ? "@Url.Action("UpdateZone", "ManageSite", new { area = "Tracking" })/:id".replace(':id', id) : "@Url.Action("StoreZone", "ManageSite", new { area = "Tracking" })";
+        executeAjax(url, id ? 'PUT' : 'POST', $(this).serialize(), 'zoneModal', [tZone]);
+    });
+
+    // Tombol Edit Site
+    $('body').on('click', '.edit-site-btn', function() {
+        $.get("@Url.Action("Edit", "ManageSite", new { area = "Tracking" })/:id".replace(':id', $(this).data('id')), function(data) {
+            $('#siteModalTitle').text('Edit Site');
+            $('#site_id').val(data.id);
+            $('#site_code').val(data.site_code);
+            $('#site_name').val(data.site_name);
+            $('#latitude').val(data.latitude);
+            $('#longitude').val(data.longitude);
+            $('#siteModal').modal('show');
+        });
+    });
+
+    // Tombol Edit Zone
+    $('body').on('click', '.edit-zone-btn', function() {
+        $.get("@Url.Action("EditZone", "ManageSite", new { area = "Tracking" })/:id".replace(':id', $(this).data('id')), function(data) {
+            $('#zoneModalTitle').text('Edit Zone');
+            $('#zone_id_input').val(data.id);
+            $('#site_id_select').val(data.site_id);
+            $('#zone_code').val(data.zone_code);
+            $('#zone_name').val(data.zone_name);
+            $('#zone_desc').val(data.description);
+            $('#zoneModal').modal('show');
+        });
+    });
+
+    // Tombol Delete
+    $('body').on('click', '.delete-site-btn', function() { deleteData("@Url.Action("Destroy", "ManageSite", new { area = "Tracking" })/:id".replace(':id', $(this).data('id')), tSite); });
+    $('body').on('click', '.delete-zone-btn', function() { deleteData("@Url.Action("DestroyZone", "ManageSite", new { area = "Tracking" })/:id".replace(':id', $(this).data('id')), tZone); });
+});
+
+function showModal(type) {
+    $(`#${type}Form`)[0].reset();
+    if(type === 'site') { $('#site_id').val(''); $('#siteModalTitle').text('Add Site'); }
+    if(type === 'zone') { $('#zone_id_input').val(''); $('#zoneModalTitle').text('Add Zone'); }
+    $(`#${type}Modal`).modal('show');
+}
+
+function executeAjax(url, method, data, modalId, tablesToReload) {
+    $.ajax({
+        url: url, type: method, data: data,
+        success: function(res) {
+            $(`#${modalId}`).modal('hide');
+            tablesToReload.forEach(table => table.ajax.reload(null, false));
+            Swal.fire('Success', res.success, 'success');
+        },
+        error: function(xhr) {
+            let errorMsg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Check your form input.';
+            Swal.fire('Error', errorMsg, 'error');
+        }
+    });
+}
+
+function deleteData(url, table) {
+    Swal.fire({ title: 'Delete data?', text: 'Data cannot be restored!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, Delete!' }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: url, type: 'DELETE',
+                success: function(res) { table.ajax.reload(null, false); Swal.fire('Deleted', res.success, 'success'); },
+                error: function(xhr) { Swal.fire('Error', xhr.responseJSON.error, 'error'); }
+            });
+        }
+    });
+}
+</script>
+}

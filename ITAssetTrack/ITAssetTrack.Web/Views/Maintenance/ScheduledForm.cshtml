@@ -1,0 +1,2303 @@
+@model ITAssetTrack.Models.ScheduledMaint
+@{
+    ViewData["Title"] = "Form Scheduled Preventive Maintenance";
+    ViewData["PageLabel"] = "Form PM";
+    var photos = ViewBag.Photos as List<ITAssetTrack.Models.MaintenancePhoto> ?? new List<ITAssetTrack.Models.MaintenancePhoto>();
+    bool isNewTarget = ViewBag.IsNewTarget ?? false;
+    bool isApproverOnly = (User.IsInRole("Approver1") || User.IsInRole("Approver2")) && !User.IsInRole("Admin") && !User.IsInRole("Coordinator") && !User.IsInRole("Technician");
+}
+
+<style>
+    /* Prevent wizard action buttons from being obscured by browser navigation bars on mobile devices */
+    @@media (max-width: 767.98px) {
+        .pm-page {
+            padding-bottom: 6rem !important;
+        }
+    }
+</style>
+
+@if (isNewTarget)
+{
+    @* =====================================================
+       MODE 1: TAMBAH TARGET PM (Form Ringkas)
+       ===================================================== *@
+    <div class="d-flex justify-content-end mb-3">
+        <a href="@Url.Action("ScheduledList", "Maintenance")" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+    </div>
+
+    <form asp-action="SaveTargetPm" method="post" id="targetPmForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="PlanMonth" />
+
+        <div class="management-card p-4 mb-4">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-4">
+                <i class="bi bi-calendar-plus text-primary me-2"></i>Data Rencana PM
+            </h5>
+
+            <div class="row g-3">
+                <!-- Tanggal Rencana -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Tanggal Rencana PM <span class="text-danger">*</span></label>
+                    <input type="date" asp-for="PlanDate" class="form-control" required />
+                </div>
+
+                <!-- SN + Autofill -->
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold text-muted">Serial Number (SN) <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input asp-for="SerialNumber" id="snInputTarget" class="form-control font-monospace fw-bold" placeholder="Masukkan SN perangkat..." required />
+                        <button type="button" id="lookupSnBtnTarget" class="btn btn-outline-primary" title="Autofill dari Master Asset">
+                            <i class="bi bi-search me-1"></i> Autofill
+                        </button>
+                    </div>
+                    <small class="text-muted">Klik Autofill untuk mengisi otomatis dari Master Asset</small>
+                </div>
+
+                <!-- Nama User -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Nama User</label>
+                    <input asp-for="NamaUser" id="namaUserInputTarget" class="form-control" placeholder="Nama Lengkap User" />
+                </div>
+                <!-- NRP -->
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted">NRP</label>
+                    <input asp-for="NRP" id="nrpInputTarget" class="form-control" placeholder="p619..." />
+                </div>
+                <!-- Site -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-muted">Site</label>
+                    <input asp-for="Site" id="siteInputTarget" class="form-control" placeholder="HQ_DEPT" />
+                </div>
+                <!-- Divisi -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-muted">Divisi</label>
+                    <input asp-for="Division" id="divisionInputTarget" class="form-control" placeholder="SHE" />
+                </div>
+
+                <!-- Computer Name -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Computer Name</label>
+                    <input asp-for="ComputerName" id="computerNameInputTarget" class="form-control" placeholder="HQ_DEPTMIINB..." />
+                </div>
+                <!-- Brand -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Merek Perangkat</label>
+                    <input asp-for="Brand" id="brandInputTarget" class="form-control" placeholder="Dell / HP / Lenovo" />
+                </div>
+                <!-- Model -->
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Model / Series</label>
+                    <input asp-for="Model" id="modelInputTarget" class="form-control" placeholder="Latitude 7320" />
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-3 mb-5">
+            <a href="@Url.Action("ScheduledList", "Maintenance")" class="btn btn-light rounded-pill px-4">Batal</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-5 shadow">
+                <i class="bi bi-plus-circle me-1"></i> Simpan Target PM
+            </button>
+        </div>
+    </form>
+}
+else
+{
+    @* =====================================================
+       MODE 2: MULAI PM - Wizard 4 Page
+       ===================================================== *@
+    <!-- ===== PROGRESS WIZARD INDICATOR (4 Steps) ===== -->
+    <div class="management-card px-3 px-sm-4 py-3 mb-4">
+        <!-- Integrated Top Bar inside Card: Title + Kembali / Cetak PDF -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <span class="fw-bold text-dark small"><i class="bi bi-journal-check text-primary me-2"></i>Execution Form PM</span>
+            <div class="d-flex align-items-center gap-2">
+                @if (Model != null && (Model.Status == "Completed" || Model.Status == "PmDone" || Model.Status == "Returned"))
+                {
+                    <a href="@Url.Action("PrintScheduledPm", "Maintenance", new { id = Model.Id })" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm" style="font-size:12px;">
+                        <i class="bi bi-printer me-1"></i> Cetak PDF
+                    </a>
+                }
+                @if (User.IsInRole("Viewer"))
+                {
+                    <a href="@Url.Action("MyAsset", "Home")" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm" style="font-size:12px;">
+                        <i class="bi bi-arrow-left me-1"></i> Kembali
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = Model.PlanMonth })" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm" style="font-size:12px;">
+                        <i class="bi bi-arrow-left me-1"></i> Kembali
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between position-relative">
+            <!-- Progress Line -->
+            <div class="position-absolute top-50 start-0 end-0 translate-middle-y" style="height: 3px; background: #e2e8f0; margin: 0 40px; z-index:0;"></div>
+            <div id="progressLine" class="position-absolute top-50 start-0 translate-middle-y" style="height: 3px; background: linear-gradient(90deg,#3b82f6,#10b981); width: 12.5%; margin-left: 40px; transition: width 0.4s ease; z-index:1;"></div>
+
+            <!-- Step 1 -->
+            <div class="d-flex flex-column align-items-center gap-1 position-relative" style="z-index:2;">
+                <div id="stepCircle1" class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white" style="width:40px;height:40px;background:#3b82f6;transition:all .3s;">1</div>
+                <small id="stepLabel1" class="fw-bold text-primary" style="font-size:0.72rem;">Identitas & User</small>
+            </div>
+            <!-- Step 2 -->
+            <div class="d-flex flex-column align-items-center gap-1 position-relative" style="z-index:2;">
+                <div id="stepCircle2" class="d-flex align-items-center justify-content-center rounded-circle fw-bold" style="width:40px;height:40px;background:#e2e8f0;color:#94a3b8;transition:all .3s;">2</div>
+                <small id="stepLabel2" class="text-muted" style="font-size:0.72rem;">Hardware & Software</small>
+            </div>
+            <!-- Step 3 -->
+            <div class="d-flex flex-column align-items-center gap-1 position-relative" style="z-index:2;">
+                <div id="stepCircle3" class="d-flex align-items-center justify-content-center rounded-circle fw-bold" style="width:40px;height:40px;background:#e2e8f0;color:#94a3b8;transition:all .3s;">3</div>
+                <small id="stepLabel3" class="text-muted" style="font-size:0.72rem;">Checklist & Remark</small>
+            </div>
+            <!-- Step 4 -->
+            <div class="d-flex flex-column align-items-center gap-1 position-relative" style="z-index:2;">
+                <div id="stepCircle4" class="d-flex align-items-center justify-content-center rounded-circle fw-bold" style="width:40px;height:40px;background:#e2e8f0;color:#94a3b8;transition:all .3s;">4</div>
+                <small id="stepLabel4" class="text-muted" style="font-size:0.72rem;">Pengesahan</small>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="ScheduledForm" method="post" id="pmForm" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="PlanMonth" />
+        <input type="hidden" asp-for="PlanDate" />
+        <input type="hidden" asp-for="PmStartedAt" />
+        <input type="hidden" asp-for="PmCompletedAt" />
+        <input type="hidden" id="execBySigData" name="ExecBySignatureData" value="@Model.ExecBySignature" />
+        <input type="hidden" id="userHandoverSigData" name="UserHandoverSignatureData" value="@Model.UserHandoverSignature" />
+        <input type="hidden" id="leaderSigData" name="LeaderSignatureData" value="@Model.LeaderSignature" />
+        <input type="hidden" id="itosSigData" name="ItosSignatureData" value="@Model.ItosSectionHeadSignature" />
+
+        <fieldset @(User.IsInRole("Viewer") ? "disabled" : "")>
+
+        <!-- ===================================================
+             PAGE 1: IDENTITAS PERANGKAT & USER
+             =================================================== -->
+        <div id="page1" class="pm-page">
+            <div class="management-card p-4 mb-4">
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="bi bi-person-vcard text-primary me-2"></i>Identitas Perangkat &amp; User
+                </h5>
+                <div class="row g-3">
+                    <!-- No. Dokumen -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">No. Dokumen FORM PM</label>
+                        <input asp-for="NoDocument" class="form-control form-control-sm fw-bold bg-light" readonly />
+                    </div>
+                    <!-- SN -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Serial Number (SN)</label>
+                        <div class="input-group input-group-sm">
+                            <input asp-for="SerialNumber" id="snInput" class="form-control font-monospace fw-bold" placeholder="Masukkan SN..." required />
+                            <button type="button" id="lookupSnBtn" class="btn btn-outline-primary" title="Autofill dari Master Asset">
+                                <i class="bi bi-search me-1"></i> Autofill
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Computer Name -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Computer Name</label>
+                        <input asp-for="ComputerName" id="computerNameInput" class="form-control form-control-sm" placeholder="HQ_DEPTMIINB..." />
+                    </div>
+
+                    <!-- Nama User -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Nama User</label>
+                        <input asp-for="NamaUser" id="namaUserInput" class="form-control form-control-sm" placeholder="Nama Lengkap User" />
+                    </div>
+                    <!-- NRP -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">NRP</label>
+                        <input asp-for="NRP" id="nrpInput" class="form-control form-control-sm" placeholder="p619..." />
+                    </div>
+                    <!-- Site -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Site</label>
+                        <input asp-for="Site" id="siteInput" class="form-control form-control-sm" placeholder="Site (HQ_DEPT)" />
+                    </div>
+                    <!-- Divisi -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Divisi</label>
+                        <input asp-for="Division" id="divisionInput" class="form-control form-control-sm" placeholder="Divisi (SHE)" />
+                    </div>
+
+                    <!-- Kontak -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">No. Handphone</label>
+                        <input asp-for="ContactInfo" class="form-control form-control-sm" placeholder="Contoh: +62 812..." />
+                    </div>
+                    <!-- Email -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Email User</label>
+                        <input asp-for="Email" class="form-control form-control-sm" placeholder="user@infrahub.com" />
+                    </div>
+                    <!-- Teknisi -->
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold text-muted">Pelaksana PM</label>
+                        <select asp-for="PerformedBy" id="performedByInput" class="form-select form-select-sm">
+                            <option value="">-- Pilih Teknisi --</option>
+                            @if (!string.IsNullOrWhiteSpace(Model.PerformedBy) && Model.PerformedBy != "Elyas" && Model.PerformedBy != "Putra" && Model.PerformedBy.ToLower() != "admin")
+                            {
+                                <option value="@Model.PerformedBy">@Model.PerformedBy</option>
+                            }
+                            <option value="Elyas">Elyas</option>
+                            <option value="Putra">Putra</option>
+                        </select>
+                    </div>
+
+                    <!-- === KELUHAN USER (Page 1 - Atas) === -->
+                    <div class="col-12 mt-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <label class="form-label fw-bold text-dark mb-0">
+                                <i class="bi bi-person-exclamation text-danger me-1"></i>Keluhan User <span class="text-danger">*</span>
+                            </label>
+                        </div>
+                        <textarea asp-for="Keluhan" id="keluhanInput" class="form-control" rows="3" placeholder="Tuliskan keluhan atau kendala yang dilaporkan user jika ada..."></textarea>
+                    </div>
+
+                    <!-- Foto Pre-PM (Page 1 - Bawah) -->
+                    <div class="col-12 mt-3">
+                        <div class="p-3 border rounded" style="background: #f0fdf4; border-color: #86efac !important;">
+                            <label class="form-label fw-bold text-dark mb-2">
+                                <i class="bi bi-camera-fill text-success me-1"></i>Dokumentasi Pre-PM (Pengambilan Device) <span class="text-danger">*</span>
+                            </label>
+                            <p class="small text-muted mb-3">Foto kondisi device beserta aksesoris sebelum PM dimulai. <strong>Wajib sebelum melanjutkan ke Tahap 2.</strong></p>
+                            @if (!User.IsInRole("Viewer"))
+                            {
+                                <!-- Camera preview for pre-PM photo -->
+                                <div id="prePmCameraArea" class="d-none mb-3">
+                                    <video id="prePmVideo" autoplay playsinline class="w-100 rounded border" style="max-height:260px;background:#000;"></video>
+                                    <div class="d-flex gap-2 mt-2 justify-content-center">
+                                        <button type="button" id="btnCapturePrepPm" class="btn btn-success rounded-pill px-4">
+                                            <i class="bi bi-camera-fill me-1"></i> Foto Sekarang
+                                        </button>
+                                        <button type="button" id="btnCancelPrePmCam" class="btn btn-secondary rounded-pill px-3">
+                                            <i class="bi bi-x-circle me-1"></i> Batal
+                                        </button>
+                                    </div>
+                                    <canvas id="prePmCanvas" class="d-none"></canvas>
+                                </div>
+                                <!-- Fallback file input (digunakan jika kamera tidak tersedia) -->
+                                <input type="file" accept="image/*" capture="environment" id="startPmCameraInput" class="d-none" />
+                                <button type="button" id="btnCameraStartPm" class="btn btn-success rounded-pill px-4 shadow-sm">
+                                    <i class="bi bi-camera-fill me-1"></i> Buka Kamera — Ambil Foto Pre-PM
+                                </button>
+                            }
+                            <div id="startPmPhotoPreviewContainer" class="mt-3 text-center @(photos.Any(p => p.PhotoType == "StartPM") ? "" : "d-none")">
+                                <small class="text-muted d-block mb-2">Foto Pre-PM:</small>
+                                <div class="d-flex gap-2 justify-content-center flex-wrap" id="evidencePhotosList">
+                                    @foreach (var ph in photos.Where(p => p.PhotoType == "StartPM"))
+                                    {
+                                        <div class="position-relative" id="photoItem-@ph.Id">
+                                            <img src="@ph.FilePath" alt="@ph.PhotoType" class="img-thumbnail shadow-sm start-pm-photo" style="height: 100px; width: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('@ph.FilePath','_blank')" />
+                                            <span class="badge bg-success position-absolute bottom-0 start-50 translate-middle-x mb-1" style="font-size:0.6rem;">Pre-PM</span>
+                                            <button type="button" onclick="deletePhoto('@ph.Id', 'photoItem-@ph.Id', 'startPmPhotoPreviewContainer', '#evidencePhotosList')" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center" style="width:22px;height:22px;border-radius:50%;font-size:0.65rem;margin:-6px;" title="Hapus Foto">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Button Page 1 -->
+            <div class="d-flex justify-content-end gap-3 mt-4 mb-4">
+                <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = Model.PlanMonth })" class="btn btn-light rounded-pill px-4">Batal</a>
+                <button type="button" class="btn btn-primary rounded-pill px-5 shadow-sm" onclick="handlePage1Next()">
+                    Selanjutnya <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 2: HARDWARE & SOFTWARE DETAIL
+             =================================================== -->
+        <div id="page2" class="pm-page d-none">
+            <div class="management-card p-4 mb-4">
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="bi bi-laptop text-primary me-2"></i>Hardware &amp; Software Detail
+                </h5>
+                <div class="row g-3">
+                    <!-- Tipe Perangkat -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Tipe Perangkat</label>
+                        <select asp-for="DeviceType" id="deviceTypeSelect" class="form-select form-select-sm">
+                            <option value="Notebook">Notebook / Laptop</option>
+                            <option value="Desktop">Desktop / Mini PC</option>
+                            <option value="Workstation">Workstation</option>
+                        </select>
+                    </div>
+                    <!-- Kondisi Perangkat -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Kondisi Perangkat</label>
+                        <select asp-for="DeviceKondisi" class="form-select form-select-sm">
+                            <option value="Baik">Baik</option>
+                            <option value="Rusak">Rusak</option>
+                        </select>
+                    </div>
+                    <!-- Merk -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Merk</label>
+                        <input asp-for="Brand" id="brandInput" class="form-control form-control-sm" placeholder="Dell / HP / Lenovo" />
+                    </div>
+                    <!-- Model -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Model / Series</label>
+                        <input asp-for="Model" id="modelInput" class="form-control form-control-sm" placeholder="Latitude 7320" />
+                    </div>
+
+                    <!-- Processor -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Processor</label>
+                        <input asp-for="Processor" id="processorInput" class="form-control form-control-sm" placeholder="Intel Core i7..." />
+                    </div>
+                    <!-- RAM -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">RAM</label>
+                        <input asp-for="Ram" id="ramInput" class="form-control form-control-sm" placeholder="16 GB" />
+                    </div>
+                    <!-- Storage -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Storage (SSD/HDD)</label>
+                        <input asp-for="Storage" id="storageInput" class="form-control form-control-sm" placeholder="512 GB SSD" />
+                    </div>
+                    <!-- Windows -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted">Windows Version</label>
+                        <input asp-for="WindowsVersion" id="winVerInput" class="form-control form-control-sm" placeholder="Windows 11 Pro" />
+                    </div>
+
+                    <!-- ===== AKSESORIS TAMBAHAN ===== -->
+                    <div class="col-12 mt-3">
+                        <style>
+                            .accessory-card {
+                                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                                background-color: #ffffff;
+                                border: 1px solid #e2e8f0 !important;
+                                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                                padding: 6px 10px;
+                            }
+                            .accessory-card:hover {
+                                border-color: #cbd5e1 !important;
+                                transform: translateY(-1px);
+                                box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+                            }
+                            .accessory-card .icon-circle {
+                                background-color: #f1f5f9;
+                                color: #64748b;
+                                width: 32px;
+                                height: 32px;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                transition: all 0.25s ease;
+                            }
+                            .accessory-card .form-check-input {
+                                cursor: pointer;
+                                width: 2em;
+                                height: 1em;
+                            }
+
+                            /* Accent-specific checked states */
+                            /* Blue Accent (Keyboard) */
+                            .accessory-card[data-accent="blue"]:has(.form-check-input:checked) {
+                                border-color: #3b82f6 !important;
+                                background-color: #f0f7ff !important;
+                                box-shadow: 0 4px 10px -2px rgba(59, 130, 246, 0.1);
+                            }
+                            .accessory-card[data-accent="blue"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #dbeafe !important;
+                                color: #1d4ed8 !important;
+                            }
+                            .accessory-card[data-accent="blue"] .form-check-input:checked {
+                                background-color: #3b82f6;
+                                border-color: #3b82f6;
+                            }
+
+                            /* Indigo Accent (Mouse) */
+                            .accessory-card[data-accent="indigo"]:has(.form-check-input:checked) {
+                                border-color: #6366f1 !important;
+                                background-color: #f5f3ff !important;
+                                box-shadow: 0 4px 10px -2px rgba(99, 102, 241, 0.1);
+                            }
+                            .accessory-card[data-accent="indigo"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #e0e7ff !important;
+                                color: #4338ca !important;
+                            }
+                            .accessory-card[data-accent="indigo"] .form-check-input:checked {
+                                background-color: #6366f1;
+                                border-color: #6366f1;
+                            }
+
+                            /* Emerald Accent (Monitor) */
+                            .accessory-card[data-accent="emerald"]:has(.form-check-input:checked) {
+                                border-color: #10b981 !important;
+                                background-color: #ecfdf5 !important;
+                                box-shadow: 0 4px 10px -2px rgba(16, 185, 129, 0.1);
+                            }
+                            .accessory-card[data-accent="emerald"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #d1fae5 !important;
+                                color: #047857 !important;
+                            }
+                            .accessory-card[data-accent="emerald"] .form-check-input:checked {
+                                background-color: #10b981;
+                                border-color: #10b981;
+                            }
+
+                            /* Amber Accent (Charger) */
+                            .accessory-card[data-accent="amber"]:has(.form-check-input:checked) {
+                                border-color: #f59e0b !important;
+                                background-color: #fffbeb !important;
+                                box-shadow: 0 4px 10px -2px rgba(245, 158, 11, 0.1);
+                            }
+                            .accessory-card[data-accent="amber"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #fef3c7 !important;
+                                color: #b45309 !important;
+                            }
+                            .accessory-card[data-accent="amber"] .form-check-input:checked {
+                                background-color: #f59e0b;
+                                border-color: #f59e0b;
+                            }
+
+                            /* Cyan Accent (Bag) */
+                            .accessory-card[data-accent="cyan"]:has(.form-check-input:checked) {
+                                border-color: #06b6d4 !important;
+                                background-color: #ecfeff !important;
+                                box-shadow: 0 4px 10px -2px rgba(6, 182, 212, 0.1);
+                            }
+                            .accessory-card[data-accent="cyan"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #cffafe !important;
+                                color: #0e7490 !important;
+                            }
+                            .accessory-card[data-accent="cyan"] .form-check-input:checked {
+                                background-color: #06b6d4;
+                                border-color: #06b6d4;
+                            }
+
+                            /* Rose Accent (Multiport) */
+                            .accessory-card[data-accent="rose"]:has(.form-check-input:checked) {
+                                border-color: #f43f5e !important;
+                                background-color: #fff1f2 !important;
+                                box-shadow: 0 4px 10px -2px rgba(244, 63, 94, 0.1);
+                            }
+                            .accessory-card[data-accent="rose"]:has(.form-check-input:checked) .icon-circle {
+                                background-color: #ffe4e6 !important;
+                                color: #be123c !important;
+                            }
+                            .accessory-card[data-accent="rose"] .form-check-input:checked {
+                                background-color: #f43f5e;
+                                border-color: #f43f5e;
+                            }
+                        </style>
+                        <h6 class="fw-bold text-secondary border-bottom pb-2 mb-3">
+                            <i class="bi bi-keyboard me-1"></i>Aksesoris Tambahan <small class="text-muted fw-normal">(Centang jika ada)</small>
+                        </h6>
+                        <div class="row g-3">
+                            <!-- Keyboard -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="blue">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-keyboard fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkKeyboardAda" style="font-size: 13px;">Keyboard</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">Merek & kondisi keyboard</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input accessory-toggle" type="checkbox" asp-for="KeyboardAda" id="chkKeyboardAda" data-target="keyboardDetail" />
+                                        </div>
+                                    </div>
+                                    <div id="keyboardDetail" class="@(Model.KeyboardAda ? "" : "d-none") mt-2 pt-2 border-top">
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold text-muted small mb-1">Merek Keyboard</label>
+                                            <select asp-for="KeyboardBrand" class="form-select form-select-sm">
+                                                <option value="">-- Pilih Merek --</option>
+                                                <option value="Logitech">Logitech</option>
+                                                <option value="Dell">Dell</option>
+                                                <option value="HP">HP</option>
+                                                <option value="Lenovo">Lenovo</option>
+                                                <option value="Apple">Apple</option>
+                                                <option value="Microsoft">Microsoft</option>
+                                                <option value="Asus">Asus</option>
+                                                <option value="Acer">Acer</option>
+                                                <option value="Lainnya">Lainnya</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="form-label fw-semibold text-muted small mb-1">Kondisi</label>
+                                            <select asp-for="KeyboardKondisi" class="form-select form-select-sm">
+                                                <option value="Baik">Baik</option>
+                                                <option value="Rusak">Rusak</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mouse -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="indigo">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-mouse fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkMouseAda" style="font-size: 13px;">Mouse</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">Merek & kondisi mouse</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input accessory-toggle" type="checkbox" asp-for="MouseAda" id="chkMouseAda" data-target="mouseDetail" />
+                                        </div>
+                                    </div>
+                                    <div id="mouseDetail" class="@(Model.MouseAda ? "" : "d-none") mt-2 pt-2 border-top">
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold text-muted small mb-1">Merek Mouse</label>
+                                            <select asp-for="MouseBrand" class="form-select form-select-sm">
+                                                <option value="">-- Pilih Merek --</option>
+                                                <option value="Logitech">Logitech</option>
+                                                <option value="Dell">Dell</option>
+                                                <option value="HP">HP</option>
+                                                <option value="Lenovo">Lenovo</option>
+                                                <option value="Apple">Apple</option>
+                                                <option value="Microsoft">Microsoft</option>
+                                                <option value="Asus">Asus</option>
+                                                <option value="Acer">Acer</option>
+                                                <option value="Lainnya">Lainnya</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="form-label fw-semibold text-muted small mb-1">Kondisi</label>
+                                            <select asp-for="MouseKondisi" class="form-select form-select-sm">
+                                                <option value="Baik">Baik</option>
+                                                <option value="Rusak">Rusak</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monitor -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="emerald">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-display fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkMonitorAda" style="font-size: 13px;">Monitor</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">Merek & kondisi monitor</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input accessory-toggle" type="checkbox" asp-for="MonitorAda" id="chkMonitorAda" data-target="monitorDetail" />
+                                        </div>
+                                    </div>
+                                    <div id="monitorDetail" class="@(Model.MonitorAda ? "" : "d-none") mt-2 pt-2 border-top">
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold text-muted small mb-1">Merek Monitor</label>
+                                            <input asp-for="MonitorBrand" class="form-control form-control-sm" placeholder="LG / Samsung / Dell..." />
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label fw-semibold text-muted small mb-1">Model Monitor</label>
+                                            <input asp-for="MonitorModel" class="form-control form-control-sm" placeholder="27UL500..." />
+                                        </div>
+                                        <div>
+                                            <label class="form-label fw-semibold text-muted small mb-1">Kondisi</label>
+                                            <select asp-for="MonitorKondisi" class="form-select form-select-sm">
+                                                <option value="Baik">Baik</option>
+                                                <option value="Rusak">Rusak</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Charger -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="amber">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-plug-fill fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkChargerAda" style="font-size: 13px;">Charger / Adaptor</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">Charger / kabel power laptop</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" asp-for="ChargerAda" id="chkChargerAda" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tas Laptop -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="cyan">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-bag-fill fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkTasAda" style="font-size: 13px;">Tas Laptop</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">Softcase / hardcase / tas bawaan</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" asp-for="TasLaptopAda" id="chkTasAda" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Multiport / Hub -->
+                            <div class="col-md-4">
+                                <div class="accessory-card border rounded-3 h-100" data-accent="rose">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle me-2 flex-shrink-0">
+                                            <i class="bi bi-usb-drive-fill fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0 me-2">
+                                            <label class="fw-bold text-dark mb-0 d-block" for="chkMultiportAda" style="font-size: 13px;">Multiport / Hub</label>
+                                            <small class="text-muted d-block text-truncate" style="font-size: 10.5px;">USB Hub / docking station</small>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" asp-for="MultiportAda" id="chkMultiportAda" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Time PM Panel (Bawah Tahap 2) -->
+            @if (!isApproverOnly)
+            {
+                <div class="management-card p-4 mb-4" style="border-left: 4px solid #ef4444;">
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="bi bi-play-circle-fill text-danger me-2"></i>Mulai Waktu PM
+                    </h5>
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-6">
+                            <p class="text-muted small mb-2">Tekan <strong>"Mulai PM"</strong> untuk mencatat waktu awal PM. Pastikan checklist di atas dan foto Pre-PM (Tahap 1) sudah selesai.</p>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Start Time:</span>
+                                <input type="text" id="startTimeInput" name="StartTime" class="form-control form-control-sm fw-bold text-success w-auto" readonly style="min-width:120px;" value="@(Model.PmStartedAt.HasValue ? Model.PmStartedAt.Value.ToString("HH:mm") : (Model.StartTime != TimeSpan.Zero ? Model.StartTime.ToString(@"hh\:mm") : ""))" placeholder="--:--" />
+                                <span id="startTimeDisplay" class="text-muted small @(Model.PmStartedAt.HasValue ? "" : "d-none")">
+                                    <i class="bi bi-check-circle-fill text-success me-1"></i>Waktu tercatat
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end @(Model.PmStartedAt.HasValue ? "d-none d-md-block" : "")">
+                            @if (!User.IsInRole("Viewer"))
+                            {
+                                @if (Model.PmStartedAt.HasValue)
+                                {
+                                    <div class="text-success fw-bold">
+                                        <i class="bi bi-check-circle-fill me-1"></i>PM Sudah Dimulai: @Model.PmStartedAt.Value.ToString("HH:mm")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button type="button" id="recordStartBtn" class="btn btn-danger rounded-pill px-5 shadow-sm fw-bold">
+                                        <i class="bi bi-play-fill me-1"></i> Mulai PM
+                                    </button>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Page 2 Navigation -->
+            <div class="d-flex justify-content-between gap-3 mt-4 mb-4">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="goToPage(1)">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </button>
+                <button type="button" class="btn btn-primary rounded-pill px-5 shadow-sm" onclick="handlePage2Next()">
+                    Selanjutnya (Checklist & Remark) <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===================================================
+             PAGE 3: PM CHECKLIST & REMARK & END PM PHOTO
+             =================================================== -->
+        <div id="page3" class="pm-page d-none">
+
+            <!-- Preventive Maintenance Checklist -->
+            <style>
+                .pm-checklist-card {
+                    background: #ffffff;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+                    padding: 16px;
+                    margin-bottom: 16px;
+                }
+                .pm-category-card {
+                    background: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    height: 100%;
+                    transition: all 0.2s ease;
+                }
+                .pm-category-card:hover {
+                    border-color: #cbd5e1;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                }
+                .pm-category-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 700;
+                    font-size: 13px;
+                    color: #1e293b;
+                    margin-bottom: 10px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                .pm-category-header i {
+                    font-size: 16px;
+                }
+                .pm-check-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    padding: 6px 10px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    margin-bottom: 6px;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .pm-check-item:hover {
+                    background: #f1f5f9;
+                    border-color: #cbd5e1;
+                    transform: translateY(-0.5px);
+                }
+                .pm-check-item.active {
+                    background: #f0fdf4;
+                    border-color: #a7f3d0;
+                    box-shadow: 0 1px 4px rgba(34,197,94,0.04);
+                }
+                .pm-check-item label {
+                    cursor: pointer;
+                    font-size: 12px;
+                    font-weight: 550;
+                    color: #334155;
+                    margin: 0;
+                    flex-grow: 1;
+                    line-height: 1.4;
+                }
+                .pm-check-item.active label {
+                    color: #15803d;
+                }
+                .pm-check-switch {
+                    width: 18px;
+                    height: 18px;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                }
+                .pm-status-badge {
+                    font-size: 10px;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    letter-spacing: 0.2px;
+                    transition: all 0.2s ease;
+                    flex-shrink: 0;
+                    white-space: nowrap;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .pm-status-badge.badge-pending {
+                    background: #e2e8f0;
+                    color: #64748b;
+                }
+                .pm-status-badge.badge-ok {
+                    background: #dcfce7;
+                    color: #15803d;
+                    border: 1px solid #86efac;
+                }
+            </style>
+
+            <div class="pm-checklist-card">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-3 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center rounded-3 bg-success bg-opacity-10 p-2 text-success">
+                            <i class="bi bi-clipboard2-check-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark m-0">Preventive Maintenance Checklist</h5>
+                            <small class="text-muted" style="font-size:12px;">Standar FORM PM_New.pdf — Verifikasi kelayakan unit dan sistem</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="chkProgressBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold" style="font-size:12px;">
+                            <i class="bi bi-check-all me-1"></i> <span id="chkCount">0</span>/7 Selesai
+                        </span>
+                        <button type="button" id="btnSelectAllChk" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold" style="font-size:12px;">
+                            <i class="bi bi-check2-circle me-1"></i> Centang Semua
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- 1. Pemeriksaan Fisik Komputer -->
+                    <div class="col-12">
+                        <div class="pm-category-card">
+                            <div class="pm-category-header">
+                                <i class="bi bi-pc-display text-primary"></i>
+                                <span>1. Pemeriksaan Fisik Komputer</span>
+                            </div>
+                            <div class="pm-check-item" id="itemFisik" onclick="toggleChk('chkFisik', 'itemFisik', 'badgeFisik')">
+                                <input class="form-check-input pm-check-switch" type="checkbox" asp-for="FisikKondisiBaik" id="chkFisik" onclick="event.stopPropagation(); updateChkState('chkFisik', 'itemFisik', 'badgeFisik');" />
+                                <label for="chkFisik">Kondisi unit dalam keadaan baik dan bersih secara keseluruhan</label>
+                                <span class="pm-status-badge badge-pending" id="badgeFisik">BELUM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Pemeriksaan Sistem (UEFI Setting) -->
+                    <div class="col-md-6">
+                        <div class="pm-category-card">
+                            <div class="pm-category-header">
+                                <i class="bi bi-shield-lock-fill text-purple" style="color:#7c3aed;"></i>
+                                <span>2. Pemeriksaan Sistem (UEFI Setting)</span>
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="pm-check-item" id="itemUefiPass" onclick="toggleChk('chkUefiPass', 'itemUefiPass', 'badgeUefiPass')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="UEFIPassword" id="chkUefiPass" onclick="event.stopPropagation(); updateChkState('chkUefiPass', 'itemUefiPass', 'badgeUefiPass');" />
+                                    <label for="chkUefiPass">UEFI Password telah distandarisasi</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeUefiPass">BELUM</span>
+                                </div>
+                                <div class="pm-check-item" id="itemBootStorage" onclick="toggleChk('chkBootStorage', 'itemBootStorage', 'badgeBootStorage')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="BootOrderStorage" id="chkBootStorage" onclick="event.stopPropagation(); updateChkState('chkBootStorage', 'itemBootStorage', 'badgeBootStorage');" />
+                                    <label for="chkBootStorage">Boot order hanya melalui storage</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeBootStorage">BELUM</span>
+                                </div>
+                                <div class="pm-check-item" id="itemBootDisable" onclick="toggleChk('chkBootDisable', 'itemBootDisable', 'badgeBootDisable')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="BootOrderDisable" id="chkBootDisable" onclick="event.stopPropagation(); updateChkState('chkBootDisable', 'itemBootDisable', 'badgeBootDisable');" />
+                                    <label for="chkBootDisable">Menu boot order di-disable</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeBootDisable">BELUM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Pemeriksaan Sistem (Sistem Setting) -->
+                    <div class="col-md-6">
+                        <div class="pm-category-card">
+                            <div class="pm-category-header">
+                                <i class="bi bi-sliders text-success"></i>
+                                <span>3. Pemeriksaan Sistem (Sistem Setting)</span>
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="pm-check-item" id="itemDisableAdmin" onclick="toggleChk('chkDisableAdmin', 'itemDisableAdmin', 'badgeDisableAdmin')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="DisableAdmin" id="chkDisableAdmin" onclick="event.stopPropagation(); updateChkState('chkDisableAdmin', 'itemDisableAdmin', 'badgeDisableAdmin');" />
+                                    <label for="chkDisableAdmin">Disable administrator</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeDisableAdmin">BELUM</span>
+                                </div>
+                                <div class="pm-check-item" id="itemDiskCleanup" onclick="toggleChk('chkDiskCleanup', 'itemDiskCleanup', 'badgeDiskCleanup')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="DiskCleanUp" id="chkDiskCleanup" onclick="event.stopPropagation(); updateChkState('chkDiskCleanup', 'itemDiskCleanup', 'badgeDiskCleanup');" />
+                                    <label for="chkDiskCleanup">Melakukan Disk Clean Up Drive C dan D</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeDiskCleanup">BELUM</span>
+                                </div>
+                                <div class="pm-check-item" id="itemSpaceSsd" onclick="toggleChk('chkSpaceSsd', 'itemSpaceSsd', 'badgeSpaceSsd')">
+                                    <input class="form-check-input pm-check-switch" type="checkbox" asp-for="SpaceSSD" id="chkSpaceSsd" onclick="event.stopPropagation(); updateChkState('chkSpaceSsd', 'itemSpaceSsd', 'badgeSpaceSsd');" />
+                                    <label for="chkSpaceSsd">Memastikan space SSD Drive C &amp; D tersisa min. 10%</label>
+                                    <span class="pm-status-badge badge-pending" id="badgeSpaceSsd">BELUM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catatan & Dokumentasi Selesai PM (Page 3) -->
+            <div class="management-card p-4 mb-4">
+                <style>
+                    .modern-editor-container {
+                        border: 1px solid #cbd5e1 !important;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        background: #ffffff;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+                    }
+                    .modern-editor-container:focus-within {
+                        border-color: #3b82f6 !important;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+                    }
+                    .camera-button-modern {
+                        background: linear-gradient(135deg, #10b981, #059669);
+                        color: #ffffff !important;
+                        border: none;
+                        font-weight: 600;
+                        transition: all 0.25s ease;
+                    }
+                    .camera-button-modern:hover {
+                        background: linear-gradient(135deg, #059669, #047857);
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+                    }
+                    .photo-thumbnail-modern {
+                        border-radius: 8px;
+                        overflow: hidden;
+                        border: 2px solid #e2e8f0;
+                        transition: all 0.25s ease;
+                        width: 100px;
+                        height: 80px;
+                        position: relative;
+                        background: #f8fafc;
+                    }
+                    .photo-thumbnail-modern:hover {
+                        border-color: #10b981;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+                    }
+                    .photo-thumbnail-modern img {
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                    }
+                    .delete-photo-btn {
+                        position: absolute;
+                        top: 4px;
+                        right: 4px;
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 50%;
+                        background: rgba(239, 68, 68, 0.9);
+                        color: #ffffff;
+                        border: none;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                        transition: all 0.2s ease;
+                    }
+                    .delete-photo-btn:hover {
+                        background: #dc2626;
+                        transform: scale(1.1);
+                    }
+                </style>
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                    <i class="bi bi-tools text-primary me-2"></i>Catatan &amp; Dokumentasi Selesai PM
+                </h5>
+
+                <!-- Keluhan User Banner (Full-Width Alert-Style, shows if exist) -->
+                <div id="keluhanSummaryBox" class="mb-3 @(string.IsNullOrEmpty(Model.Keluhan) ? "d-none" : "")" style="background-color: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px 16px;">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-warning fs-5 mt-0"></i>
+                        <div>
+                            <span class="fw-bold text-dark small">Keluhan / Laporan User:</span>
+                            <span class="text-dark ms-1" id="keluhanSummaryText" style="font-size:0.9rem;">@Model.Keluhan</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unified Editor Card -->
+                <div class="modern-editor-container">
+                    <!-- Textarea Area -->
+                    <div class="p-3">
+                        <label class="form-label fw-bold text-dark mb-1 small px-1">
+                            <i class="bi bi-chat-left-text-fill text-primary me-1"></i>Remark / Jawaban Teknisi <span class="text-danger">*</span>
+                        </label>
+                        <textarea asp-for="Remark" id="remarkInput" class="form-control border-0 p-1" rows="5" style="resize: vertical; font-size: 13.5px; box-shadow: none; background-color: transparent;" placeholder="Tuliskan tindakan yang telah dilakukan, jawaban atas keluhan user, atau temuan teknis lainnya..."></textarea>
+                    </div>
+
+                    <!-- Camera View Area (Nested, shows inside editor if active) -->
+                    <div id="endPmCameraArea" class="d-none border-top p-3 text-center" style="background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                        <div style="max-width: 300px; margin: 0 auto;">
+                            <video id="endPmVideo" autoplay playsinline class="w-100 rounded border shadow-sm mb-2" style="max-height:170px;background:#000;"></video>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button type="button" id="btnCaptureEndPm" class="btn btn-success btn-sm rounded-pill px-3">
+                                    <i class="bi bi-camera-fill me-1"></i> Foto
+                                </button>
+                                <button type="button" id="btnCancelEndPmCam" class="btn btn-secondary btn-sm rounded-pill px-3">
+                                    Batal
+                                </button>
+                            </div>
+                            <canvas id="endPmCanvas" class="d-none"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar / Attachments Area -->
+                    <div class="border-top px-3 py-2 d-flex align-items-center gap-3 flex-wrap" style="background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                        @if (!User.IsInRole("Viewer"))
+                        {
+                            <!-- Fallback file input -->
+                            <input type="file" accept="image/*" capture="environment" id="endPmCameraInput" class="d-none" />
+                            <button type="button" id="btnCameraEndPm" class="btn camera-button-modern rounded-pill px-3 py-1.5 shadow-sm" style="font-size: 13px;">
+                                <i class="bi bi-camera-fill me-1"></i> Ambil Foto Evidence
+                            </button>
+                        }
+
+                        <!-- Inline attached photos -->
+                        <div id="endPmPhotoPreviewContainer" class="d-flex gap-2 flex-wrap align-items-center @(photos.Any(p => p.PhotoType == "EndPM") ? "" : "d-none")">
+                            <span class="text-muted small fw-semibold me-1" style="font-size: 11px;">Lampiran:</span>
+                            <div class="d-flex gap-2 flex-wrap" id="endPmPhotosList">
+                                @foreach (var ph in photos.Where(p => p.PhotoType == "EndPM"))
+                                {
+                                    <div class="photo-thumbnail-modern" id="photoItem-@ph.Id">
+                                        <img src="@ph.FilePath" alt="EndPM" onclick="window.open('@ph.FilePath','_blank')" style="cursor: pointer;" />
+                                        <span class="badge bg-success position-absolute bottom-0 start-50 translate-middle-x mb-1" style="font-size:0.55rem; padding: 2px 5px; border-radius: 8px;">Selesai PM</span>
+                                        <button type="button" onclick="deletePhoto('@ph.Id', 'photoItem-@ph.Id', 'endPmPhotoPreviewContainer', '#endPmPhotosList')" class="delete-photo-btn" title="Hapus Foto">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Riwayat Reschedule -->
+            @if (Model.OriginalPlanDate.HasValue || Model.Reschedule1Date.HasValue || Model.Reschedule2Date.HasValue || Model.Reschedule3Date.HasValue)
+            {
+                <div class="management-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="bi bi-clock-history text-warning me-2"></i>Riwayat Reschedule PM
+                    </h5>
+                    <table class="table table-sm table-bordered align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Tanggal Baru</th><th>Alasan Reschedule</th></tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.OriginalPlanDate.HasValue)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-secondary">-</td>
+                                    <td>Original Target: <strong>@Model.OriginalPlanDate.Value.ToString("dd MMM yyyy")</strong></td>
+                                    <td>Tanggal target awal sebelum reschedule</td>
+                                </tr>
+                            }
+                            @if (Model.Reschedule1Date.HasValue)
+                            {
+                                <tr><td class="fw-bold">1</td><td>@Model.Reschedule1Date.Value.ToString("dd MMM yyyy")</td><td>@(Model.Reschedule1Reason ?? "-")</td></tr>
+                            }
+                            @if (Model.Reschedule2Date.HasValue)
+                            {
+                                <tr><td class="fw-bold">2</td><td>@Model.Reschedule2Date.Value.ToString("dd MMM yyyy")</td><td>@(Model.Reschedule2Reason ?? "-")</td></tr>
+                            }
+                            @if (Model.Reschedule3Date.HasValue)
+                            {
+                                <tr><td class="fw-bold">3</td><td>@Model.Reschedule3Date.Value.ToString("dd MMM yyyy")</td><td>@(Model.Reschedule3Reason ?? "-")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- Page 3 Navigation (Akhiri PM button setelah remark card) -->
+            <div class="d-flex justify-content-between gap-3 mt-4 mb-4">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="goToPage(2)">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </button>
+                @if (isApproverOnly || Model.PmCompletedAt.HasValue || Model.Status == "PmDone" || Model.Status == "Completed" || Model.Status == "Returned")
+                {
+                    <button type="button" class="btn btn-primary rounded-pill px-5 shadow-sm fw-semibold" onclick="handlePage3Next()">
+                        Selanjutnya (Pengesahan) <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-danger rounded-pill px-5 shadow-sm fw-bold" onclick="handlePage3Next()">
+                        <i class="bi bi-stop-circle-fill me-1"></i> Akhiri PM &amp; Catat Waktu Selesai
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- PAGE 4: PENGESAHAN (SIGNATURES) -->
+        <div id="page4" class="pm-page d-none">
+
+            <!-- Header Section -->
+            <div class="management-card p-4 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div style="width:42px;height:42px;background:linear-gradient(135deg,#1a4598,#2563eb);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-pencil-square text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">Pengesahan 4 Tanda Tangan Digital</h5>
+                        <small class="text-muted">Lengkapi tanda tangan & approval untuk mengesahkan hasil PM</small>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+
+                    <!-- ===== TTD 1: Teknisi Pelaksana ===== -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="h-100 border rounded-3 overflow-hidden shadow-sm" style="border-color:#dee2e6!important;">
+                            <!-- Card Header -->
+                            <div class="px-3 py-2 d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#1a4598,#2563eb);">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold text-primary" style="width:24px;height:24px;font-size:12px;flex-shrink:0;">1</div>
+                                <span class="fw-semibold text-white small">Dibuat Oleh</span>
+                            </div>
+                            <!-- Card Body -->
+                            <div class="p-3 d-flex flex-column" style="min-height:240px;">
+                                @if (!string.IsNullOrEmpty(Model.ExecBySignature))
+                                {
+                                    <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10 d-flex flex-column align-items-center justify-content-center flex-grow-1">
+                                        <i class="bi bi-check-circle-fill text-success fs-3 mb-1"></i>
+                                        <div class="fw-bold small text-success mb-2">Sudah Ditandatangani</div>
+                                        <img src="@Model.ExecBySignature" style="max-height:100px;max-width:100%;" class="border rounded p-1 bg-white shadow-sm" />
+                                    </div>
+                                }
+                                else if (User.IsInRole("Coordinator") || User.IsInRole("Technician"))
+                                {
+                                    <div class="signature-box flex-grow-1" style="background:#fafafa;border:1px dashed #cbd5e1;border-radius:8px;overflow:hidden;">
+                                        <div class="signature-canvas-wrapper" style="height:130px;">
+                                            <canvas id="canvasSig1" class="w-100 h-100"></canvas>
+                                        </div>
+                                        <div class="d-flex justify-content-center py-1" style="border-top:1px solid #e2e8f0;">
+                                            <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" id="clearSig1">
+                                                <i class="bi bi-eraser me-1"></i><small>Hapus</small>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="flex-grow-1 d-flex align-items-center justify-content-center rounded-3" style="background:#f8fafc;border:1px dashed #dee2e6;min-height:130px;">
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-pen fs-3 d-block mb-1 opacity-30"></i>
+                                            <small>Tanda Tangan Teknisi</small>
+                                        </div>
+                                    </div>
+                                }
+                                <!-- Footer Label -->
+                                <div class="mt-2 pt-2 border-top text-center">
+                                    <small class="text-muted fw-semibold">Teknisi Pelaksana PM</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TTD 2: User Penerima ===== -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="h-100 border rounded-3 overflow-hidden shadow-sm" style="border-color:#dee2e6!important;">
+                            <!-- Card Header -->
+                            <div class="px-3 py-2 d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#0891b2,#06b6d4);">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold text-info" style="width:24px;height:24px;font-size:12px;flex-shrink:0;">2</div>
+                                <span class="fw-semibold text-white small">Diterima Oleh</span>
+                            </div>
+                            <!-- Card Body -->
+                            <div class="p-3 d-flex flex-column" style="min-height:240px;">
+                                @if (!string.IsNullOrEmpty(Model.UserHandoverSignature))
+                                {
+                                    <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10 d-flex flex-column align-items-center justify-content-center flex-grow-1">
+                                        <i class="bi bi-check-circle-fill text-success fs-3 mb-1"></i>
+                                        <div class="fw-bold small text-success mb-2">Sudah Ditandatangani</div>
+                                        <img src="@Model.UserHandoverSignature" style="max-height:100px;max-width:100%;" class="border rounded p-1 bg-white shadow-sm" />
+                                    </div>
+                                }
+                                else if (User.IsInRole("Coordinator") || User.IsInRole("Technician"))
+                                {
+                                    <!-- Checkbox: User Tidak Ada di Meja -->
+                                    <div class="mb-2">
+                                        <label class="d-flex align-items-center gap-2 p-2 rounded-2 cursor-pointer" style="background:#fffbeb;border:1px solid #f59e0b;cursor:pointer;" for="chkUserNotPresent">
+                                            <input class="form-check-input m-0 flex-shrink-0" type="checkbox" asp-for="UserNotPresent" id="chkUserNotPresent" />
+                                            <span class="small fw-semibold" style="color:#b45309;">
+                                                <i class="bi bi-person-x-fill me-1"></i>User Tidak Ada di Meja
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <!-- Canvas Tanda Tangan User (jika user ada) -->
+                                    <div id="userHandoverSigSection" class="flex-grow-1 @(Model.UserNotPresent ? "d-none" : "")">
+                                        <div class="signature-box h-100" style="background:#fafafa;border:1px dashed #cbd5e1;border-radius:8px;overflow:hidden;">
+                                            <div class="signature-canvas-wrapper" style="height:110px;">
+                                                <canvas id="canvasSigUser" class="w-100 h-100"></canvas>
+                                            </div>
+                                            <div class="d-flex justify-content-center py-1" style="border-top:1px solid #e2e8f0;">
+                                                <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" id="clearSigUser">
+                                                    <i class="bi bi-eraser me-1"></i><small>Hapus</small>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Foto Bukti User Tidak Ada -->
+                                    <div id="userNotPresentPhotoSection" class="flex-grow-1 @(Model.UserNotPresent ? "" : "d-none")">
+                                        <div class="h-100 rounded-2 p-2 text-center d-flex flex-column align-items-center justify-content-center gap-1" style="background:#fff8e1;border:1px dashed #f59e0b;min-height:110px;">
+                                            <i class="bi bi-camera-fill text-warning fs-4"></i>
+                                            <small class="fw-semibold" style="color:#b45309;">Ambil Foto Sebagai Bukti</small>
+                                            <input type="file" accept="image/*" capture="environment" id="userNotPresentCamera" class="d-none" />
+                                            <button type="button" id="btnCameraUserAbsent" class="btn btn-sm btn-warning rounded-pill px-3 mt-1" style="font-size:11px;">
+                                                <i class="bi bi-camera me-1"></i>Foto Bukti
+                                            </button>
+                                            <div id="userAbsentPhotoContainer" class="mt-1 @(photos.Any(p => p.PhotoType == "UserAbsent") ? "" : "d-none")">
+                                                <div class="d-flex gap-1 flex-wrap justify-content-center" id="userAbsentPhotoList">
+                                                    @foreach (var ph in photos.Where(p => p.PhotoType == "UserAbsent"))
+                                                    {
+                                                        <div class="position-relative" id="photoItem-@ph.Id">
+                                                            <img src="@ph.FilePath" class="img-thumbnail" style="height:55px;width:60px;object-fit:cover;border-radius:5px;cursor:pointer;" onclick="window.open('@ph.FilePath','_blank')" />
+                                                            <button type="button" onclick="deletePhoto('@ph.Id','photoItem-@ph.Id','userAbsentPhotoContainer','#userAbsentPhotoList')" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0" style="width:16px;height:16px;border-radius:50%;font-size:0.55rem;margin:-3px;">
+                                                                <i class="bi bi-x"></i>
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="flex-grow-1 d-flex align-items-center justify-content-center rounded-3" style="background:#f8fafc;border:1px dashed #dee2e6;min-height:130px;">
+                                        @if (Model.UserNotPresent)
+                                        {
+                                            <div class="text-center" style="color:#b45309;">
+                                                <i class="bi bi-person-x-fill fs-3 d-block mb-1"></i>
+                                                <small class="fw-semibold">User Tidak Ada</small>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center text-muted">
+                                                <i class="bi bi-pen fs-3 d-block mb-1 opacity-30"></i>
+                                                <small>Tanda Tangan User</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <!-- Footer Label -->
+                                <div class="mt-2 pt-2 border-top text-center">
+                                    <small class="text-muted fw-semibold">User Penerima Laptop</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TTD 3: PIC TEAM (Franz / Approver1) ===== -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="h-100 border rounded-3 overflow-hidden shadow-sm" style="border-color:#dee2e6!important;">
+                            <!-- Card Header -->
+                            <div class="px-3 py-2 d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#7c3aed,#8b5cf6);">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold" style="width:24px;height:24px;font-size:12px;flex-shrink:0;color:#7c3aed;">3</div>
+                                <span class="fw-semibold text-white small">Diketahui Oleh</span>
+                            </div>
+                            <!-- Card Body -->
+                            <div class="p-3 d-flex flex-column" style="min-height:240px;">
+                                @if (User.IsInRole("Approver1"))
+                                {
+                                    <!-- Nama login -->
+                                    <div class="d-flex align-items-center gap-2 p-2 rounded-2 mb-2" style="background:#f5f3ff;border:1px solid #ddd6fe;">
+                                        <i class="bi bi-person-badge-fill" style="color:#7c3aed;"></i>
+                                        <span class="fw-semibold small text-dark">@(User.Identity?.Name ?? "-")</span>
+                                    </div>
+                                    <input type="hidden" asp-for="LeaderApprovedBy" value="@(User.Identity?.Name ?? string.Empty)" />
+                                    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                                        @if (Model.LeaderApproved)
+                                        {
+                                            <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10">
+                                                <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                                                <div class="fw-bold small text-success">Sudah Disetujui</div>
+                                                @if (Model.LeaderApprovedAt.HasValue) { <div class="text-muted" style="font-size:0.7rem;">@Model.LeaderApprovedAt.Value.ToString("dd MMM yyyy HH:mm")</div> }
+                                            </div>
+                                            <input type="hidden" asp-for="LeaderApproved" />
+                                        }
+                                        else if (!string.IsNullOrEmpty(Model.ExecBySignature) && (!string.IsNullOrEmpty(Model.UserHandoverSignature) || Model.UserNotPresent))
+                                        {
+                                            <button type="button" id="btnLeaderApprove" class="btn btn-sm fw-bold w-100 text-white rounded-2 py-2" style="background:#7c3aed;">
+                                                <i class="bi bi-check-circle me-1"></i>Setujui sebagai PIC TEAM
+                                            </button>
+                                            <input type="hidden" asp-for="LeaderApproved" id="leaderApprovedHidden" />
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center p-3 rounded-2 bg-light border w-100">
+                                                <i class="bi bi-hourglass-split text-muted fs-4 d-block mb-1 opacity-50"></i>
+                                                <small class="text-muted">Menunggu tanda tangan Teknisi &amp; User</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                                        @if (Model.LeaderApproved)
+                                        {
+                                            <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10">
+                                                <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                                                <div class="fw-bold small text-success">Sudah Disetujui</div>
+                                                @if (Model.LeaderApprovedAt.HasValue) { <div class="text-muted" style="font-size:0.7rem;">@Model.LeaderApprovedAt.Value.ToString("dd MMM yyyy HH:mm")</div> }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center p-3 rounded-2 bg-light border w-100">
+                                                <i class="bi bi-hourglass-split text-muted fs-4 d-block mb-1 opacity-50"></i>
+                                                <small class="text-muted">Menunggu Approval PIC TEAM</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <!-- Footer Label -->
+                                <div class="mt-2 pt-2 border-top text-center">
+                                    <small class="fw-semibold" style="color:#7c3aed;">PIC TEAM</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== TTD 4: Section Head (Eddi / Approver2) ===== -->
+                    <div class="col-lg-3 col-md-6">
+                        <div class="h-100 border rounded-3 overflow-hidden shadow-sm" style="border-color:#dee2e6!important;">
+                            <!-- Card Header -->
+                            <div class="px-3 py-2 d-flex align-items-center gap-2" style="background:linear-gradient(90deg,#059669,#10b981);">
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold text-success" style="width:24px;height:24px;font-size:12px;flex-shrink:0;">4</div>
+                                <span class="fw-semibold text-white small">Disetujui Oleh</span>
+                            </div>
+                            <!-- Card Body -->
+                            <div class="p-3 d-flex flex-column" style="min-height:240px;">
+                                @if (!Model.LeaderApproved)
+                                {
+                                    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                                        <div class="text-center p-3 rounded-2 bg-light border w-100">
+                                            <i class="bi bi-hourglass-split text-muted fs-4 d-block mb-1 opacity-50"></i>
+                                            <small class="text-muted">Menunggu Approval PIC TEAM (Franz)</small>
+                                        </div>
+                                    </div>
+                                }
+                                else if (User.IsInRole("Approver2"))
+                                {
+                                    <!-- Nama login -->
+                                    <div class="d-flex align-items-center gap-2 p-2 rounded-2 mb-2" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                                        <i class="bi bi-person-badge-fill text-success"></i>
+                                        <span class="fw-semibold small text-dark">@(User.Identity?.Name ?? "-")</span>
+                                    </div>
+                                    <input type="hidden" asp-for="SectionHeadApprovedBy" value="@(User.Identity?.Name ?? string.Empty)" />
+                                    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                                        @if (Model.SectionHeadApproved)
+                                        {
+                                            <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10">
+                                                <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                                                <div class="fw-bold small text-success">Sudah Disetujui</div>
+                                                @if (Model.SectionHeadApprovedAt.HasValue) { <div class="text-muted" style="font-size:0.7rem;">@Model.SectionHeadApprovedAt.Value.ToString("dd MMM yyyy HH:mm")</div> }
+                                            </div>
+                                            <input type="hidden" asp-for="SectionHeadApproved" />
+                                        }
+                                        else
+                                        {
+                                            <button type="button" id="btnSectionHeadApprove" class="btn btn-sm fw-bold w-100 text-white rounded-2 py-2" style="background:#059669;">
+                                                <i class="bi bi-check-circle me-1"></i>Setujui sebagai Section Head
+                                            </button>
+                                            <input type="hidden" asp-for="SectionHeadApproved" id="sectionHeadApprovedHidden" />
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center">
+                                        @if (Model.SectionHeadApproved)
+                                        {
+                                            <div class="w-100 p-3 rounded-2 text-center border border-success bg-success bg-opacity-10">
+                                                <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                                                <div class="fw-bold small text-success">Sudah Disetujui</div>
+                                                @if (Model.SectionHeadApprovedAt.HasValue) { <div class="text-muted" style="font-size:0.7rem;">@Model.SectionHeadApprovedAt.Value.ToString("dd MMM yyyy HH:mm")</div> }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center p-3 rounded-2 bg-light border w-100">
+                                                <i class="bi bi-hourglass-split text-muted fs-4 d-block mb-1 opacity-50"></i>
+                                                <small class="text-muted">Menunggu Approval Section Head</small>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <!-- Footer Label -->
+                                <div class="mt-2 pt-2 border-top text-center">
+                                    <small class="fw-semibold text-success">Section Head</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- end row -->
+            </div><!-- end management-card -->
+
+            <!-- Submit Buttons Page 4 -->
+            <div class="d-flex justify-content-between gap-3 mt-4 mb-5">
+                <button type="button" class="btn btn-light rounded-pill px-4" onclick="goToPage(3)">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </button>
+                @if (User.IsInRole("Viewer"))
+                {
+                    <button type="submit" id="savePmBtn" class="btn btn-primary rounded-pill px-5 shadow">
+                        <i class="bi bi-send-check me-1"></i> Simpan Tanda Tangan
+                    </button>
+                }
+                else
+                {
+                    <button type="submit" id="savePmBtn" class="btn btn-success rounded-pill px-5 shadow">
+                        <i class="bi bi-check-circle me-1"></i> Simpan &amp; Selesaikan Form PM
+                    </button>
+                }
+            </div>
+        </div>
+
+        </fieldset>
+    </form>
+}
+
+@section Scripts {
+    <script>
+        // ===== DELETE PHOTO =====
+        function deletePhoto(photoId, wrapperId, containerId, listSelector) {
+            Swal.fire({
+                title: 'Hapus Foto?',
+                text: 'Foto ini akan dihapus permanen.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="bi bi-trash me-1"></i>Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('@Url.Action("DeletePmPhoto", "Maintenance")', { photoId: photoId })
+                        .done(function(r) {
+                            if (r.success) {
+                                const wrapper = document.getElementById(wrapperId);
+                                if (wrapper) wrapper.remove();
+                                // Hide container if no more photos
+                                const list = document.querySelector(listSelector);
+                                if (list && list.children.length === 0) {
+                                    const container = document.getElementById(containerId);
+                                    if (container) container.classList.add('d-none');
+                                }
+                                Swal.fire({ icon: 'success', title: 'Foto dihapus', timer: 1000, showConfirmButton: false });
+                            } else {
+                                Swal.fire('Gagal', r.message, 'error');
+                            }
+                        }).fail(function() { Swal.fire('Error', 'Gagal menghapus foto.', 'error'); });
+                }
+            });
+        }
+
+        // ===== WIZARD PAGE NAVIGATION =====
+        let currentPage = 1;
+
+        function goToPage(page) {
+            document.getElementById('page' + currentPage).classList.add('d-none');
+            document.getElementById('page' + page).classList.remove('d-none');
+            currentPage = page;
+            updateProgress(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (page === 4) {
+                setTimeout(function() {
+                    initSignaturePads();
+                    resizeSigPads();
+                }, 50);
+                setTimeout(resizeSigPads, 200);
+                setTimeout(resizeSigPads, 500);
+            }
+        }
+
+        function updateProgress(page) {
+            const circles = [1, 2, 3, 4];
+            circles.forEach(n => {
+                const circle = document.getElementById('stepCircle' + n);
+                const label = document.getElementById('stepLabel' + n);
+                if (n < page) {
+                    circle.style.background = '#10b981';
+                    circle.style.color = '#fff';
+                    circle.innerHTML = '<i class="bi bi-check-lg"></i>';
+                } else if (n === page) {
+                    circle.style.background = '#3b82f6';
+                    circle.style.color = '#fff';
+                    circle.textContent = n;
+                    label.className = 'fw-bold text-primary';
+                    label.style.fontSize = '0.72rem';
+                } else {
+                    circle.style.background = '#e2e8f0';
+                    circle.style.color = '#94a3b8';
+                    circle.textContent = n;
+                    label.className = 'text-muted';
+                    label.style.fontSize = '0.72rem';
+                }
+            });
+            // Progress line width: page 1=12.5%, page 2=37.5%, page 3=62.5%, page 4=87.5%
+            const widths = { 1: '12.5%', 2: '37.5%', 3: '62.5%', 4: '87.5%' };
+            const progressLine = document.getElementById('progressLine');
+            if (progressLine) progressLine.style.width = widths[page];
+        }
+
+        const isApproverOnlyRole = @(isApproverOnly ? "true" : "false");
+
+        // Page 1 validation before moving to Page 2
+        function handlePage1Next() {
+            if (isApproverOnlyRole) {
+                goToPage(2);
+                return true;
+            }
+
+            const sn = document.getElementById('snInput')?.value.trim();
+            const computerName = document.getElementById('computerNameInput')?.value.trim();
+            const namaUser = document.getElementById('namaUserInput')?.value.trim();
+            const nrp = document.getElementById('nrpInput')?.value.trim();
+            const site = document.getElementById('siteInput')?.value.trim();
+            const division = document.getElementById('divisionInput')?.value.trim();
+            const keluhan = document.getElementById('keluhanInput')?.value.trim();
+
+            if (!sn || !computerName || !namaUser || !nrp || !site || !division || !keluhan) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Form Belum Lengkap',
+                    text: 'Semua identitas dan keluhan user wajib diisi terlebih dahulu.'
+                });
+                return false;
+            }
+
+            // Check pre-PM photo (checks #evidencePhotosList, #prePmPhotosList, or .start-pm-photo)
+            const prePhotos = document.querySelectorAll('#evidencePhotosList img, #prePmPhotosList img, .start-pm-photo');
+            if (prePhotos.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Foto Pre-PM Wajib Upload',
+                    text: 'Harap ambil foto kondisi device (Pre-PM) sebelum melanjutkan ke tahap berikutnya.'
+                });
+                return false;
+            }
+
+            goToPage(2);
+            return true;
+        }
+
+        // Page 2 validation before moving to Page 3
+        function handlePage2Next() {
+            if (isApproverOnlyRole) {
+                goToPage(3);
+                return;
+            }
+            const timeInputVal = document.getElementById('startTimeInput')?.value.trim();
+            const recordStartBtn = document.getElementById('recordStartBtn');
+            const isBtnStarted = recordStartBtn && (recordStartBtn.disabled || recordStartBtn.classList.contains('btn-success'));
+            const isModelStarted = @(Model.PmStartedAt.HasValue ? "true" : "false");
+
+            if (!timeInputVal && !isBtnStarted && !isModelStarted) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Start Time Belum Dicatat',
+                    text: 'Harap tekan tombol "Mulai PM (Start Time)" untuk mencatat waktu mulai PM terlebih dahulu.'
+                });
+                return;
+            }
+            goToPage(3);
+        }
+
+        const isPmAlreadyDone = @((isApproverOnly || Model.PmCompletedAt.HasValue || Model.Status == "PmDone" || Model.Status == "Completed" || Model.Status == "Returned") ? "true" : "false");
+
+        // Page 3 — Akhiri PM / Next for Approver & Completed PMs
+        function handlePage3Next() {
+            if (isApproverOnlyRole || isPmAlreadyDone) {
+                goToPage(4);
+                return;
+            }
+            const remark = document.getElementById('remarkInput')?.value.trim();
+            if (!remark) {
+                Swal.fire({ icon: 'warning', title: 'Form Belum Lengkap', text: 'Remark wajib diisi terlebih dahulu.' });
+                return;
+            }
+            const endPhotos = document.querySelectorAll('#endPmPhotosList img');
+            if (endPhotos.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Dokumentasi Selesai PM Wajib', text: 'Harap ambil foto evidence Selesai PM sebelum mengakhiri PM.' });
+                return;
+            }
+            // Konfirmasi sebelum akhiri PM (mencatat end time)
+            Swal.fire({
+                icon: 'question',
+                title: 'Akhiri PM?',
+                html: 'Apakah PM sudah benar-benar selesai?<br><small class="text-muted">Waktu selesai akan dicatat secara otomatis saat ini juga.</small>',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: '<i class="bi bi-stop-circle-fill me-1"></i> Ya, Akhiri PM',
+                cancelButtonText: 'Belum'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Serialize form data so all inputs (Keluhan, Remark, PerformedBy, Accessories) are saved when ending PM
+                    const formData = $('#pmForm').serialize();
+                    $.post('@Url.Action("EndPm", "Maintenance")', formData)
+                        .done(function (r) {
+                            if (r && r.success) {
+                                Swal.fire({ icon: 'success', title: 'PM Selesai!', text: `End Time: ${r.endTime}`, timer: 1800, showConfirmButton: false });
+                            }
+                            goToPage(4);
+                        })
+                        .fail(function () {
+                            // Still proceed even if API call fails
+                            goToPage(4);
+                        });
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (isApproverOnlyRole) {
+                // Lock pages 1, 2, 3 visually and interactively using pointerEvents so controls are non-editable,
+                // while keeping inputs populated and enabled so HTML form values are preserved intact!
+                ['#page1', '#page2', '#page3'].forEach(pageSelector => {
+                    const pageEl = document.querySelector(pageSelector);
+                    if (pageEl) {
+                        pageEl.style.pointerEvents = 'none';
+                        pageEl.style.userSelect = 'none';
+                    }
+                });
+                // Ensure navigation buttons (Selanjutnya / Kembali) inside pages remain 100% clickable
+                document.querySelectorAll('.pm-page button').forEach(btn => {
+                    btn.style.pointerEvents = 'auto';
+                });
+                // Hide "Centang Semua" button for Approvers
+                const btnSelectAll = document.getElementById('btnSelectAllChk');
+                if (btnSelectAll) btnSelectAll.style.display = 'none';
+            }
+            // Target PM lookup script (if isNewTarget mode)
+            const lookupSnBtnTarget = document.getElementById('lookupSnBtnTarget');
+            if (lookupSnBtnTarget) {
+                lookupSnBtnTarget.addEventListener('click', function () {
+                    const sn = document.getElementById('snInputTarget').value.trim();
+                    if (!sn) { Swal.fire('Peringatan', 'Silakan masukkan Serial Number terlebih dahulu.', 'warning'); return; }
+
+                    $.get('@Url.Action("GetAssetBySN", "Maintenance")', { sn: sn }, function (data) {
+                        if (data) {
+                            $('#computerNameInputTarget').val(data.computerName || '');
+                            $('#namaUserInputTarget').val(data.assignedTo || '');
+                            $('#nrpInputTarget').val(data.nrp || '');
+                            $('#siteInputTarget').val(data.site || '');
+                            $('#divisionInputTarget').val(data.division || '');
+                            $('#brandInputTarget').val(data.brand || '');
+                            $('#modelInputTarget').val(data.model || '');
+                            Swal.fire({ icon: 'success', title: 'Autofill Berhasil', text: 'Data berhasil diambil dari Master Asset.', timer: 1500, showConfirmButton: false });
+                        }
+                    }).fail(function () {
+                        Swal.fire('Tidak Ditemukan', 'SN tidak ditemukan di Master Asset. Silakan isi manual.', 'info');
+                    });
+                });
+
+                // Enter key on SN input triggers autofill
+                document.getElementById('snInputTarget')?.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); lookupSnBtnTarget.click(); }
+                });
+            }
+
+            // ===== Accessory Toggles =====
+            document.querySelectorAll('.accessory-toggle').forEach(function (chk) {
+                chk.addEventListener('change', function () {
+                    const target = document.getElementById(this.dataset.target);
+                    if (target) {
+                        if (this.checked) {
+                            target.classList.remove('d-none');
+                        } else {
+                            target.classList.add('d-none');
+                        }
+                    }
+                });
+            });
+
+            // ===== Setup Signature Pads =====
+            let pad1 = null, padUser = null;
+            let padsInitialized = false;
+
+            function initPad(canvasId, inputId, clearBtnId) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return null;
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                
+                // Fallback to parent element or 200x130 if offsetWidth/offsetHeight is 0
+                const width = canvas.offsetWidth || (canvas.parentElement ? canvas.parentElement.offsetWidth : 0) || 200;
+                const height = canvas.offsetHeight || (canvas.parentElement ? canvas.parentElement.offsetHeight : 0) || 130;
+                
+                canvas.width = width * ratio;
+                canvas.height = height * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                
+                const pad = new SignaturePad(canvas, { backgroundColor: 'rgba(255, 255, 255, 0)', penColor: 'rgb(15, 23, 42)' });
+                const inputElem = document.getElementById(inputId);
+                const existingData = inputElem?.value;
+                if (existingData && existingData.startsWith('data:image')) { pad.fromDataURL(existingData); }
+                
+                const autoSaveSignature = function() {
+                    if (pad.isEmpty()) return;
+                    const sigData = pad.toDataURL();
+                    if (inputElem) inputElem.value = sigData;
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const postData = {
+                        id: '@Model.Id',
+                        __RequestVerificationToken: token
+                    };
+                    if (inputId === 'execBySigData') postData.execSig = sigData;
+                    if (inputId === 'userHandoverSigData') postData.userSig = sigData;
+
+                    $.ajax({
+                        url: '@Url.Action("SaveScheduledSignature", "Maintenance")',
+                        type: 'POST',
+                        data: postData
+                    });
+                };
+                
+                pad.onEnd = autoSaveSignature;
+
+                document.getElementById(clearBtnId)?.addEventListener('click', function () {
+                    pad.clear();
+                    if (inputElem) inputElem.value = '';
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    const postData = {
+                        id: '@Model.Id',
+                        __RequestVerificationToken: token
+                    };
+                    if (inputId === 'execBySigData') postData.execSig = '';
+                    if (inputId === 'userHandoverSigData') postData.userSig = '';
+
+                    $.ajax({
+                        url: '@Url.Action("SaveScheduledSignature", "Maintenance")',
+                        type: 'POST',
+                        data: postData
+                    });
+                });
+                return pad;
+            }
+
+            function initSignaturePads() {
+                const canvas1 = document.getElementById('canvasSig1');
+                const canvasUser = document.getElementById('canvasSigUser');
+                const sigSection = document.getElementById('userHandoverSigSection');
+
+                // Initialize Technician Pad if not already initialized
+                if (!pad1 && canvas1) {
+                    pad1 = initPad('canvasSig1', 'execBySigData', 'clearSig1');
+                }
+
+                // Initialize User Pad if not already initialized
+                if (!padUser && canvasUser && sigSection && !sigSection.classList.contains('d-none')) {
+                    padUser = initPad('canvasSigUser', 'userHandoverSigData', 'clearSigUser');
+                }
+
+                padsInitialized = true;
+            }
+            
+            function resizeSigPads() {
+                if (!pad1 && !padUser) return;
+                
+                const padsToResize = [
+                    { pad: pad1, canvasId: 'canvasSig1', inputId: 'execBySigData' },
+                    { pad: padUser, canvasId: 'canvasSigUser', inputId: 'userHandoverSigData' }
+                ];
+
+                padsToResize.forEach(item => {
+                    const canvas = document.getElementById(item.canvasId);
+                    if (!canvas || !item.pad) return;
+
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    const targetWidth = (canvas.offsetWidth || (canvas.parentElement ? canvas.parentElement.offsetWidth : 0) || 200) * ratio;
+                    const targetHeight = (canvas.offsetHeight || (canvas.parentElement ? canvas.parentElement.offsetHeight : 0) || 130) * ratio;
+
+                    // Only resize if actual offset width/height changed
+                    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                        let currentData = null;
+                        if (!item.pad.isEmpty()) {
+                            currentData = item.pad.toDataURL();
+                        }
+
+                        canvas.width = targetWidth;
+                        canvas.height = targetHeight;
+                        canvas.getContext("2d").scale(ratio, ratio);
+                        item.pad.clear();
+
+                        if (currentData) {
+                            item.pad.fromDataURL(currentData);
+                        }
+                    }
+                });
+            }
+
+            // Handle window resizing
+            window.addEventListener('resize', function() {
+                if (currentPage === 4) {
+                    resizeSigPads();
+                }
+            });
+
+            // Save signatures before submit
+            document.getElementById('pmForm')?.addEventListener('submit', function () {
+                try {
+                    if (pad1 && !pad1.isEmpty()) document.getElementById('execBySigData').value = pad1.toDataURL();
+                    if (padUser && !padUser.isEmpty()) document.getElementById('userHandoverSigData').value = padUser.toDataURL();
+                } catch (e) { console.warn('Signature save error:', e); }
+            });
+
+            // ===== Toggle User Tidak Ada =====
+            const chkUserNotPresent = document.getElementById('chkUserNotPresent');
+            if (chkUserNotPresent) {
+                chkUserNotPresent.addEventListener('change', function () {
+                    const sigSection = document.getElementById('userHandoverSigSection');
+                    const photoSection = document.getElementById('userNotPresentPhotoSection');
+                    if (this.checked) {
+                        sigSection?.classList.add('d-none');
+                        photoSection?.classList.remove('d-none');
+                    } else {
+                        sigSection?.classList.remove('d-none');
+                        photoSection?.classList.add('d-none');
+                        setTimeout(function() {
+                            initSignaturePads();
+                            resizeSigPads();
+                        }, 50);
+                    }
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    $.ajax({
+                        url: '@Url.Action("SaveScheduledSignature", "Maintenance")',
+                        type: 'POST',
+                        data: {
+                            id: '@Model.Id',
+                            userNotPresent: this.checked,
+                            __RequestVerificationToken: token
+                        }
+                    });
+                });
+            }
+
+            // ===== PIC TEAM Approve Button =====
+            const btnLeaderApprove = document.getElementById('btnLeaderApprove');
+            if (btnLeaderApprove) {
+                btnLeaderApprove.addEventListener('click', function () {
+                    const approvedBy = document.querySelector('[name="LeaderApprovedBy"]')?.value?.trim();
+                    if (!approvedBy) {
+                        Swal.fire('Peringatan', 'Nama PIC TEAM tidak ditemukan. Pastikan Anda login sebagai PIC TEAM.', 'warning');
+                        return;
+                    }
+                    const hidden = document.getElementById('leaderApprovedHidden');
+                    if (hidden) hidden.value = 'true';
+                    btnLeaderApprove.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Disetujui ✓';
+                    btnLeaderApprove.style.background = '#16a34a';
+                    btnLeaderApprove.disabled = true;
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    $.ajax({
+                        url: '@Url.Action("SaveScheduledSignature", "Maintenance")',
+                        type: 'POST',
+                        data: {
+                            id: '@Model.Id',
+                            leaderApproved: true,
+                            __RequestVerificationToken: token
+                        }
+                    });
+                });
+            }
+
+            // ===== Section Head Approve Button =====
+            const btnSectionHeadApprove = document.getElementById('btnSectionHeadApprove');
+            if (btnSectionHeadApprove) {
+                btnSectionHeadApprove.addEventListener('click', function () {
+                    const approvedBy = document.querySelector('[name="SectionHeadApprovedBy"]')?.value?.trim();
+                    if (!approvedBy) {
+                        Swal.fire('Peringatan', 'Nama Section Head tidak ditemukan. Pastikan Anda login sebagai Section Head.', 'warning');
+                        return;
+                    }
+                    const hidden = document.getElementById('sectionHeadApprovedHidden');
+                    if (hidden) hidden.value = 'true';
+                    btnSectionHeadApprove.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Disetujui ✓';
+                    btnSectionHeadApprove.style.background = '#16a34a';
+                    btnSectionHeadApprove.disabled = true;
+
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                    $.ajax({
+                        url: '@Url.Action("SaveScheduledSignature", "Maintenance")',
+                        type: 'POST',
+                        data: {
+                            id: '@Model.Id',
+                            sectionHeadApproved: true,
+                            __RequestVerificationToken: token
+                        }
+                    });
+                });
+            }
+
+            // ===== User Absent Photo Upload =====
+            const userNotPresentCamera = document.getElementById('userNotPresentCamera');
+            if (userNotPresentCamera) {
+                userNotPresentCamera.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const maintId = '@Model.Id';
+                        const formData = new FormData();
+                        formData.append('maintId', maintId);
+                        formData.append('photoType', 'UserAbsent');
+                        formData.append('photo', file);
+                        $.ajax({
+                            url: '@Url.Action("UploadPmPhoto", "Maintenance")', type: 'POST',
+                            data: formData, processData: false, contentType: false
+                        }).done(function (r) {
+                            if (r.success) {
+                                Swal.fire({ icon: 'success', title: 'Foto Bukti Uploaded', timer: 1500, showConfirmButton: false });
+                                const list = document.getElementById('userAbsentPhotoList');
+                                if (list) {
+                                    const wrapperId = 'photoItem-' + r.photoId;
+                                    const div = document.createElement('div');
+                                    div.className = 'position-relative';
+                                    div.id = wrapperId;
+                                    div.innerHTML = `<img src="${r.filePath}" class="img-thumbnail" style="height:70px;width:80px;object-fit:cover;border-radius:6px;cursor:pointer;" onclick="window.open('${r.filePath}','_blank')" /><button type="button" onclick="deletePhoto('${r.photoId}','${wrapperId}','userAbsentPhotoContainer','#userAbsentPhotoList')" class="btn btn-danger btn-sm position-absolute top-0 end-0 p-0" style="width:18px;height:18px;border-radius:50%;font-size:0.6rem;margin:-4px;"><i class="bi bi-x"></i></button>`;
+                                    list.appendChild(div);
+                                    document.getElementById('userAbsentPhotoContainer')?.classList.remove('d-none');
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            const btnCameraUserAbsent = document.getElementById('btnCameraUserAbsent');
+            if (btnCameraUserAbsent) {
+                btnCameraUserAbsent.addEventListener('click', () => document.getElementById('userNotPresentCamera').click());
+            }
+
+            // ===== Camera state =====
+            let currentStream = null;
+
+            function stopCamera() {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                    currentStream = null;
+                }
+            }
+
+            function uploadCapturedPhoto(blob, photoType, listId, containerId, badgeLabel) {
+                const maintId = '@Model.Id';
+                const formData = new FormData();
+                formData.append('maintId', maintId);
+                formData.append('photoType', photoType);
+                formData.append('photo', blob, 'capture.jpg');
+                $.ajax({
+                    url: '@Url.Action("UploadPmPhoto", "Maintenance")',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                }).done(function (r) {
+                    if (r.success) {
+                        const list = document.getElementById(listId);
+                        if (list) {
+                            const wrapperId = 'photoItem-' + r.photoId;
+                            const div = document.createElement('div');
+                            div.className = 'photo-thumbnail-modern';
+                            div.id = wrapperId;
+                            div.innerHTML = `<img src="${r.filePath}" alt="${photoType}" onclick="window.open('${r.filePath}','_blank')" style="cursor: pointer;" />`
+                                + `<span class="badge bg-success position-absolute bottom-0 start-50 translate-middle-x mb-2" style="font-size:0.65rem; padding: 3px 8px; border-radius: 10px;">${badgeLabel}</span>`
+                                + `<button type="button" onclick="deletePhoto('${r.photoId}','${wrapperId}','${containerId}','#${listId}')" class="delete-photo-btn" title="Hapus Foto"><i class="bi bi-x"></i></button>`;
+                            list.appendChild(div);
+                            document.getElementById(containerId)?.classList.remove('d-none');
+                        }
+                        Swal.fire({ icon: 'success', title: 'Foto Tersimpan!', timer: 1500, showConfirmButton: false });
+                    } else {
+                        Swal.fire('Gagal', r.message || 'Upload foto gagal.', 'error');
+                    }
+                }).fail(function () {
+                    Swal.fire('Error', 'Gagal mengunggah foto ke server.', 'error');
+                });
+            }
+
+            function uploadFileInput(inputId, photoType, listId, containerId, badgeLabel) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                input.onchange = function (e) {
+                    const file = e.target.files[0];
+                    if (file) uploadCapturedPhoto(file, photoType, listId, containerId, badgeLabel);
+                    input.value = '';
+                };
+                input.click();
+            }
+
+            // Try getUserMedia, fall back to file input picker
+            function openCameraOrFallback(videoEl, canvasEl, cameraArea, openBtn, fallbackInputId, photoType, listId, containerId, badgeLabel) {
+                const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+                if (isSecure && hasGetUserMedia) {
+                    const handleSuccess = function (stream) {
+                        currentStream = stream;
+                        videoEl.srcObject = stream;
+                        cameraArea.classList.remove('d-none');
+                        if (openBtn) openBtn.classList.add('d-none');
+                    };
+
+                    const handleFail = function (err) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Kamera Tidak Tersedia',
+                            text: 'Tidak dapat mengakses kamera (' + (err.message || 'Perangkat kamera tidak ditemukan') + '). Beralih ke mode pilih file/foto manual.',
+                            timer: 3500,
+                            showConfirmButton: false
+                        });
+                        setTimeout(() => uploadFileInput(fallbackInputId, photoType, listId, containerId, badgeLabel), 1500);
+                    };
+
+                    // Try environment camera first, then fall back to default camera
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+                        .then(handleSuccess)
+                        .catch(function () {
+                            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                                .then(handleSuccess)
+                                .catch(handleFail);
+                        });
+                } else {
+                    // HTTP atau browser lama — langsung pakai file picker
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Kamera Diblokir Browser',
+                        text: 'Akses kamera langsung membutuhkan koneksi HTTPS (Secure) atau localhost. Beralih ke mode pilih file/foto manual.',
+                        timer: 4000,
+                        showConfirmButton: false
+                    });
+                    setTimeout(() => uploadFileInput(fallbackInputId, photoType, listId, containerId, badgeLabel), 2000);
+                }
+            }
+
+            function captureFromVideo(videoEl, canvasEl, callback) {
+                canvasEl.width = videoEl.videoWidth || 640;
+                canvasEl.height = videoEl.videoHeight || 480;
+                canvasEl.getContext('2d').drawImage(videoEl, 0, 0);
+                canvasEl.toBlob(function (blob) { if (blob) callback(blob); }, 'image/jpeg', 0.88);
+                stopCamera();
+            }
+
+            // ===== Pre-PM Camera (Tahap 1) =====
+            const btnCameraStartPm2 = document.getElementById('btnCameraStartPm');
+            if (btnCameraStartPm2) {
+                btnCameraStartPm2.addEventListener('click', () =>
+                    openCameraOrFallback(
+                        document.getElementById('prePmVideo'),
+                        document.getElementById('prePmCanvas'),
+                        document.getElementById('prePmCameraArea'),
+                        btnCameraStartPm2,
+                        'startPmCameraInput',
+                        'StartPM', 'evidencePhotosList', 'startPmPhotoPreviewContainer', 'Pre-PM'
+                    )
+                );
+            }
+            document.getElementById('btnCapturePrepPm')?.addEventListener('click', function () {
+                captureFromVideo(
+                    document.getElementById('prePmVideo'),
+                    document.getElementById('prePmCanvas'),
+                    function (blob) {
+                        document.getElementById('prePmCameraArea')?.classList.add('d-none');
+                        btnCameraStartPm2?.classList.remove('d-none');
+                        uploadCapturedPhoto(blob, 'StartPM', 'evidencePhotosList', 'startPmPhotoPreviewContainer', 'Pre-PM');
+                    }
+                );
+            });
+            document.getElementById('btnCancelPrePmCam')?.addEventListener('click', function () {
+                stopCamera();
+                document.getElementById('prePmCameraArea')?.classList.add('d-none');
+                btnCameraStartPm2?.classList.remove('d-none');
+            });
+
+            // ===== End-PM Camera (Tahap 3) =====
+            const btnCameraEndPm2 = document.getElementById('btnCameraEndPm');
+            if (btnCameraEndPm2) {
+                btnCameraEndPm2.addEventListener('click', () =>
+                    openCameraOrFallback(
+                        document.getElementById('endPmVideo'),
+                        document.getElementById('endPmCanvas'),
+                        document.getElementById('endPmCameraArea'),
+                        btnCameraEndPm2,
+                        'endPmCameraInput',
+                        'EndPM', 'endPmPhotosList', 'endPmPhotoPreviewContainer', 'Selesai PM'
+                    )
+                );
+            }
+            document.getElementById('btnCaptureEndPm')?.addEventListener('click', function () {
+                captureFromVideo(
+                    document.getElementById('endPmVideo'),
+                    document.getElementById('endPmCanvas'),
+                    function (blob) {
+                        document.getElementById('endPmCameraArea')?.classList.add('d-none');
+                        btnCameraEndPm2?.classList.remove('d-none');
+                        uploadCapturedPhoto(blob, 'EndPM', 'endPmPhotosList', 'endPmPhotoPreviewContainer', 'Selesai PM');
+                    }
+                );
+            });
+            document.getElementById('btnCancelEndPmCam')?.addEventListener('click', function () {
+                stopCamera();
+                document.getElementById('endPmCameraArea')?.classList.add('d-none');
+                btnCameraEndPm2?.classList.remove('d-none');
+            });
+
+            // ===== Sync Keluhan to Tahap 3 Summary =====
+            const keluhanInput = document.getElementById('keluhanInput');
+            if (keluhanInput) {
+                keluhanInput.addEventListener('input', function () {
+                    const val = this.value.trim();
+                    const box = document.getElementById('keluhanSummaryBox');
+                    const txt = document.getElementById('keluhanSummaryText');
+                    const remarkColumn = document.getElementById('remarkColumn');
+                    if (val) {
+                        if (txt) txt.textContent = val;
+                        box?.classList.remove('d-none');
+                        if (remarkColumn) {
+                            remarkColumn.className = 'col-md-6';
+                        }
+                    } else {
+                        box?.classList.add('d-none');
+                        if (remarkColumn) {
+                            remarkColumn.className = 'col-12';
+                        }
+                    }
+                });
+            }
+
+            // ===== Record Start Time Button =====
+            const recordStartBtn = document.getElementById('recordStartBtn');
+            if (recordStartBtn) {
+                recordStartBtn.addEventListener('click', function () {
+                    const performedByInput = document.getElementById('performedByInput');
+                    const performedBy = performedByInput ? performedByInput.value.trim() : '@(User.Identity?.Name ?? "Teknisi")';
+                    
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Mulai PM Sekarang?',
+                        text: 'Waktu mulai PM akan dicatat otomatis saat ini juga.',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: '<i class="bi bi-play-fill me-1"></i> Ya, Mulai PM',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const maintId = '@Model.Id';
+                            $.post('@Url.Action("StartPm", "Maintenance")', { id: maintId, performedBy: performedBy })
+                                .done(function (r) {
+                                    if (r.success) {
+                                        const cleanTime = (r.startTime || '').replace('.', ':');
+                                        const timeInput = document.getElementById('startTimeInput');
+                                        if (timeInput) timeInput.value = cleanTime;
+                                        const timeDisplay = document.getElementById('startTimeDisplay');
+                                        if (timeDisplay) timeDisplay.classList.remove('d-none');
+                                        recordStartBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> PM Dimulai: ' + cleanTime;
+                                        recordStartBtn.classList.remove('btn-danger');
+                                        recordStartBtn.classList.add('btn-success');
+                                        recordStartBtn.disabled = true;
+                                        Swal.fire({ icon: 'success', title: 'Waktu Mulai Dicatat!', text: 'Start Time: ' + cleanTime, timer: 1800, showConfirmButton: false });
+                                    } else {
+                                        Swal.fire('Gagal', r.message || 'Gagal mencatat waktu mulai.', 'error');
+                                    }
+                                })
+                                .fail(function () {
+                                    Swal.fire('Error', 'Gagal memulai PM di server.', 'error');
+                                });
+                        }
+                    });
+                });
+            }
+
+            // ===== Lookup SN Autofill =====
+            const lookupSnBtn = document.getElementById('lookupSnBtn');
+            if (lookupSnBtn) {
+                lookupSnBtn.addEventListener('click', function () {
+                    const sn = document.getElementById('snInput').value.trim();
+                    if (!sn) { Swal.fire('Peringatan', 'Silakan masukkan SN terlebih dahulu.', 'warning'); return; }
+
+                    $.get('@Url.Action("GetAssetBySN", "Maintenance")', { sn: sn }, function (data) {
+                        if (data) {
+                            $('#computerNameInput').val(data.computerName || '');
+                            $('#namaUserInput').val(data.assignedTo || '');
+                            $('#nrpInput').val(data.nrp || '');
+                            $('#siteInput').val(data.site || '');
+                            $('#divisionInput').val(data.division || '');
+                            $('#brandInput').val(data.brand || '');
+                            $('#modelInput').val(data.model || '');
+                            $('#processorInput').val(data.processor || '');
+                            $('#ramInput').val(data.ram || '');
+                            $('#storageInput').val(data.storage || '');
+                            $('#winVerInput').val(data.windowsVersion || '');
+                            if (data.deviceType) $('#deviceTypeSelect').val(data.deviceType);
+                            Swal.fire({ icon: 'success', title: 'Autofill Berhasil', text: 'Data diambil dari Master Asset.', timer: 1500, showConfirmButton: false });
+                        }
+                    }).fail(function () {
+                        Swal.fire('Tidak Ditemukan', 'SN tidak ditemukan di Master Asset. Silakan isi manual.', 'info');
+                    });
+                });
+            }
+            window.updateChkState = function(chkId, itemId, badgeId) {
+                const chk = document.getElementById(chkId);
+                const item = document.getElementById(itemId);
+                const badge = document.getElementById(badgeId);
+                if (!chk || !item || !badge) return;
+
+                if (chk.checked) {
+                    item.classList.add('active');
+                    badge.className = 'pm-status-badge badge-ok';
+                    badge.innerHTML = '<i class="bi bi-check-lg me-1"></i>OK';
+                } else {
+                    item.classList.remove('active');
+                    badge.className = 'pm-status-badge badge-pending';
+                    badge.textContent = 'BELUM';
+                }
+                window.recountChecklistProgress();
+            };
+
+            window.toggleChk = function(chkId, itemId, badgeId) {
+                const chk = document.getElementById(chkId);
+                if (chk) {
+                    chk.checked = !chk.checked;
+                    window.updateChkState(chkId, itemId, badgeId);
+                }
+            };
+
+            window.recountChecklistProgress = function() {
+                const chkList = ['chkFisik', 'chkUefiPass', 'chkBootStorage', 'chkBootDisable', 'chkDisableAdmin', 'chkDiskCleanup', 'chkSpaceSsd'];
+                let count = 0;
+                chkList.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.checked) count++;
+                });
+                const countEl = document.getElementById('chkCount');
+                if (countEl) countEl.textContent = count;
+            };
+
+            const chkPairs = [
+                ['chkFisik', 'itemFisik', 'badgeFisik'],
+                ['chkUefiPass', 'itemUefiPass', 'badgeUefiPass'],
+                ['chkBootStorage', 'itemBootStorage', 'badgeBootStorage'],
+                ['chkBootDisable', 'itemBootDisable', 'badgeBootDisable'],
+                ['chkDisableAdmin', 'itemDisableAdmin', 'badgeDisableAdmin'],
+                ['chkDiskCleanup', 'itemDiskCleanup', 'badgeDiskCleanup'],
+                ['chkSpaceSsd', 'itemSpaceSsd', 'badgeSpaceSsd']
+            ];
+            chkPairs.forEach(pair => window.updateChkState(pair[0], pair[1], pair[2]));
+
+            document.getElementById('btnSelectAllChk')?.addEventListener('click', function() {
+                const allChecked = chkPairs.every(pair => {
+                    const el = document.getElementById(pair[0]);
+                    return el && el.checked;
+                });
+                chkPairs.forEach(pair => {
+                    const el = document.getElementById(pair[0]);
+                    if (el) {
+                        el.checked = !allChecked;
+                        window.updateChkState(pair[0], pair[1], pair[2]);
+                    }
+                });
+            });
+        });
+    </script>
+}

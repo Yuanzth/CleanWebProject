@@ -1,0 +1,870 @@
+@{
+    ViewData["Title"] = "ITAssetTrack — Laporan Telemetri Komputer";
+}
+
+<div class="pulse-reports-container">
+    <!-- Header Title -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("Dashboard", "Pulse")" class="btn btn-sm btn-light border rounded-pill px-2 py-1 text-muted">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+                <h1 class="h4 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-laptop-fill text-primary"></i> Laporan Telemetri Komputer (1 Data Per Hostname)
+                </h1>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Daftar snapshot get terakhir per komputer. Klik aksi detail untuk menelusuri riwayat periode normal vs bermasalah.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" onclick="reloadReportsTable()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Tabel
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Filter & Search Toolbar (Auto-Wrap Mobile) ── -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+        <div class="row g-2 align-items-center">
+            <!-- Filter Status Kondisi -->
+            <div class="col-12 col-sm-6 col-md-4">
+                <label class="form-label text-muted small fw-semibold mb-1" style="font-size: 11px;">Status Kondisi Snapshot</label>
+                <select id="filterStatus" class="form-select form-select-sm rounded-3" onchange="reloadReportsTable()">
+                    <option value="All">Semua Kondisi (Normal & Bermasalah)</option>
+                    <option value="NormalOnly">Hanya Kondisi Normal</option>
+                    <option value="ProblemOnly">Hanya Bermasalah (Mismatch / High Load / Baterai Kritis)</option>
+                    <option value="MismatchOnly">Hanya User Mismatch</option>
+                </select>
+            </div>
+
+            <!-- Search Quick Info -->
+            <div class="col-12 col-sm-6 col-md-8 text-md-end text-muted small mt-2 mt-md-0 pt-md-3">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill me-1">
+                    <i class="bi bi-pc-display me-1"></i> @ViewBag.UniqueHostnamesCount Komputer Terpantau
+                </span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">
+                    <i class="bi bi-layers me-1"></i> @ViewBag.TotalSnapshotsCount Total Riwayat Snapshot
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DataTables Server-Side AJAX Table (1 Baris Per Hostname - Latest Snapshot) ── -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+        <div class="table-responsive">
+            <table id="reportsTable" class="table table-hover align-middle w-100" style="font-size: 12px;">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th>Komputer / Hostname</th>
+                        <th>Pengguna Aktif</th>
+                        <th>OS Version (Terakhir)</th>
+                        <th>Kondisi Status</th>
+                        <th>BMS Baterai</th>
+                        <th>Traffic 24 Jam</th>
+                        <th>Hardware (Avg)</th>
+                        <th>Get Terakhir</th>
+                        <th class="text-center" style="width: 90px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL DETAIL TELEMETRI & RIWAYAT PERIODE SNAPSHOT -->
+<!-- ======================================================== -->
+<div class="modal fade" id="reportDetailModal" tabindex="-1" aria-labelledby="reportDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <!-- Modal Header (Prioritize Hostname) -->
+            <div class="modal-header bg-dark text-white border-0 px-4 py-3 rounded-top-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-laptop-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="modal-title fw-bold mb-0 text-white" id="modalHostname">Hostname</h5>
+                            <span class="badge bg-primary" id="modalReportType">Snapshot Terakhir</span>
+                            <span class="badge bg-danger d-none" id="modalMismatchBadge"><i class="bi bi-exclamation-triangle-fill me-1"></i>User Mismatch</span>
+                        </div>
+                        <div class="text-white-50 small mt-1">
+                            Pengguna: <span id="modalUser" class="text-white fw-medium">-</span> &bull; 
+                            SN: <span id="modalSN" class="text-white-50 fw-normal">-</span> &bull; 
+                            OS: <span id="modalOs" class="text-white fw-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- SNAPSHOT / PERIODE SELECTOR STRIP (Dua Tingkat: 1. Hari, 2. Periode di Hari Itu / Semua 1 Hari) -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="row g-2 align-items-center">
+                    <!-- KOLOM 1: PILIH HARI / TANGGAL -->
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-dark small fw-bold mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-calendar3 text-primary"></i> 1. Pilih Hari / Tanggal:
+                        </label>
+                        <select id="modalDaySelector" class="form-select form-select-sm rounded-3 fw-semibold text-dark shadow-sm" onchange="onDaySelected(this.value)">
+                            <option value="">Memuat daftar hari...</option>
+                        </select>
+                    </div>
+
+                    <!-- KOLOM 2: PILIH PERIODE (SEMUA SEKALIGUS ATAU 3 PERIODE PAGI/SIANG/SORE) -->
+                    <div class="col-12 col-md-8">
+                        <label class="form-label text-dark small fw-bold mb-1 d-flex align-items-center gap-1">
+                            <i class="bi bi-clock-history text-primary"></i> 2. Periode Hari Ini:
+                        </label>
+                        <div id="periodPillsContainer" class="d-flex align-items-center gap-1 flex-wrap">
+                            <!-- Populated dynamically: [Semua (1 Hari Penuh)] [Pagi (07:59)] [Siang (12:00)] [Sore (16:24)] -->
+                        </div>
+                    </div>
+
+                    <!-- BARIS 3: STATUS BANNER PERIODE TERPILIH -->
+                    <div class="col-12 mt-1">
+                        <div id="snapshotStatusBanner" class="p-2 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2 border bg-white">
+                            <span class="text-muted"><i class="bi bi-info-circle me-1"></i> Memuat status...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Nav Tabs (Horizontal Touch-Scrollable) -->
+            <div class="bg-white border-bottom px-3 pt-2">
+                <ul class="nav nav-tabs border-0 flex-nowrap overflow-auto" id="reportDetailTabs" role="tablist" style="-webkit-overflow-scrolling: touch;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-overview-tab" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">
+                            <i class="bi bi-info-circle me-1"></i> Overview & Jaringan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-software-tab" data-bs-toggle="tab" data-bs-target="#tab-software" type="button" role="tab">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Software Terinstall (<span id="tabSoftwareCount">0</span>)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-timeline-tab" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab">
+                            <i class="bi bi-clock-history me-1"></i> Timeline Aplikasi & Idle
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-battery-tab" data-bs-toggle="tab" data-bs-target="#tab-battery" type="button" role="tab">
+                            <i class="bi bi-battery-charging me-1"></i> Riwayat Baterai
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-sessions-tab" data-bs-toggle="tab" data-bs-target="#tab-sessions" type="button" role="tab">
+                            <i class="bi bi-person-lines-fill me-1"></i> Sesi Login User
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold small text-nowrap py-2 px-3 border-0 rounded-top-3" id="tab-topapps-tab" data-bs-toggle="tab" data-bs-target="#tab-topapps" type="button" role="tab">
+                            <i class="bi bi-bar-chart-fill me-1"></i> Top Apps
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Modal Body (Tab Content) -->
+            <div class="modal-body p-3 p-md-4">
+                <div class="tab-content" id="reportDetailTabsContent">
+                    <!-- TAB 1: OVERVIEW & JARINGAN -->
+                    <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+                        <div class="row g-3">
+                            <!-- Device Specifications & Master Asset Info -->
+                            <div class="col-12 col-md-6">
+                                <div class="card border rounded-3 p-3 h-100 bg-light">
+                                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-laptop me-1 text-primary"></i> Identitas & Penugasan Komputer</h6>
+                                    <table class="table table-sm table-borderless small mb-0">
+                                        <tr>
+                                            <td class="text-muted" style="width: 140px;">Nama Komputer:</td>
+                                            <td class="fw-bold text-primary" id="detailHostname">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Serial Number:</td>
+                                            <td class="fw-bold text-dark font-monospace" id="detailSN">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Sistem Operasi:</td>
+                                            <td class="fw-bold text-dark" id="detailOsVersion">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">IP Address:</td>
+                                            <td class="fw-bold text-dark" id="detailLocalIp">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">WiFi SSID:</td>
+                                            <td class="fw-bold text-dark" id="detailSsid">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Koordinat GPS:</td>
+                                            <td class="fw-bold text-dark" id="detailCoords">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">OS Uptime:</td>
+                                            <td class="fw-bold text-dark" id="detailUptime">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Penugasan Master:</td>
+                                            <td class="fw-semibold text-dark" id="detailAssignedInfo">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Site:</td>
+                                            <td class="fw-semibold text-dark" id="detailSite">-</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Network Data Usage (24 Jam) -->
+                            <div class="col-12 col-md-6">
+                                <div class="card border rounded-3 p-3 h-100 bg-light">
+                                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-reception-4 me-1 text-success"></i> Penggunaan Data Jaringan (24 Jam)</h6>
+                                    <div class="p-3 bg-white rounded-3 border mb-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="text-muted small">Total Kuota Terpakai:</span>
+                                            <span class="h5 fw-bold text-primary mb-0" id="detailNetTotal">0 MB</span>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
+                                            <div id="detailNetDownBar" class="progress-bar bg-success" role="progressbar" style="width: 50%;" title="Download"></div>
+                                            <div id="detailNetUpBar" class="progress-bar bg-primary" role="progressbar" style="width: 50%;" title="Upload"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small">
+                                            <span class="text-success"><i class="bi bi-arrow-down-short"></i> Download: <strong id="detailNetDownload">0 MB</strong></span>
+                                            <span class="text-primary"><i class="bi bi-arrow-up-short"></i> Upload: <strong id="detailNetUpload">0 MB</strong></span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 11px;">
+                                        <i class="bi bi-info-circle me-1"></i> Data diakumulasi dari adapter jaringan Windows aktif.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hardware Utilization Averages -->
+                            <div class="col-12">
+                                <div class="card border rounded-3 p-3 bg-light">
+                                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-cpu me-1 text-info"></i> Utilisasi Hardware Periode Laporan</h6>
+                                    <div class="row g-2 text-center">
+                                        <div class="col-4">
+                                            <div class="p-2 bg-white rounded-3 border">
+                                                <div class="text-muted small" style="font-size: 11px;">CPU Load (Avg)</div>
+                                                <div class="h4 fw-bold text-primary mb-0" id="detailCpuAvg">0%</div>
+                                                <div class="text-muted small" style="font-size: 10px;" id="detailCpuRange">Min: 0% | Max: 0%</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 bg-white rounded-3 border">
+                                                <div class="text-muted small" style="font-size: 11px;">RAM Memory (Avg)</div>
+                                                <div class="h4 fw-bold text-info mb-0" id="detailRamAvg">0%</div>
+                                                <div class="text-muted small" style="font-size: 10px;" id="detailRamRange">Min: 0% | Max: 0%</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="p-2 bg-white rounded-3 border">
+                                                <div class="text-muted small" style="font-size: 11px;">GPU / VGA (Avg)</div>
+                                                <div class="h4 fw-bold text-success mb-0" id="detailGpuAvg">0%</div>
+                                                <div class="text-muted small" style="font-size: 10px;" id="detailGpuRange">Min: 0% | Max: 0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: INVENTARIS SOFTWARE (DEDUPLICATED / TANPA DUPLIKAT) -->
+                    <div class="tab-pane fade" id="tab-software" role="tabpanel">
+                        <div class="card border rounded-3 p-3 bg-light">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-grid-3x3-gap-fill me-1 text-primary"></i> Software Terpasang di Komputer Ini</h6>
+                                    <span class="text-muted small" style="font-size: 11px;">Daftar aplikasi unik terdeteksi pada komputer ini (Deduplicated)</span>
+                                </div>
+                                <div style="width: 220px;">
+                                    <input type="text" id="searchInstalledSw" class="form-control form-control-sm rounded-pill" placeholder="Cari software..." onkeyup="filterInstalledSoftwareTable()" />
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 380px;">
+                                <table class="table table-hover table-sm bg-white rounded-3 align-middle mb-0" id="installedSwTable" style="font-size: 12px;">
+                                    <thead class="table-light text-muted sticky-top">
+                                        <tr>
+                                            <th>Nama Software / Aplikasi</th>
+                                            <th>Versi</th>
+                                            <th>Publisher / Vendor</th>
+                                            <th>Tanggal Install</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="installedSwTableBody">
+                                        <tr><td colspan="4" class="text-center py-3 text-muted">Memuat data software...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: TIMELINE AKTIVITAS APLIKASI & IDLE -->
+                    <div class="tab-pane fade" id="tab-timeline" role="tabpanel">
+                        <div class="card border rounded-3 p-3 bg-light">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history me-1 text-primary"></i> Runtun Waktu Penggunaan Aplikasi & Idle Periode Ini</h6>
+                                <span class="text-muted small" style="font-size: 11px;">Detail start time, end time, durasi, dan status AFK</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 380px;">
+                                <table class="table table-hover table-sm bg-white rounded-3 align-middle mb-0" style="font-size: 12px;">
+                                    <thead class="table-light text-muted sticky-top">
+                                        <tr>
+                                            <th>Rentang Waktu (Start - End)</th>
+                                            <th>Aplikasi / Window</th>
+                                            <th>Durasi</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="timelineTableBody">
+                                        <tr><td colspan="4" class="text-center py-3 text-muted">Memuat data timeline...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: RIWAYAT BATERAI -->
+                    <div class="tab-pane fade" id="tab-battery" role="tabpanel">
+                        <div class="card border rounded-3 p-3 bg-light">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-battery-charging me-1 text-success"></i> Riwayat Siklus Daya & Baterai Periode Ini</h6>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" id="detailBatteryHealthBadge">Health: 100%</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 380px;">
+                                <table class="table table-hover table-sm bg-white rounded-3 align-middle mb-0" style="font-size: 12px;">
+                                    <thead class="table-light text-muted sticky-top">
+                                        <tr>
+                                            <th>Waktu (Start - End)</th>
+                                            <th>Status Daya</th>
+                                            <th>Kapasitas Awal</th>
+                                            <th>Kapasitas Akhir</th>
+                                            <th>Perubahan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="batteryTimelineTableBody">
+                                        <tr><td colspan="5" class="text-center py-3 text-muted">Memuat data baterai...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: SESI LOGIN USER -->
+                    <div class="tab-pane fade" id="tab-sessions" role="tabpanel">
+                        <div class="card border rounded-3 p-3 bg-light">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-person-lines-fill me-1 text-info"></i> Histori Sesi Login Karyawan</h6>
+                            <div class="table-responsive" style="max-height: 380px;">
+                                <table class="table table-hover table-sm bg-white rounded-3 align-middle mb-0" style="font-size: 12px;">
+                                    <thead class="table-light text-muted sticky-top">
+                                        <tr>
+                                            <th>Pengguna / Display Name</th>
+                                            <th>Mulai Sesi (Login)</th>
+                                            <th>Selesai Sesi (Last Seen)</th>
+                                            <th>Durasi Aktif</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="loginSessionsTableBody">
+                                        <tr><td colspan="4" class="text-center py-3 text-muted">Memuat data sesi...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: TOP APPS -->
+                    <div class="tab-pane fade" id="tab-topapps" role="tabpanel">
+                        <div class="card border rounded-3 p-3 bg-light">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-bar-chart-fill me-1 text-primary"></i> Peringkat Aplikasi Paling Sering Digunakan</h6>
+                            <div class="table-responsive" style="max-height: 380px;">
+                                <table class="table table-hover table-sm bg-white rounded-3 align-middle mb-0" style="font-size: 12px;">
+                                    <thead class="table-light text-muted sticky-top">
+                                        <tr>
+                                            <th>Nama Aplikasi</th>
+                                            <th>Frekuensi Snapshot</th>
+                                            <th>Estimasi Durasi</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topAppsTableBody">
+                                        <tr><td colspan="4" class="text-center py-3 text-muted">Memuat data top apps...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer bg-light border-0 px-4 py-2 rounded-bottom-4">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let reportsDataTable = null;
+    let currentInstalledSoftwareList = [];
+    let currentDeviceSnapshotsList = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initReportsDataTable();
+    });
+
+    function initReportsDataTable() {
+        reportsDataTable = $('#reportsTable').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            ordering: false,
+            pageLength: 10,
+            ajax: {
+                url: '/api/pulse/reports/datatables',
+                type: 'POST',
+                data: function (d) {
+                    d.statusFilter = $('#filterStatus').val();
+                }
+            },
+            columns: [
+                {
+                    data: 'hostname',
+                    render: function (data, type, row) {
+                        return `<div class="fw-bold text-primary d-flex align-items-center gap-1">
+                                    <i class="bi bi-laptop fs-6"></i> ${data}
+                                </div>
+                                <div class="text-muted small" style="font-size: 10px;">SN: ${row.serialNumber} &bull; <span class="badge bg-secondary-subtle text-secondary px-1">${row.totalSnapshots}x snap</span></div>`;
+                    }
+                },
+                {
+                    data: 'loggedInUser',
+                    render: function (data, type, row) {
+                        return `<div><strong>${row.displayName}</strong></div>
+                                <div class="text-muted small" style="font-size: 10px;">NRP: ${data} (Tugas: ${row.assignedNrp})</div>`;
+                    }
+                },
+                {
+                    data: 'osVersion',
+                    render: function (data) {
+                        return `<span class="badge bg-light text-dark border font-monospace" style="font-size: 11px;">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'statusBadge',
+                    render: function (data, type, row) {
+                        if (data === 'Normal') {
+                            return `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Normal</span>`;
+                        } else if (data === 'User Mismatch') {
+                            return `<span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Mismatch</span>
+                                    <div class="text-danger small" style="font-size: 9px;">NRP Berbeda</div>`;
+                        } else if (data === 'BMS Kritis' || data === 'Baterai Kritis') {
+                            return `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-battery-alert me-1"></i>BMS Kritis</span>`;
+                        } else {
+                            return `<span class="badge bg-warning text-dark px-2 py-1">${data}</span>`;
+                        }
+                    }
+                },
+                {
+                    data: 'batteryHealthPct',
+                    render: function (data) {
+                        if (!data) return '<span class="text-muted">-</span>';
+                        let cls = data >= 80 ? 'text-success' : (data >= 50 ? 'text-warning' : 'text-danger');
+                        return `<span class="fw-bold ${cls}"><i class="bi bi-battery-charging me-1"></i>${data}%</span>`;
+                    }
+                },
+                {
+                    data: 'dailyNetworkTotalMb',
+                    render: function (data, type, row) {
+                        if (data && data > 0) {
+                            let totGb = (data / 1024).toFixed(2);
+                            return `<div class="fw-bold text-dark">${totGb} GB</div>
+                                    <div class="text-muted small" style="font-size: 10px;">${row.dailyNetworkUsageText}</div>`;
+                        }
+                        return '<span class="text-muted small">-</span>';
+                    }
+                },
+                {
+                    data: 'cpuAvgPct',
+                    render: function (data, type, row) {
+                        return `<div class="small">CPU: <strong>${data}%</strong> | RAM: <strong>${row.ramAvgPct}%</strong></div>
+                                <div class="text-muted small" style="font-size: 10px;">GPU: ${row.gpuAvgPct}%</div>`;
+                    }
+                },
+                {
+                    data: 'lastSeenAt',
+                    render: function (data) {
+                        return `<div class="fw-semibold text-dark">${data}</div>`;
+                    }
+                },
+                {
+                    data: null,
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        return `<button class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm" style="font-size: 11px;" onclick="openDeviceSnapshotsModal('${row.hostname}', '${row.serialNumber}', '${row.id}')">
+                                    <i class="bi bi-layers-fill me-1"></i> Detail
+                                </button>`;
+                    }
+                }
+            ],
+            language: {
+                search: "Cari Komputer / User / NRP:",
+                lengthMenu: "Tampil _MENU_ komputer",
+                info: "Menampilkan _START_ s/d _END_ dari _TOTAL_ komputer",
+                infoEmpty: "Tidak ada data",
+                zeroRecords: "Tidak ada komputer yang sesuai",
+                paginate: { first: "«", last: "»", next: "›", previous: "‹" }
+            }
+        });
+    }
+
+    function reloadReportsTable() {
+        if (reportsDataTable) reportsDataTable.ajax.reload();
+    }
+
+    let currentModalHostname = '';
+    let currentModalSN = '';
+    let currentSelectedDateKey = '';
+    let currentSelectedPeriodId = 'ALL_DAY';
+
+    // Membuka modal detail dan memuat seluruh snapshot riwayat komputer ini
+    function openDeviceSnapshotsModal(hostname, serialNumber, latestReportId) {
+        currentModalHostname = hostname;
+        currentModalSN = serialNumber;
+
+        // Fetch all historical snapshots for this device
+        fetch(`/api/pulse/reports/snapshots?hostname=${encodeURIComponent(hostname)}&serialNumber=${encodeURIComponent(serialNumber)}`)
+            .then(res => res.json())
+            .then(snapshots => {
+                currentDeviceSnapshotsList = snapshots || [];
+                const daySelector = document.getElementById('modalDaySelector');
+                daySelector.innerHTML = '';
+
+                if (currentDeviceSnapshotsList.length === 0) {
+                    daySelector.innerHTML = '<option value="">Tidak ada rekaman tanggal</option>';
+                    document.getElementById('periodPillsContainer').innerHTML = '<span class="text-muted small">Tidak ada data</span>';
+                    fetch(`/api/pulse/reports/detail/${latestReportId}`)
+                        .then(r => r.json())
+                        .then(data => renderDetailData(data));
+                    const modal = new bootstrap.Modal(document.getElementById('reportDetailModal'));
+                    modal.show();
+                    return;
+                }
+
+                // Group by unique dates
+                const dateGroups = {};
+                currentDeviceSnapshotsList.forEach(s => {
+                    if (!dateGroups[s.dateKey]) {
+                        dateGroups[s.dateKey] = {
+                            dateKey: s.dateKey,
+                            dateDisplay: s.dateDisplay,
+                            snapshots: []
+                        };
+                    }
+                    dateGroups[s.dateKey].snapshots.push(s);
+                });
+
+                const dateKeys = Object.keys(dateGroups).sort().reverse();
+
+                dateKeys.forEach((dKey, idx) => {
+                    const g = dateGroups[dKey];
+                    const hasProblem = g.snapshots.some(x => x.isProblem);
+                    const icon = hasProblem ? '⚠️' : '✅';
+                    const opt = document.createElement('option');
+                    opt.value = dKey;
+                    opt.textContent = `${icon} ${g.dateDisplay} (${g.snapshots.length} Periode)`;
+                    if (idx === 0) opt.selected = true;
+                    daySelector.appendChild(opt);
+                });
+
+                const modal = new bootstrap.Modal(document.getElementById('reportDetailModal'));
+                modal.show();
+
+                // Load initial date (latest)
+                onDaySelected(daySelector.value);
+            })
+            .catch(err => {
+                alert('Gagal memuat snapshot komputer: ' + err);
+            });
+    }
+
+    function onDaySelected(dateKey) {
+        currentSelectedDateKey = dateKey;
+        const daySnaps = currentDeviceSnapshotsList.filter(s => s.dateKey === dateKey);
+        const container = document.getElementById('periodPillsContainer');
+        container.innerHTML = '';
+
+        if (daySnaps.length === 0) {
+            container.innerHTML = '<span class="text-muted small">Tidak ada periode pada hari ini</span>';
+            return;
+        }
+
+        // 1. Tombol "Semua Periode (1 Hari Penuh)"
+        const allBtn = document.createElement('button');
+        allBtn.type = 'button';
+        allBtn.id = 'btn-period-ALL_DAY';
+        allBtn.className = 'btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm fw-semibold';
+        allBtn.innerHTML = `<i class="bi bi-calendar-check me-1"></i> Semua Periode (${daySnaps.length}) [1 Hari]`;
+        allBtn.onclick = function () { selectPeriod('ALL_DAY'); };
+        container.appendChild(allBtn);
+
+        // 2. Tombol untuk masing-masing periode hari itu (Pagi 07:59, Siang 12:00, Sore 16:24, dll)
+        const daySnapsAsc = [...daySnaps].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+        daySnapsAsc.forEach(snap => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = `btn-period-${snap.id}`;
+            btn.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-medium';
+
+            const statusIcon = snap.isProblem 
+                ? '<i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>' 
+                : '<i class="bi bi-check-circle-fill text-success me-1"></i>';
+
+            btn.innerHTML = `${statusIcon} ${snap.periodName}`;
+            btn.title = `Periode ${snap.periodFull || snap.scheduleTriggered} — ${snap.status}`;
+            btn.onclick = function () { selectPeriod(snap.id); };
+            container.appendChild(btn);
+        });
+
+        // Default: Pilih Semua Periode 1 Hari
+        selectPeriod('ALL_DAY');
+    }
+
+    function selectPeriod(periodId) {
+        currentSelectedPeriodId = periodId;
+
+        // Update button active state
+        const container = document.getElementById('periodPillsContainer');
+        const buttons = container.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.id === `btn-period-${periodId}`) {
+                btn.className = 'btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm fw-semibold';
+            } else {
+                btn.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-medium';
+            }
+        });
+
+        const daySnaps = currentDeviceSnapshotsList.filter(s => s.dateKey === currentSelectedDateKey);
+        const banner = document.getElementById('snapshotStatusBanner');
+
+        if (periodId === 'ALL_DAY') {
+            const hasProblem = daySnaps.some(s => s.isProblem);
+            const problemSnaps = daySnaps.filter(s => s.isProblem);
+
+            if (hasProblem) {
+                banner.className = 'p-2 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2 border bg-danger-subtle border-danger text-danger';
+                banner.innerHTML = `<div><i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>REKAPITULASI 1 HARI:</strong> Terdapat ${problemSnaps.length} periode bermasalah (${problemSnaps.map(p => p.periodName + ': ' + p.status).join(', ')})</div>
+                                    <div><span class="badge bg-danger">${daySnaps.length} Periode</span></div>`;
+            } else {
+                banner.className = 'p-2 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2 border bg-success-subtle border-success text-success';
+                banner.innerHTML = `<div><i class="bi bi-check-circle-fill me-1"></i> <strong>REKAPITULASI 1 HARI:</strong> Seluruh ${daySnaps.length} periode normal & parameter optimal</div>
+                                    <div><span class="badge bg-success">Optimal</span></div>`;
+            }
+
+            fetch(`/api/pulse/reports/day-detail?hostname=${encodeURIComponent(currentModalHostname)}&serialNumber=${encodeURIComponent(currentModalSN)}&date=${encodeURIComponent(currentSelectedDateKey)}`)
+                .then(res => res.json())
+                .then(data => renderDetailData(data))
+                .catch(err => alert('Gagal memuat rekapitulasi harian: ' + err));
+        } else {
+            const snap = daySnaps.find(s => s.id === periodId);
+            if (snap) {
+                if (snap.isProblem) {
+                    banner.className = 'p-2 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2 border bg-danger-subtle border-danger text-danger';
+                    banner.innerHTML = `<div><i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>PERIODE BERMASALAH (${snap.periodName}):</strong> ${snap.status}</div>
+                                        <div><span class="badge bg-danger">${snap.periodFull || snap.scheduleTriggered}</span></div>`;
+                } else {
+                    banner.className = 'p-2 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2 border bg-success-subtle border-success text-success';
+                    banner.innerHTML = `<div><i class="bi bi-check-circle-fill me-1"></i> <strong>PERIODE NORMAL (${snap.periodName}):</strong> Parameter sistem optimal tanpa kendala</div>
+                                        <div><span class="badge bg-success">${snap.periodFull || snap.scheduleTriggered}</span></div>`;
+                }
+            }
+
+            fetch(`/api/pulse/reports/detail/${periodId}`)
+                .then(res => res.json())
+                .then(data => renderDetailData(data))
+                .catch(err => alert('Gagal memuat detail periode: ' + err));
+        }
+    }
+
+    function renderDetailData(data) {
+                // Header info
+                document.getElementById('modalHostname').innerText = data.computerName || data.hostname;
+                document.getElementById('modalReportType').innerText = `${data.reportType} (${data.scheduleTriggered})`;
+                document.getElementById('modalSN').innerText = data.serialNumber;
+                document.getElementById('modalUser').innerText = `${data.displayName} (${data.loggedInUser})`;
+                document.getElementById('modalOs').innerText = data.osVersion;
+
+                const mismatchBadge = document.getElementById('modalMismatchBadge');
+                if (data.isUserMismatch) {
+                    mismatchBadge.classList.remove('d-none');
+                } else {
+                    mismatchBadge.classList.add('d-none');
+                }
+
+                // Tab 1: Overview
+                document.getElementById('detailHostname').innerText = data.computerName || data.hostname;
+                document.getElementById('detailSN').innerText = data.serialNumber;
+                document.getElementById('detailOsVersion').innerText = data.osVersion;
+                document.getElementById('detailLocalIp').innerText = data.localIp;
+                document.getElementById('detailSsid').innerText = data.ssid;
+                document.getElementById('detailCoords').innerText = data.coordsText;
+                document.getElementById('detailUptime').innerText = data.uptimeFormatted;
+
+                let assignedText = data.asset && data.asset.assignedTo 
+                    ? `${data.asset.assignedTo} (NRP: ${data.asset.nrp || '-'})` 
+                    : (data.assignedNrp && data.assignedNrp !== '-' ? `NRP: ${data.assignedNrp}` : 'Belum terdaftar di Master Asset');
+                document.getElementById('detailAssignedInfo').innerText = assignedText;
+
+                let siteText = (data.asset && data.asset.site) ? data.asset.site : '-';
+                document.getElementById('detailSite').innerText = siteText;
+
+                // Network Usage
+                const netMb = data.networkUsage.totalMb;
+                const downMb = data.networkUsage.downloadMb;
+                const upMb = data.networkUsage.uploadMb;
+                const totGb = (netMb / 1024).toFixed(2);
+
+                document.getElementById('detailNetTotal').innerText = `${totGb} GB (${netMb.toFixed(0)} MB)`;
+                document.getElementById('detailNetDownload').innerText = `${(downMb / 1024).toFixed(2)} GB`;
+                document.getElementById('detailNetUpload').innerText = `${(upMb / 1024).toFixed(2)} GB`;
+
+                let downPct = netMb > 0 ? (downMb / netMb * 100) : 50;
+                let upPct = netMb > 0 ? (upMb / netMb * 100) : 50;
+                document.getElementById('detailNetDownBar').style.width = `${downPct}%`;
+                document.getElementById('detailNetUpBar').style.width = `${upPct}%`;
+
+                // Hardware
+                document.getElementById('detailCpuAvg').innerText = `${data.hardware.cpu.avg}%`;
+                document.getElementById('detailCpuRange').innerText = `Min: ${data.hardware.cpu.min}% | Max: ${data.hardware.cpu.max}%`;
+                document.getElementById('detailRamAvg').innerText = `${data.hardware.ram.avg}%`;
+                document.getElementById('detailRamRange').innerText = `Min: ${data.hardware.ram.min}% | Max: ${data.hardware.ram.max}%`;
+                document.getElementById('detailGpuAvg').innerText = `${data.hardware.gpu.avg}%`;
+                document.getElementById('detailGpuRange').innerText = `Min: ${data.hardware.gpu.min}% | Max: ${data.hardware.gpu.max}%`;
+
+                // Tab 2: Installed Software (Deduplicated)
+                currentInstalledSoftwareList = data.installedSoftware || [];
+                document.getElementById('tabSoftwareCount').innerText = currentInstalledSoftwareList.length;
+                renderInstalledSoftwareTable(currentInstalledSoftwareList);
+
+                // Tab 3: Timeline Aplikasi & Idle
+                const timelineBody = document.getElementById('timelineTableBody');
+                if (!data.appTimelines || data.appTimelines.length === 0) {
+                    timelineBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada rekaman timeline aplikasi pada periode ini</td></tr>';
+                } else {
+                    let html = '';
+                    data.appTimelines.forEach(t => {
+                        let afkBadge = t.isAFK ? '<span class="badge bg-warning text-dark ms-1">AFK / Idle</span>' : '<span class="badge bg-success-subtle text-success">Aktif</span>';
+                        html += `
+                            <tr>
+                                <td><span class="fw-semibold text-dark">${t.startTime}</span> s/d <span class="fw-semibold text-dark">${t.endTime}</span></td>
+                                <td class="fw-bold text-dark">${t.appName}</td>
+                                <td>${t.durationMinutes.toFixed(1)} menit</td>
+                                <td>${afkBadge}</td>
+                            </tr>
+                        `;
+                    });
+                    timelineBody.innerHTML = html;
+                }
+
+                // Tab 4: Battery Timeline
+                document.getElementById('detailBatteryHealthBadge').innerText = `BMS Health: ${data.batteryHealthPct || '-'}%`;
+                const batteryBody = document.getElementById('batteryTimelineTableBody');
+                if (!data.batteryTimelines || data.batteryTimelines.length === 0) {
+                    batteryBody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada rekaman timeline baterai pada periode ini</td></tr>';
+                } else {
+                    let html = '';
+                    data.batteryTimelines.forEach(b => {
+                        let isCharging = b.status === 'Charging';
+                        let badge = isCharging ? '<span class="badge bg-success"><i class="bi bi-plug-fill me-1"></i>Cas (Charging)</span>' : '<span class="badge bg-secondary"><i class="bi bi-battery me-1"></i>Lepas (Discharging)</span>';
+                        html += `
+                            <tr>
+                                <td>${b.startTime} s/d ${b.endTime}</td>
+                                <td>${badge}</td>
+                                <td>${b.startPct}%</td>
+                                <td>${b.endPct}%</td>
+                                <td><strong>${b.startPct}% &rarr; ${b.endPct}%</strong></td>
+                            </tr>
+                        `;
+                    });
+                    batteryBody.innerHTML = html;
+                }
+
+                // Tab 5: Login Sessions
+                const sessionsBody = document.getElementById('loginSessionsTableBody');
+                if (!data.loginSessions || data.loginSessions.length === 0) {
+                    sessionsBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada rekaman sesi login pada periode ini</td></tr>';
+                } else {
+                    let html = '';
+                    data.loginSessions.forEach(s => {
+                        html += `
+                            <tr>
+                                <td><strong>${s.displayName}</strong> (${s.loggedInUser})</td>
+                                <td>${s.sessionStart}</td>
+                                <td>${s.sessionEnd}</td>
+                                <td>${s.durationMinutes} menit</td>
+                            </tr>
+                        `;
+                    });
+                    sessionsBody.innerHTML = html;
+                }
+
+                // Tab 6: Top Apps
+                const topAppsBody = document.getElementById('topAppsTableBody');
+                if (!data.topApps || data.topApps.length === 0) {
+                    topAppsBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada rekaman top apps pada periode ini</td></tr>';
+                } else {
+                    let html = '';
+                    data.topApps.forEach(a => {
+                        html += `
+                            <tr>
+                                <td class="fw-bold text-dark">${a.appName}</td>
+                                <td>${a.recordCount}x snapshot</td>
+                                <td>${a.durationMinutes ? a.durationMinutes.toFixed(1) + ' menit' : '-'}</td>
+                                <td>${a.isAFK ? '<span class="badge bg-warning text-dark">Idle</span>' : '<span class="badge bg-success">Aktif</span>'}</td>
+                            </tr>
+                        `;
+                    });
+                    topAppsBody.innerHTML = html;
+                }
+    }
+
+    function renderInstalledSoftwareTable(list) {
+        const tbody = document.getElementById('installedSwTableBody');
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada data software terinstall di komputer ini</td></tr>';
+            return;
+        }
+
+        let html = '';
+        list.forEach(s => {
+            html += `
+                <tr>
+                    <td class="fw-bold text-dark">${s.softwareName}</td>
+                    <td><span class="badge bg-light text-dark border">${s.softwareVersion}</span></td>
+                    <td class="text-muted">${s.publisher}</td>
+                    <td class="text-muted">${s.installDate}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function filterInstalledSoftwareTable() {
+        const query = document.getElementById('searchInstalledSw').value.toLowerCase();
+        const filtered = currentInstalledSoftwareList.filter(s =>
+            s.softwareName.toLowerCase().includes(query) ||
+            s.softwareVersion.toLowerCase().includes(query) ||
+            s.publisher.toLowerCase().includes(query)
+        );
+        renderInstalledSoftwareTable(filtered);
+    }
+</script>
+}

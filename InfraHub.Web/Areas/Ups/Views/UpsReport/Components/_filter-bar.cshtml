@@ -1,0 +1,210 @@
+@{
+    var sites = ViewBag.Districts as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var siteId = ViewBag.SiteId as string ?? "";
+    var dateFrom = ViewBag.DateFrom as string ?? DateTime.Now.ToString("yyyy-MM-dd");
+    var dateTo = ViewBag.DateTo as string ?? DateTime.Now.ToString("yyyy-MM-dd");
+    var resolution = ViewBag.Resolution as string ?? "daily";
+    var aggregation = ViewBag.Aggregation as string ?? "average";
+    var upsCategory = ViewBag.UpsCategory as string ?? "ALL";
+    var timeFrom = ViewBag.TimeFrom as string ?? "00:00";
+    var timeTo = ViewBag.TimeTo as string ?? "23:59";
+
+    var fromH = timeFrom.Split(':').ElementAtOrDefault(0) ?? "00";
+    var fromM = timeFrom.Split(':').ElementAtOrDefault(1) ?? "00";
+    var toH = timeTo.Split(':').ElementAtOrDefault(0) ?? "23";
+    var toM = timeTo.Split(':').ElementAtOrDefault(1) ?? "59";
+
+    var reportType = ViewBag.ReportType as string;
+    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+    if (string.IsNullOrEmpty(reportType))
+    {
+        if (currentPath.Contains("/ups/log/sensor")) reportType = "Sensor";
+        else if (currentPath.Contains("/ups/log/pac")) reportType = "Pac";
+        else if (currentPath.Contains("/ups/log/cctv")) reportType = "Cctv";
+        else reportType = "Ups";
+    }
+
+    string brandTitle;
+    string brandIcon;
+    switch ((reportType ?? "").ToLower())
+    {
+        case "sensor":
+            brandTitle = "Sensor Suhu Report & Analytics";
+            brandIcon = "fa-solid fa-temperature-half";
+            break;
+        case "pac":
+            brandTitle = "PAC Report & Analytics";
+            brandIcon = "fa-solid fa-fan";
+            break;
+        case "cctv":
+            brandTitle = "CCTV Report & Analytics";
+            brandIcon = "fa-solid fa-video";
+            break;
+        default:
+            brandTitle = "UPS Report & Analytics";
+            brandIcon = "fa-solid fa-plug-circle-bolt";
+            break;
+    }
+}
+
+<div class="ups-rpt-filter-bar" id="upsRptFilterBar">
+    <div class="ups-rpt-filter-row-top">
+        <div class="ups-rpt-filter-bar__brand">
+            <div class="ups-rpt-brand-icon">
+                <i class="@brandIcon"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-brand-title">@brandTitle</div>
+                <div class="ups-rpt-brand-sub">
+                    <span class="ups-rpt-live-dot"></span>
+                    <span id="upsRptDeviceCount">0</span> Devices
+                    &bull; <span id="upsRptPeriodLabel" class="ups-rpt-period-text">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ups-rpt-filter-row-top__right">
+            <div class="ups-rpt-filter-group">
+                <label class="ups-rpt-filter-label">Resolusi</label>
+                <div class="ups-rpt-resolution-toggle" id="upsRptResolutionToggle">
+                    <button id="btnResDaily" data-res="daily" class="ups-rpt-res-btn @(resolution == "daily" ? "is-active" : "")"
+                            onclick="upsRptSetResolution('daily', this); return false;">Daily</button>
+                    <button id="btnResWeekly" data-res="weekly" class="ups-rpt-res-btn @(resolution == "weekly" ? "is-active" : "")"
+                            onclick="upsRptSetResolution('weekly', this); return false;">Weekly</button>
+                    <button id="btnResMonthly" data-res="monthly" class="ups-rpt-res-btn @(resolution == "monthly" ? "is-active" : "")"
+                            onclick="upsRptSetResolution('monthly', this); return false;">Monthly</button>
+                </div>
+            </div>
+
+            <button class="ups-rpt-btn-apply" onclick="upsRptApply()" id="upsRptApplyBtn">
+                <i class="fa-solid fa-rotate"></i> Terapkan
+            </button>
+        </div>
+    </div>
+
+    <div class="ups-rpt-filter-controls">
+        <div class="ups-rpt-filter-group ups-rpt-filter-group--site">
+            <label class="ups-rpt-filter-label" for="upsRptSiteFilter">Site</label>
+            <select id="upsRptSiteFilter" class="ups-rpt-filter-select" onchange="upsRptFilterChange()">
+                @if(string.IsNullOrEmpty(siteId)){
+                    <option value="" disabled selected>Pilih Site</option>
+                } else {
+                    <option value="" disabled>Pilih Site</option>
+                }
+                
+                @if (siteId == "ALL") {
+                    <option value="ALL" selected>Semua Site (Global Average)</option>
+                } else {
+                    <option value="ALL">Semua Site (Global Average)</option>
+                }
+                
+                @foreach(var site in sites)
+                {
+                    string sid = site.Id.ToString();
+                    string code = site.SiteCode;
+                    string name = site.SiteName;
+                    
+                    if (siteId == sid) {
+                        <option value="@sid" selected>@code@(string.IsNullOrEmpty(name) ? "" : " – " + name)</option>
+                    } else {
+                        <option value="@sid">@code@(string.IsNullOrEmpty(name) ? "" : " – " + name)</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="ups-rpt-filter-group ups-rpt-category-group">
+            <label class="ups-rpt-filter-label" for="upsRptCategoryFilter">Kategori</label>
+            <select id="upsRptCategoryFilter" class="ups-rpt-filter-select" onchange="upsRptFilterChange()">
+                @if(ViewBag.ReportType == "Sensor")
+                {
+                    @if (upsCategory == "ALL") { <option value="ALL" selected>Semua Sensor</option> } else { <option value="ALL">Semua Sensor</option> }
+                    @if (upsCategory == "SENSOR SUHU RUANGAN") { <option value="SENSOR SUHU RUANGAN" selected>Suhu Ruangan</option> } else { <option value="SENSOR SUHU RUANGAN">Suhu Ruangan</option> }
+                }
+                else if(ViewBag.ReportType == "Cctv")
+                {
+                    <option value="ALL" selected>Semua CCTV</option>
+                }
+                else if(ViewBag.ReportType == "Pac")
+                {
+                    <option value="ALL" selected>Semua PAC</option>
+                }
+                else
+                {
+                    @if (upsCategory == "ALL") { <option value="ALL" selected>Semua Kategori</option> } else { <option value="ALL">Semua Kategori</option> }
+                    @if (upsCategory == "UPS DC") { <option value="UPS DC" selected>UPS DC</option> } else { <option value="UPS DC">UPS DC</option> }
+                    @if (upsCategory == "UPS USER") { <option value="UPS USER" selected>UPS User</option> } else { <option value="UPS USER">UPS User</option> }
+                    @if (upsCategory == "KOMPARASI") { <option value="KOMPARASI" selected>Komparasi Antar Site</option> } else { <option value="KOMPARASI">Komparasi Antar Site</option> }
+                }
+            </select>
+        </div>
+
+        <div class="ups-rpt-filter-group" id="upsRptDateFromGroup" style="@(resolution == "daily" ? "display: none;" : "")">
+            <label class="ups-rpt-filter-label" for="upsRptDateFrom">Dari Tanggal</label>
+            <input type="date" id="upsRptDateFrom" class="ups-rpt-filter-select ups-rpt-filter-select--date"
+                   value="@dateFrom" onchange="upsRptFilterChange()">
+        </div>
+
+        <div class="ups-rpt-filter-group" id="upsRptDateToGroup">
+            <label class="ups-rpt-filter-label" id="upsRptDateToLabel" for="upsRptDateTo">@(resolution == "daily" ? "Pilih Tanggal" : "Sampai Tanggal")</label>
+            <input type="date" id="upsRptDateTo" class="ups-rpt-filter-select ups-rpt-filter-select--date"
+                   value="@dateTo" onchange="upsRptFilterChange()">
+        </div>
+
+        <div class="ups-rpt-filter-group" id="upsRptMonthGroup" style="display:none;">
+            <label class="ups-rpt-filter-label" for="upsRptMonth">Pilih Bulan</label>
+            <input type="month" id="upsRptMonth" class="ups-rpt-filter-select ups-rpt-filter-select--date"
+                   value="@DateTime.Now.ToString("yyyy-MM")" onchange="upsRptFilterChange()">
+        </div>
+
+        <div class="ups-rpt-filter-group ups-rpt-filter-group--time" id="upsRptTimeGroup" style="@(resolution != "daily" ? "display: none;" : "")">
+            <label class="ups-rpt-filter-label">Dari Jam</label>
+            <div style="display: flex; gap: 3px; align-items: center;">
+                <select id="upsRptTimeFromH" class="ups-rpt-filter-select ups-rpt-filter-select--time" onchange="upsRptFilterChange()">
+                    @for(int i = 0; i <= 23; i++)
+                    {
+                        var v = i.ToString("D2");
+                        if (fromH == v) { <option value="@v" selected>@v</option> } else { <option value="@v">@v</option> }
+                    }
+                </select>
+                <span class="ups-rpt-time-sep">:</span>
+                <select id="upsRptTimeFromM" class="ups-rpt-filter-select ups-rpt-filter-select--time" onchange="upsRptFilterChange()">
+                    @for(int i = 0; i <= 59; i++)
+                    {
+                        var v = i.ToString("D2");
+                        if (fromM == v) { <option value="@v" selected>@v</option> } else { <option value="@v">@v</option> }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="ups-rpt-filter-group ups-rpt-filter-group--time" id="upsRptTimeGroup2" style="@(resolution != "daily" ? "display: none;" : "")">
+            <label class="ups-rpt-filter-label">Sampai Jam</label>
+            <div style="display: flex; gap: 3px; align-items: center;">
+                <select id="upsRptTimeToH" class="ups-rpt-filter-select ups-rpt-filter-select--time" onchange="upsRptFilterChange()">
+                    @for(int i = 0; i <= 23; i++)
+                    {
+                        var v = i.ToString("D2");
+                        if (toH == v) { <option value="@v" selected>@v</option> } else { <option value="@v">@v</option> }
+                    }
+                </select>
+                <span class="ups-rpt-time-sep">:</span>
+                <select id="upsRptTimeToM" class="ups-rpt-filter-select ups-rpt-filter-select--time" onchange="upsRptFilterChange()">
+                    @for(int i = 0; i <= 59; i++)
+                    {
+                        var v = i.ToString("D2");
+                        if (toM == v) { <option value="@v" selected>@v</option> } else { <option value="@v">@v</option> }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="ups-rpt-filter-group ups-rpt-filter-group--agg" id="upsRptAggregationGroup" style="@(resolution != "daily" ? "display: none;" : "")">
+            <label class="ups-rpt-filter-label" for="upsRptAggregationFilter">Agregasi</label>
+            <select id="upsRptAggregationFilter" class="ups-rpt-filter-select" onchange="upsRptFilterChange()">
+                @if(aggregation == "average") { <option value="average" selected>Rata-rata / Jam</option> } else { <option value="average">Rata-rata / Jam</option> }
+                @if(aggregation == "actual") { <option value="actual" selected>Aktual</option> } else { <option value="actual">Aktual</option> }
+            </select>
+        </div>
+    </div>
+</div>

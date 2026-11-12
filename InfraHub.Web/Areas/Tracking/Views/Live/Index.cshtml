@@ -1,0 +1,113 @@
+@{ Layout = "_Layout";
+
+   ViewData["Title"] = "";
+}
+
+@section Styles {
+    @* Leaflet CSS *@
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    @* Tracking CSS *@
+    <link rel="stylesheet" href="~/assets/css/tracking.css">
+    @* Signal Report CSS *@
+    <link rel="stylesheet" href="~/assets/css/signal-report.css">
+}
+
+    <div class="tracking-page-wrapper">
+        @* Sidebar *@
+        <aside class="tracking-sidebar">
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_siteSelector.cshtml")
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_dateRangeSelector.cshtml")
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_chooseUnit.cshtml")
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_trackReplay.cshtml")
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_totalDistance.cshtml")
+        </aside>
+
+        @* Map Area *@
+        <div class="tracking-map-area">
+            <div id="trackingMap"></div>
+
+            @* Loading Overlay (shown while fetching site dots) *@
+            <div class="map-loading-overlay" id="mapLoadingOverlay">
+                <div class="map-loading-content">
+                    <div class="map-loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <i class="fa-solid fa-satellite-dish spinner-icon"></i>
+                    </div>
+                    <div class="map-loading-text" id="mapLoadingText">Memuat data sinyal...</div>
+                    <div class="map-loading-subtext" id="mapLoadingSubtext">Mengambil data tracking dari server</div>
+                    <div class="map-loading-progress">
+                        <div class="map-loading-progress-bar" id="mapLoadingProgressBar"></div>
+                    </div>
+                </div>
+            </div>
+
+            @* Unit Detail Overlay (on map) *@
+            @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_unitDetail.cshtml")
+
+            @* Map Controls Group *@
+            <div class="custom-map-controls">
+                <button class="map-action-btn hidden-btn" id="mapBackBtn" type="button" title="Back to Site View" onclick="backToSite()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button class="map-action-btn" onclick="locateToSite()" title="Center Map">
+                    <i class="fa-solid fa-crosshairs"></i>
+                </button>
+                <button class="map-action-btn hidden-btn" id="unitToggleBtn" type="button" aria-pressed="false" title="Toggle unit icons">
+                    <i class="fa-solid fa-truck"></i>
+                </button>
+                <button class="map-action-btn" id="trackDotToggle" type="button" aria-pressed="false" title="Show RSRP dots">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+                <button class="map-action-btn hidden-btn" id="coveragePlanToggle" type="button" aria-pressed="false" title="Show Coverage Plan">
+                    <i class="fa-solid fa-layer-group"></i>
+                </button>
+                <button class="map-action-btn hidden-btn" id="signalReportToggleBtn" type="button" aria-pressed="false" title="Toggle Signal Report">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </button>
+            </div>
+
+            @* Coverage Opacity Slider (floating popup beside controls) *@
+            <div class="coverage-opacity-popup" id="coverageOpacityPopup">
+                <div class="coverage-opacity-header">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Coverage</span>
+                </div>
+                <div class="coverage-opacity-body">
+                    <input type="range" id="coverageOpacitySlider" min="0" max="100" value="70" class="coverage-opacity-range">
+                    <span class="coverage-opacity-value" id="coverageOpacityValue">70%</span>
+                </div>
+            </div>
+        </div>
+
+        @* Signal Strength Report Panel *@
+        @await Html.PartialAsync("~/Areas/Tracking/Views/Live/Components/_signalReport.cshtml")
+    </div>
+}
+
+@section Scripts {
+    @* Leaflet JS *@
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    @* Leaflet KMZ Plugin (requires JSZip) *@
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/leaflet-kmz@latest/dist/leaflet-kmz.js"></script>
+    @* Chart.js *@
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    @* Tracking JS *@
+    <script src="~/js/tracking/tracking.js" asp-append-version="true"></script>
+    @* Signal Report JS *@
+    <script src="~/js/tracking/signal-report.js" asp-append-version="true"></script>
+
+    @* Set header to tracking variant *@
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const header = document.querySelector('.main-header');
+            if (header) {
+                header.classList.add('header-tracking');
+            }
+        });
+    </script>
+}
+
+

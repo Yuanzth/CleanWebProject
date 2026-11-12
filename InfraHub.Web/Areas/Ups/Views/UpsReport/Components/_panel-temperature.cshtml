@@ -1,0 +1,71 @@
+@*
+    Component: panel-temperature.blade.php
+    Props: $report (stats)
+    Charts: chartTemp
+*@
+<div class="ups-rpt-panel" id="panelTemp">
+
+    <div class="ups-rpt-panel__header">
+        <div class="ups-rpt-panel__title-group">
+            <div class="ups-rpt-panel__icon-wrap ups-rpt-panel__icon-wrap--red">
+                <i class="fa-solid fa-temperature-three-quarters"></i>
+            </div>
+            <div>
+                <div class="ups-rpt-panel__title">Suhu</div>
+                <div class="ups-rpt-panel__sub">Suhu UPS dan Ruangan per device</div>
+                @await Html.PartialAsync("~/Areas/Ups/Views/UpsReport/Components/_period-badge.cshtml")
+            </div>
+        </div>
+
+        <div class="ups-rpt-stat-bar">
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG Machine</span>
+                <span class="ups-rpt-stat-chip__value" id="statTempAvg">—</span>
+            </div>
+            <div class="ups-rpt-stat-chip" id="chipTempMax">
+                <span class="ups-rpt-stat-chip__label">MAX Machine</span>
+                <span class="ups-rpt-stat-chip__value" id="statTempMax">—</span>
+            </div>
+            <div class="ups-rpt-stat-chip">
+                <span class="ups-rpt-stat-chip__label">AVG Room</span>
+                <span class="ups-rpt-stat-chip__value" id="statRoomTempAvg">—</span>
+            </div>
+            <div class="ups-rpt-stat-chip" id="chipRoomTempMax">
+                <span class="ups-rpt-stat-chip__label">MAX Room</span>
+                <span class="ups-rpt-stat-chip__value" id="statRoomTempMax">—</span>
+            </div>
+        </div>
+    </div>
+
+    @* Tab Navigation *@
+    <div class="ups-rpt-tabs">
+        <button class="ups-rpt-tab-btn active" data-target="temp-machine">Machine</button>
+        <button class="ups-rpt-tab-btn" data-target="temp-room">Room</button>
+    </div>
+
+    <div class="ups-rpt-tab-content">
+        <div class="ups-rpt-chart-section active" id="tab-temp-machine">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-server" style="color:var(--ups-icon-red-color);"></i>
+                <span>Machine Temperature (Ambient)</span>
+                <span class="ups-rpt-trend-limits">Warn ≥30°C · Crit ≥35°C</span>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartTempMachine"></canvas>
+            </div>
+        </div>
+
+        <div class="ups-rpt-chart-section" id="tab-temp-room">
+            <div class="ups-rpt-chart-title">
+                <i class="fa-solid fa-door-open" style="color:var(--ups-icon-red-color);"></i>
+                <span>Room Temperature</span>
+                <span class="ups-rpt-trend-limits">Warn ≥30°C · Crit ≥35°C</span>
+            </div>
+            <div class="ups-rpt-chart-wrap ups-rpt-chart-wrap--220">
+                <canvas id="chartTempRoom"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+

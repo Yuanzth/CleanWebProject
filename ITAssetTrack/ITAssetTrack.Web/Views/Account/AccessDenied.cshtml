@@ -1,0 +1,36 @@
+@{
+    ViewData["Title"] = "Akses Ditolak";
+    ViewData["PageLabel"] = "Access Denied";
+    var _deniedRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Guest";
+    var _homeUrl = _deniedRole switch {
+        "Admin" or "Coordinator" => Url.Action("AssetDashboard", "Home"),
+        "Technician" => Url.Action("PmExecution", "Maintenance"),
+        "Viewer" => Url.Action("MyAsset", "Home"),
+        _ => Url.Action("Login", "Account")
+    };
+}
+
+<div class="container py-5 text-center">
+    <div class="management-card p-5 mx-auto" style="max-width: 520px;">
+        <div class="mb-3 text-danger">
+            <i class="bi bi-shield-slash-fill display-1"></i>
+        </div>
+        <h3 class="fw-bold text-dark mb-2">Akses Ditolak</h3>
+        <p class="text-muted mb-1">
+            Role Anda: <span class="badge bg-secondary px-3 py-2">@_deniedRole</span>
+        </p>
+        <p class="text-muted mb-4 small">
+            Fitur atau halaman ini tidak dapat diakses oleh role <strong>@_deniedRole</strong>.<br/>
+            Silakan hubungi Administrator jika Anda merasa ini adalah kesalahan.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="@_homeUrl" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Halaman Saya
+            </a>
+            <a href="@Url.Action("Logout", "Account")" class="btn btn-outline-danger rounded-pill px-4">
+                <i class="bi bi-box-arrow-right me-1"></i> Ganti Akun
+            </a>
+        </div>
+    </div>
+</div>
+

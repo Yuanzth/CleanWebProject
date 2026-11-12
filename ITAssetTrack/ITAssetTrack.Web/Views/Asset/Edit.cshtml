@@ -1,0 +1,118 @@
+@model ITAssetTrack.Models.Asset
+
+@{
+    ViewData["Title"] = "Edit Asset";
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-3 p-sm-4">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="@Url.Action("Index", "Asset")" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 text-nowrap" style="font-size:12px; font-weight:600;">
+                <i class="bi bi-arrow-left me-1"></i> Kembali
+            </a>
+        </div>
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Serial Number (SN) <span class="text-danger">*</span></label>
+                    <input asp-for="SerialNumber" class="form-control rounded-3 font-monospace" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Asset Tag / No SN <span class="text-danger">*</span></label>
+                    <input asp-for="NoSN" class="form-control rounded-3" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Host Name / Computer Name</label>
+                    <input asp-for="ComputerName" class="form-control rounded-3 font-monospace" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Model / Series</label>
+                    <input asp-for="Model" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Tipe Perangkat</label>
+                    <select asp-for="DeviceTypeId" class="form-select rounded-3">
+                        <option value="">-- Pilih Tipe --</option>
+                        @foreach (var type in (IEnumerable<ITAssetTrack.Models.DeviceType>)ViewBag.DeviceTypes)
+                        {
+                            <option value="@type.Id">@type.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Kategori Perangkat</label>
+                    <select asp-for="DeviceCategoryId" class="form-select rounded-3">
+                        <option value="">-- Pilih Kategori --</option>
+                        @foreach (var cat in (IEnumerable<ITAssetTrack.Models.DeviceCategory>)ViewBag.DeviceCategories)
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Merk (Brand)</label>
+                    <select asp-for="BrandId" class="form-select rounded-3">
+                        <option value="">-- Pilih Merk --</option>
+                        @foreach (var brand in (IEnumerable<ITAssetTrack.Models.Brand>)ViewBag.Brands)
+                        {
+                            <option value="@brand.Id">@brand.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Vendor</label>
+                    <select asp-for="VendorId" class="form-select rounded-3">
+                        <option value="">-- Pilih Vendor --</option>
+                        @foreach (var v in (IEnumerable<ITAssetTrack.Models.Vendor>)ViewBag.Vendors)
+                        {
+                            <option value="@v.Id">@v.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">RAM</label>
+                    <input asp-for="Ram" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Storage</label>
+                    <input asp-for="Storage" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Processor</label>
+                    <input asp-for="Processor" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">GPU</label>
+                    <input asp-for="Gpu" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Operating System</label>
+                    <input asp-for="OperatingSystem" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Windows Version</label>
+                    <input asp-for="WindowsVersion" class="form-control rounded-3" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Status Aset</label>
+                    <select asp-for="Status" class="form-select rounded-3">
+                        <option value="Available">Available (Belum Digunakan)</option>
+                        <option value="InUse">In Use (Sedang Digunakan)</option>
+                        <option value="UnderMaintenance">Under Maintenance</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Catatan / Remarks</label>
+                    <textarea asp-for="Remarks" class="form-control rounded-3" rows="2"></textarea>
+                </div>
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-save me-1"></i> Perbarui Asset
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

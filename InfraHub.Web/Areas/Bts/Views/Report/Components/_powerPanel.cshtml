@@ -1,0 +1,67 @@
+<div class="rpt-panel rpt-panel--power" id="panelPower">
+    <div class="rpt-panel__header">
+        <div class="rpt-panel__title-group">
+            <div class="rpt-panel__icon-wrap rpt-panel__icon-wrap--power">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+                <div class="rpt-panel__title">Power Analytics</div>
+                <div class="rpt-panel__meta" id="rptPowerPeriod">@(ViewBag.Report?["meta"]?["period_label"])</div>
+            </div>
+        </div>
+        <div class="rpt-panel-controls">
+            <div class="rpt-resolution-toggle" id="powerResolutionToggle">
+                <button class="rpt-res-btn rpt-res-btn--active" onclick="setGlobalResolution('daily',   this)">Daily</button>
+                <button class="rpt-res-btn"                      onclick="setGlobalResolution('weekly',  this)">Weekly</button>
+                <button class="rpt-res-btn"                      onclick="setGlobalResolution('monthly', this)">Monthly</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="rpt-stat-bar">
+
+        <div class="rpt-stat-chip rpt-stat-chip--ok">
+            <span class="rpt-stat-chip__label">MIN VOLTAGE</span>
+            <span class="rpt-stat-chip__value" id="statVoltMin">@(ViewBag.Report?["power"]?["min_voltage"]) <small>V</small></span>
+        </div>
+
+        <div class="rpt-stat-chip rpt-stat-chip--ok">
+            <span class="rpt-stat-chip__label">MAX VOLTAGE</span>
+            <span class="rpt-stat-chip__value" id="statVoltMax">@(ViewBag.Report?["power"]?["max_voltage"]) <small>V</small></span>
+        </div>
+
+    </div>
+
+    <div class="rpt-chart-section">
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-chart-line rpt-icon--power"></i>
+            <code>Voltage</code> —
+            <span id="rptPowerChartLabel">Today</span>
+            <span class="rpt-trend-limits">
+                Normal: @(ViewBag.Report?["power"]?["trend_lower_limit"])–@(ViewBag.Report?["power"]?["trend_upper_limit"]) V
+            </span>
+        </div>
+        <div class="rpt-chart-wrap rpt-chart-wrap--240">
+            <canvas id="chartVoltageTrend"></canvas>
+        </div>
+    </div>
+
+    <div class="rpt-chart-section">
+        <div class="rpt-chart-title">
+            <i class="fa-solid fa-gas-pump" style="margin-right:5px;color:#0284c7;"></i>
+            <code>Fuel Level</code>
+            <span class="rpt-trend-limits">Warn &lt;40% · Crit &lt;25%</span>
+        </div>
+        <div class="rpt-chart-wrap rpt-chart-wrap--240">
+            <canvas id="chartFuelLevel"></canvas>
+        </div>
+    </div>
+
+</div>
+
+
+
+
+
+
+

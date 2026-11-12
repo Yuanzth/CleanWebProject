@@ -1,0 +1,492 @@
+@{ Layout = "_Layout";
+   ViewData["Title"] = "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-map-location-dot fa-2x me-3" style="color: #D4952B;"></i>
+        <h2 class="mb-0 fw-bold" style="color: #D4952B;">Manage Sites &amp; Boundaries</h2>
+    </div>
+    
+    <div class="manage-card">
+        <div class="table-responsive">
+            <table id="siteTable" class="table table-hover w-100 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>No</th>
+                        <th>Kode Site</th>
+                        <th>Nama Site</th>
+                        <th>Status Boundary</th>
+                        <th>Status Basemap</th>
+                        <th>Status Coverage</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* Kelola Peta Modal *@
+<div class="modal fade" id="kelolaPetaModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-map-location-dot text-primary"></i> Kelola Peta: <span id="kelola_site_name_title" class="fw-bold"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="kelolaPetaForm" enctype="multipart/form-data">
+                <input type="hidden" id="kelola_site_id" name="site_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Kolom Kiri: Peta Preview -->
+                        <div class="col-md-7">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-bold mb-0">Peta Preview (Tanpa Unit)</label>
+                                <div>
+                                    <div class="form-check form-check-inline form-switch">
+                                        <input class="form-check-input toggle-preview" type="checkbox" id="toggle_basemap" checked>
+                                        <label class="form-check-label small" for="toggle_basemap">Basemap</label>
+                                    </div>
+                                    <div class="form-check form-check-inline form-switch">
+                                        <input class="form-check-input toggle-preview" type="checkbox" id="toggle_boundary" checked>
+                                        <label class="form-check-label small" for="toggle_boundary">Boundary</label>
+                                    </div>
+                                    <div class="form-check form-check-inline form-switch">
+                                        <input class="form-check-input toggle-preview" type="checkbox" id="toggle_coverage" checked>
+                                        <label class="form-check-label small" for="toggle_coverage">Coverage</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="previewMap" style="height: 500px; border: 1px solid #ddd; border-radius: 8px;"></div>
+                            <div class="mt-2 text-muted small"><i class="fa-solid fa-circle-info"></i> Peta ini memuat Boundary, Basemap, dan Coverage yang sudah ada. Silakan pilih file baru di sebelah kanan untuk melihat pratinjau sebelum menyimpan.</div>
+                        </div>
+                        
+                        <!-- Kolom Kanan: Form Upload -->
+                        <div class="col-md-5">
+                            <div class="card mb-3 border-primary">
+                                <div class="card-header bg-primary text-white"><i class="fa-solid fa-draw-polygon"></i> 1. Boundary (Batas Wilayah)</div>
+                                <div class="card-body">
+                                    <div id="boundary_upload_container">
+                                        <label class="form-label text-muted small">Pilih File (.kmz, .kml, .zip) Maks 10MB</label>
+                                        <input type="file" id="boundary_file" name="boundary_file" class="form-control" accept=".kmz,.kml,.zip">
+                                    </div>
+                                    <div id="boundary_delete_container" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                                            <span class="text-truncate fw-bold text-primary" id="boundary_filename" style="max-width: 250px;"><i class="fa-solid fa-file-zipper"></i> file.kmz</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-map" id="btn_delete_boundary" data-type="Kmz" data-id=""><i class="fa-solid fa-trash"></i> Hapus</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-3 border-info">
+                                <div class="card-header bg-info text-white"><i class="fa-solid fa-map"></i> 2. Basemap (Peta Dasar)</div>
+                                <div class="card-body">
+                                    <div id="basemap_upload_container">
+                                        <label class="form-label text-muted small">Pilih File (.kmz, .zip) Maks 100MB</label>
+                                        <input type="file" id="basemap_file" name="basemap_file" class="form-control" accept=".kmz,.zip">
+                                    </div>
+                                    <div id="basemap_delete_container" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                                            <span class="text-truncate fw-bold text-info" id="basemap_filename" style="max-width: 250px;"><i class="fa-solid fa-file-zipper"></i> file.kmz</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-map" id="btn_delete_basemap" data-type="Basemap" data-id=""><i class="fa-solid fa-trash"></i> Hapus</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-3 border-success">
+                                <div class="card-header bg-success text-white"><i class="fa-solid fa-layer-group"></i> 3. Coverage Plan</div>
+                                <div class="card-body">
+                                    <div id="coverage_upload_container">
+                                        <label class="form-label text-muted small">Provider Name (Opsional)</label>
+                                        <input type="text" id="coverage_provider_name" name="provider_name" class="form-control mb-2" placeholder="Contoh: Telkomsel, XL">
+                                        <label class="form-label text-muted small">Pilih File (.kmz, .zip) Maks 100MB</label>
+                                        <input type="file" id="coverage_file" name="coverage_file" class="form-control" accept=".kmz,.zip">
+                                    </div>
+                                    <div id="coverage_delete_container" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+                                            <span class="text-truncate fw-bold text-success" id="coverage_filename" style="max-width: 250px;"><i class="fa-solid fa-file-zipper"></i> file.kmz</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-map" id="btn_delete_coverage" data-type="Coverage" data-id=""><i class="fa-solid fa-trash"></i> Hapus</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnKelolaPetaSubmit">
+                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Simpan Perubahan Peta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+}
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-tracking');
+        }
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-kmz@latest/dist/leaflet-kmz.js"></script>
+
+<script>
+let tSite;
+let previewMap = null;
+let activeLayers = {
+    currentBasemap: null, newBasemap: null,
+    currentBoundary: null, newBoundary: null,
+    currentCoverage: null, newCoverage: null
+};
+let activeBounds = {}; // Store bounds of each loaded layer
+
+$(document).ready(function() {
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
+
+    tSite = $('#siteTable').DataTable({ 
+        serverSide: true, 
+        ajax: "@Url.Action("Index", "ManageSite", new { area = "Tracking" })", 
+        columns: [
+            {data: 'DT_RowIndex', orderable: false, searchable: false}, 
+            {data: 'site_code'}, 
+            {data: 'site_name'}, 
+            {data: 'status_boundary'}, 
+            {data: 'status_basemap'}, 
+            {data: 'status_coverage'}, 
+            {data: 'action', orderable: false, searchable: false}
+        ] 
+    });
+
+    function initPreviewMap() {
+        if (previewMap != null) return;
+        previewMap = L.map('previewMap').setView([-2.2, 113.9], 5); // Default center Indonesia
+        
+        // Add Google Satellite Hybrid base layer
+        L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(previewMap);
+    }
+
+    // Modal Events
+    $('#kelolaPetaModal').on('shown.bs.modal', function () {
+        initPreviewMap();
+        previewMap.invalidateSize(); // Fix map size if modal animation breaks it
+    });
+
+    $('#kelolaPetaModal').on('hidden.bs.modal', function () {
+        $('#kelolaPetaForm')[0].reset();
+        clearAllLayers();
+    });
+
+    function clearAllLayers() {
+        for (let key in activeLayers) {
+            if (activeLayers[key]) {
+                if (previewMap) previewMap.removeLayer(activeLayers[key]);
+                activeLayers[key] = null;
+            }
+        }
+        activeBounds = {};
+    }
+
+    function removeLayerKey(key) {
+        if (activeLayers[key]) {
+            if (previewMap) previewMap.removeLayer(activeLayers[key]);
+            activeLayers[key] = null;
+        }
+        delete activeBounds[key];
+    }
+
+    function fitMapToBounds() {
+        let bounds = L.latLngBounds();
+        let hasBounds = false;
+        for (let key in activeBounds) {
+            if (activeBounds[key] && activeBounds[key].isValid()) {
+                bounds.extend(activeBounds[key]);
+                hasBounds = true;
+            }
+        }
+        if (hasBounds) {
+            previewMap.fitBounds(bounds, { padding: [20, 20] });
+        }
+    }
+
+    function updateLayerVisibilityAndOrder() {
+        if (!previewMap) return;
+        
+        let showBasemap = $('#toggle_basemap').is(':checked');
+        let showBoundary = $('#toggle_boundary').is(':checked');
+        let showCoverage = $('#toggle_coverage').is(':checked');
+
+        // Basemap (Bottom) - Send to back
+        [activeLayers.currentBasemap, activeLayers.newBasemap].forEach(layer => {
+            if (layer) {
+                if (showBasemap && !previewMap.hasLayer(layer)) layer.addTo(previewMap);
+                if (!showBasemap && previewMap.hasLayer(layer)) previewMap.removeLayer(layer);
+                if (showBasemap && typeof layer.bringToBack === 'function') layer.bringToBack();
+            }
+        });
+
+        // Boundary (Middle) - Bring to front
+        [activeLayers.currentBoundary, activeLayers.newBoundary].forEach(layer => {
+            if (layer) {
+                if (showBoundary && !previewMap.hasLayer(layer)) layer.addTo(previewMap);
+                if (!showBoundary && previewMap.hasLayer(layer)) previewMap.removeLayer(layer);
+                if (showBoundary && typeof layer.bringToFront === 'function') layer.bringToFront();
+            }
+        });
+
+        // Coverage (Top) - Bring to front (runs after Boundary, so it stays on top of Boundary)
+        [activeLayers.currentCoverage, activeLayers.newCoverage].forEach(layer => {
+            if (layer) {
+                if (showCoverage && !previewMap.hasLayer(layer)) layer.addTo(previewMap);
+                if (!showCoverage && previewMap.hasLayer(layer)) previewMap.removeLayer(layer);
+                if (showCoverage && typeof layer.bringToFront === 'function') layer.bringToFront();
+            }
+        });
+    }
+
+    function loadKmzLayer(layerKey, url) {
+        removeLayerKey(layerKey); // Ensure clean slate
+        let kmz = L.kmzLayer(url);
+        activeLayers[layerKey] = kmz;
+        
+        kmz.on('load', function(e) {
+            let b = null;
+            if (e.layer && typeof e.layer.getBounds === 'function') {
+                b = e.layer.getBounds();
+            } else if (typeof kmz.getBounds === 'function') {
+                b = kmz.getBounds();
+            }
+            if (b && b.isValid()) {
+                activeBounds[layerKey] = b;
+            }
+            fitMapToBounds();
+            updateLayerVisibilityAndOrder();
+        });
+        
+        updateLayerVisibilityAndOrder(); // Add to map if toggle is on
+    }
+
+    // Toggle Preview Listeners
+    $('.toggle-preview').on('change', function() {
+        updateLayerVisibilityAndOrder();
+    });
+
+    function getFilenameFromPath(path) {
+        if (!path) return '';
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    function getFullFileUrl(path) {
+        if (!path) return '';
+        // Legacy Laravel records might not have the 'storage/' prefix in DB
+        if (!path.startsWith('storage/')) {
+            return '/storage/' + path;
+        }
+        return '/' + path;
+    }
+
+    $('body').on('click', '.kelola-peta-btn', function() { 
+        let btn = $(this);
+        let siteId = btn.data('id');
+        let siteName = btn.data('name');
+        
+        let boundaryPath = btn.data('boundary-path');
+        let basemapPath = btn.data('basemap-path');
+        let coveragePath = btn.data('coverage-path');
+        let boundaryId = btn.data('boundary-id');
+        let basemapId = btn.data('basemap-id');
+        let coverageId = btn.data('coverage-id');
+
+        // Toggle form inputs vs delete buttons
+        if (boundaryId) {
+            $('#boundary_upload_container').hide();
+            $('#boundary_delete_container').show();
+            $('#boundary_filename').html('<i class="fa-solid fa-file-zipper"></i> ' + getFilenameFromPath(boundaryPath));
+            $('#btn_delete_boundary').data('id', boundaryId).data('site-id', siteId);
+        } else {
+            $('#boundary_upload_container').show();
+            $('#boundary_delete_container').hide();
+            $('#boundary_file').val('');
+        }
+
+        if (basemapId) {
+            $('#basemap_upload_container').hide();
+            $('#basemap_delete_container').show();
+            $('#basemap_filename').html('<i class="fa-solid fa-file-zipper"></i> ' + getFilenameFromPath(basemapPath));
+            $('#btn_delete_basemap').data('id', basemapId).data('site-id', siteId);
+        } else {
+            $('#basemap_upload_container').show();
+            $('#basemap_delete_container').hide();
+            $('#basemap_file').val('');
+        }
+
+        if (coverageId) {
+            $('#coverage_upload_container').hide();
+            $('#coverage_delete_container').show();
+            $('#coverage_filename').html('<i class="fa-solid fa-file-zipper"></i> ' + getFilenameFromPath(coveragePath));
+            $('#btn_delete_coverage').data('id', coverageId).data('site-id', siteId);
+        } else {
+            $('#coverage_upload_container').show();
+            $('#coverage_delete_container').hide();
+            $('#coverage_file').val('');
+        }
+
+        $('#kelola_site_id').val(siteId); 
+        $('#kelola_site_name_title').text(siteName);
+        $('#kelolaPetaModal').modal('show'); 
+        
+        // Timeout to let modal render and initPreviewMap run
+        setTimeout(() => {
+            clearAllLayers();
+
+            // Load existing files onto preview map
+            if (boundaryPath && typeof L.kmzLayer === 'function') {
+                loadKmzLayer('currentBoundary', getFullFileUrl(boundaryPath));
+            }
+            if (basemapPath && typeof L.kmzLayer === 'function') {
+                loadKmzLayer('currentBasemap', getFullFileUrl(basemapPath));
+            }
+            if (coveragePath && typeof L.kmzLayer === 'function') {
+                loadKmzLayer('currentCoverage', getFullFileUrl(coveragePath));
+            }
+        }, 500);
+    });
+
+    // File Input Preview Handlers
+    $('#basemap_file').on('change', function(e) {
+        removeLayerKey('newBasemap');
+        removeLayerKey('currentBasemap'); // Hide existing basemap if replacing
+        
+        let file = e.target.files[0];
+        if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.zip'))) {
+            let url = URL.createObjectURL(file);
+            loadKmzLayer('newBasemap', url);
+        }
+    });
+
+    $('#coverage_file').on('change', function(e) {
+        removeLayerKey('newCoverage');
+        removeLayerKey('currentCoverage');
+        
+        let file = e.target.files[0];
+        if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.zip'))) {
+            let url = URL.createObjectURL(file);
+            loadKmzLayer('newCoverage', url);
+        }
+    });
+
+    $('#boundary_file').on('change', function(e) {
+        removeLayerKey('newBoundary');
+        removeLayerKey('currentBoundary');
+        
+        let file = e.target.files[0];
+        if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.zip') || file.name.endsWith('.kml'))) {
+            let url = URL.createObjectURL(file);
+            loadKmzLayer('newBoundary', url);
+        }
+    });
+
+    $('#kelolaPetaForm').submit(function(e) { 
+        e.preventDefault(); 
+        
+        let formData = new FormData(this);
+        let siteId = $('#kelola_site_id').val();
+        let url = "/Tracking/Manage/Sites/" + siteId + "/UpdateMapFiles";
+        let btn = $('#btnKelolaPetaSubmit');
+        
+        let boundaryFile = $('#boundary_file')[0].files[0];
+        let basemapFile = $('#basemap_file')[0].files[0];
+        let coverageFile = $('#coverage_file')[0].files[0];
+
+        if (!boundaryFile && !basemapFile && !coverageFile) {
+            Swal.fire('Peringatan', 'Silakan pilih setidaknya satu file untuk di-upload.', 'warning');
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i>Menyimpan...');
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                $('#kelolaPetaModal').modal('hide');
+                tSite.ajax.reload(null, false);
+                Swal.fire('Berhasil!', res.message, 'success');
+            },
+            error: function(xhr) {
+                Swal.fire('Gagal', xhr.responseJSON?.message || 'Terjadi kesalahan sistem', 'error');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-cloud-arrow-up me-2"></i>Simpan Perubahan Peta');
+            }
+        });
+    });
+
+    // Delete handler within modal
+    $('body').on('click', '.btn-delete-map', function() { 
+        let id = $(this).data('id');
+        let type = $(this).data('type'); // 'Kmz', 'Basemap', or 'Coverage'
+        let siteId = $(this).data('site-id');
+        let url = "/Tracking/Manage/Sites/" + type + "/" + id;
+        
+        let typeName = type === 'Kmz' ? 'Boundary' : type;
+
+        Swal.fire({ 
+            title: 'Hapus ' + typeName + '?', 
+            text: 'File akan dihapus secara permanen!', 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonColor: '#d33', 
+            cancelButtonColor: '#3085d6', 
+            confirmButtonText: 'Ya, Hapus!' 
+        }).then((result) => { 
+            if (result.isConfirmed) { 
+                $.ajax({ 
+                    url: url, 
+                    type: 'DELETE', 
+                    success: function(res) { 
+                        // Reload data table
+                        tSite.ajax.reload(null, false); 
+                        
+                        // Close modal, the user can reopen it if they want to upload a new one
+                        $('#kelolaPetaModal').modal('hide');
+                        Swal.fire('Terhapus', res.success || res.message, 'success'); 
+                    }, 
+                    error: function(xhr) { 
+                        Swal.fire('Error', xhr.responseJSON?.message || 'Terjadi kesalahan saat menghapus', 'error'); 
+                    } 
+                }); 
+            } 
+        }); 
+    });
+});
+</script>
+}

@@ -1,0 +1,836 @@
+:root {
+    --ups-bg-page: #0a0e1a;
+    --ups-text: #e2e8f0;
+    --ups-muted: #64748b;
+    --ups-border: rgba(255, 255, 255, 0.08);
+    --ups-card-bg: rgba(255, 255, 255, 0.04);
+    --ups-card-border: rgba(255, 255, 255, 0.06);
+    --ups-table-header-bg: #0d1424;
+    --ups-table-row-odd: #0a0e1a;
+    --ups-table-row-even: #0c1120;
+    --ups-input-bg: #0f172a;
+    --ups-input-border: rgba(255, 255, 255, 0.1);
+    --ups-modal-bg: #0f172a;
+    --ups-modal-border: rgba(255, 255, 255, 0.08);
+    --ups-modal-header-bg: rgba(255, 255, 255, 0.03);
+    --ups-modal-divider: rgba(255, 255, 255, 0.06);
+    --ups-btn-cancel-bg: rgba(255, 255, 255, 0.06);
+    --ups-btn-cancel-border: rgba(255, 255, 255, 0.1);
+    
+    --ups-badge-33-color: #818cf8;
+    --ups-badge-33-bg: rgba(99, 102, 241, 0.15);
+    --ups-badge-33-border: rgba(99, 102, 241, 0.25);
+    --ups-badge-31-color: #fbbf24;
+    --ups-badge-31-bg: rgba(245, 158, 11, 0.15);
+    --ups-badge-31-border: rgba(245, 158, 11, 0.25);
+    --ups-badge-11-color: #4ade80;
+    --ups-badge-11-bg: rgba(34, 197, 94, 0.15);
+    --ups-badge-11-border: rgba(34, 197, 94, 0.25);
+    
+    --ups-status-active-color: #4ade80;
+    --ups-status-active-bg: rgba(34, 197, 94, 0.12);
+    --ups-status-active-border: rgba(34, 197, 94, 0.2);
+    --ups-status-inactive-color: #f87171;
+    --ups-status-inactive-bg: rgba(239, 68, 68, 0.12);
+    --ups-status-inactive-border: rgba(239, 68, 68, 0.2);
+
+    --ups-pag-bg: rgba(255, 255, 255, 0.04);
+    --ups-pag-border: rgba(255, 255, 255, 0.07);
+    --ups-pag-text: #94a3b8;
+    --ups-pag-hover-bg: rgba(255, 255, 255, 0.1);
+    --ups-pag-hover-border: rgba(255, 255, 255, 0.2);
+    --ups-pag-hover-text: #e2e8f0;
+    --ups-pag-active-bg: rgba(255, 255, 255, 0.2);
+    --ups-pag-active-border: rgba(255, 255, 255, 0.4);
+    --ups-pag-active-text: #fff;
+    --ups-pag-disabled-bg: rgba(255, 255, 255, 0.02);
+    --ups-pag-disabled-border: rgba(255, 255, 255, 0.04);
+    --ups-pag-disabled-text: #334155;
+}
+
+.theme-light {
+    --ups-bg-page: #f8fafc;
+    --ups-text: #334155;
+    --ups-muted: #64748b;
+    --ups-border: rgba(148, 163, 184, 0.2);
+    --ups-card-bg: #ffffff;
+    --ups-card-border: rgba(148, 163, 184, 0.22);
+    --ups-table-header-bg: #f1f5f9;
+    --ups-table-row-odd: #ffffff;
+    --ups-table-row-even: #f8fafc;
+    --ups-input-bg: #ffffff;
+    --ups-input-border: rgba(148, 163, 184, 0.25);
+    --ups-modal-bg: #ffffff;
+    --ups-modal-border: rgba(148, 163, 184, 0.22);
+    --ups-modal-header-bg: #f8fafc;
+    --ups-modal-divider: rgba(148, 163, 184, 0.15);
+    --ups-btn-cancel-bg: #e2e8f0;
+    --ups-btn-cancel-border: rgba(148, 163, 184, 0.2);
+    
+    --ups-badge-33-color: #4f46e5;
+    --ups-badge-33-bg: #e0e7ff;
+    --ups-badge-33-border: rgba(79, 70, 229, 0.25);
+    --ups-badge-31-color: #b45309;
+    --ups-badge-31-bg: #fef3c7;
+    --ups-badge-31-border: rgba(217, 119, 6, 0.25);
+    --ups-badge-11-color: #15803d;
+    --ups-badge-11-bg: #dcfce7;
+    --ups-badge-11-border: rgba(22, 163, 74, 0.25);
+    
+    --ups-status-active-color: #15803d;
+    --ups-status-active-bg: #dcfce7;
+    --ups-status-active-border: rgba(22, 163, 74, 0.2);
+    --ups-status-inactive-color: #b91c1c;
+    --ups-status-inactive-bg: #fee2e2;
+    --ups-status-inactive-border: rgba(220, 38, 38, 0.2);
+
+    --ups-pag-bg: #f1f5f9;
+    --ups-pag-border: rgba(148, 163, 184, 0.2);
+    --ups-pag-text: #475569;
+    --ups-pag-hover-bg: #e2e8f0;
+    --ups-pag-hover-border: rgba(148, 163, 184, 0.35);
+    --ups-pag-hover-text: #0f172a;
+    --ups-pag-active-bg: #6366f1;
+    --ups-pag-active-border: #6366f1;
+    --ups-pag-active-text: #ffffff;
+    --ups-pag-disabled-bg: #f8fafc;
+    --ups-pag-disabled-border: rgba(148, 163, 184, 0.1);
+    --ups-pag-disabled-text: #94a3b8;
+}
+
+body {
+    background: var(--ups-bg-page) !important;
+    color: var(--ups-text);
+}
+
+.udt-page {
+    padding: 28px 0;
+}
+
+.udt-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.udt-page-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.udt-page-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.udt-page-title h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ups-text);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.udt-page-title p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 2px 0 0;
+}
+
+.udt-btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.udt-btn-add:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+/* Card */
+.udt-card {
+    background: var(--ups-card-bg);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--ups-card-border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+}
+
+.udt-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+}
+
+.udt-card-body {
+    padding: 24px;
+}
+
+.udt-card-body .dataTables_wrapper {
+    overflow-x: visible !important;
+}
+
+/* ── DataTable + Bootstrap full dark override ── */
+.dataTables_wrapper,
+.dataTables_wrapper label,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info {
+    color: #94a3b8 !important;
+}
+
+.udt-dt-top,
+.udt-dt-bottom {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.udt-dt-top {
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.udt-dt-bottom {
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.dataTables_wrapper .dataTables_length label,
+.dataTables_wrapper .dataTables_filter label {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 13px;
+}
+
+.udt-dt-top .dataTables_length,
+.udt-dt-top .dataTables_filter,
+.udt-dt-bottom .dataTables_info,
+.udt-dt-bottom .dataTables_paginate {
+    float: none !important;
+}
+
+.udt-dt-top .dataTables_filter {
+    margin-left: auto;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    background: var(--ups-input-bg) !important;
+    border: 1px solid var(--ups-input-border) !important;
+    color: var(--ups-text) !important;
+    border-radius: 8px;
+    padding: 6px 10px;
+    box-shadow: none !important;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    min-width: 84px;
+    appearance: none;
+    padding-right: 28px;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    min-width: 260px;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    outline: none;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 0 !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: var(--ups-pag-bg) !important;
+    border: 1px solid var(--ups-pag-border) !important;
+    color: var(--ups-pag-text) !important;
+    border-radius: 10px !important;
+    margin: 0 4px !important;
+    padding: 7px 12px !important;
+    min-width: 38px;
+    line-height: 1;
+    box-shadow: none !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--ups-pag-hover-bg) !important;
+    color: var(--ups-pag-hover-text) !important;
+    border-color: var(--ups-pag-hover-border) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: var(--ups-pag-active-bg) !important;
+    color: var(--ups-pag-active-text) !important;
+    border-color: var(--ups-pag-active-border) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.previous,
+.dataTables_wrapper .dataTables_paginate .paginate_button.next {
+    font-weight: 700;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    background: var(--ups-pag-disabled-bg) !important;
+    border-color: var(--ups-pag-disabled-border) !important;
+    color: var(--ups-pag-disabled-text) !important;
+    cursor: not-allowed !important;
+}
+
+/* Table base — override Bootstrap .table */
+.udt-card table,
+.udt-card .table,
+table.dataTable {
+    background-color: var(--ups-bg-page) !important;
+    border-color: transparent !important;
+    border-collapse: collapse !important;
+}
+
+/* Head */
+.udt-card table thead tr,
+.udt-card table thead th,
+table.dataTable thead th,
+table.dataTable thead td {
+    background-color: var(--ups-table-header-bg) !important;
+    color: #64748b !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .07em !important;
+    border-bottom: 1px solid var(--ups-border) !important;
+    border-top: none !important;
+    font-weight: 600 !important;
+    padding: 13px 12px !important;
+    white-space: nowrap;
+    box-shadow: none !important;
+}
+
+/* Body rows — all states */
+.udt-card table tbody tr,
+table.dataTable tbody tr,
+table.dataTable tbody tr.odd,
+table.dataTable tbody tr.even {
+    background-color: var(--ups-table-row-odd) !important;
+    --bs-table-bg: var(--ups-table-row-odd) !important;
+    --bs-table-striped-bg: var(--ups-table-row-odd) !important;
+    --bs-table-hover-bg: var(--ups-table-row-odd) !important;
+    --bs-table-active-bg: var(--ups-table-row-odd) !important;
+}
+
+table.dataTable tbody tr.even {
+    background-color: var(--ups-table-row-even) !important;
+    --bs-table-bg: var(--ups-table-row-even) !important;
+}
+
+/* TD — must override Bootstrap's box-shadow color trick */
+.udt-card table tbody td,
+table.dataTable tbody tr>td {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--ups-border) !important;
+    border-top: none !important;
+    padding: 12px !important;
+    vertical-align: middle !important;
+    color: var(--ups-text) !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
+}
+
+/* Hover row */
+.udt-card table tbody tr:hover>td,
+table.dataTable tbody tr:hover>td {
+    background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Badges */
+.udt-dev-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ups-text);
+}
+
+.udt-dev-site {
+    color: #64748b;
+    font-size: 11px;
+    display: block;
+    margin-top: 2px;
+}
+
+.udt-ip {
+    color: #94a3b8;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    letter-spacing: 0.02em;
+}
+
+.udt-no-data {
+    color: #334155;
+    font-size: 11px;
+}
+
+.udt-cat-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--cat-color) 12%, transparent);
+    color: var(--cat-color);
+    border: 1px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
+    letter-spacing: 0.02em;
+}
+
+.udt-action-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.udt-phase-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.phase-33 {
+    background: var(--ups-badge-33-bg);
+    color: var(--ups-badge-33-color);
+    border: 1px solid var(--ups-badge-33-border);
+}
+
+.phase-31 {
+    background: var(--ups-badge-31-bg);
+    color: var(--ups-badge-31-color);
+    border: 1px solid var(--ups-badge-31-border);
+}
+
+.phase-11 {
+    background: var(--ups-badge-11-bg);
+    color: var(--ups-badge-11-color);
+    border: 1px solid var(--ups-badge-11-border);
+}
+
+.udt-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.udt-status-badge i {
+    font-size: 7px;
+}
+
+.udt-status-active {
+    background: var(--ups-status-active-bg);
+    color: var(--ups-status-active-color);
+    border: 1px solid var(--ups-status-active-border);
+}
+
+.udt-status-inactive {
+    background: var(--ups-status-inactive-bg);
+    color: var(--ups-status-inactive-color);
+    border: 1px solid var(--ups-status-inactive-border);
+}
+
+/* Action buttons */
+.udt-btn-edit {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.udt-btn-edit:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.udt-btn-delete {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.udt-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Modal dark */
+.udt-modal .modal-content {
+    background: var(--ups-modal-bg);
+    border: 1px solid var(--ups-modal-border);
+    border-radius: 16px;
+    color: var(--ups-text);
+}
+
+.udt-modal .modal-header {
+    background: var(--ups-modal-header-bg);
+    border-bottom: 1px solid var(--ups-modal-divider);
+    padding: 20px 24px;
+}
+
+.udt-modal .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ups-text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.udt-modal .modal-title i {
+    color: #818cf8;
+}
+
+.udt-modal .btn-close {
+    filter: invert(1) opacity(.5);
+}
+
+.theme-light .udt-modal .btn-close {
+    filter: none;
+    opacity: .5;
+}
+
+.udt-modal .modal-body {
+    padding: 24px;
+}
+
+.udt-modal .modal-footer {
+    border-top: 1px solid var(--ups-modal-divider);
+    padding: 16px 24px;
+}
+
+.udt-form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ups-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.udt-form-control,
+.udt-form-select {
+    width: 100%;
+    background: var(--ups-card-bg);
+    border: 1px solid var(--ups-input-border);
+    color: var(--ups-text);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.udt-form-control:focus,
+.udt-form-select:focus {
+    outline: none;
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    background: var(--ups-input-bg) !important;
+    color: var(--ups-text) !important;
+}
+
+.udt-form-select option {
+    background: var(--ups-modal-bg);
+    color: var(--ups-text);
+}
+
+.udt-form-group {
+    margin-bottom: 18px;
+}
+
+.udt-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.udt-phase-option {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.udt-phase-option small {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.udt-btn-save {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    color: #fff;
+    padding: 11px 28px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    width: 100%;
+}
+
+.udt-btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+}
+
+.udt-btn-cancel {
+    background: var(--ups-btn-cancel-bg);
+    border: 1px solid var(--ups-btn-cancel-border);
+    color: var(--ups-text);
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.udt-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.udt-divider {
+    height: 1px;
+    background: var(--ups-modal-divider);
+    margin: 16px 0;
+}
+
+.udt-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.udt-stat {
+    background: var(--ups-card-bg);
+    border: 1px solid var(--ups-card-border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+}
+
+.udt-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ups-text, #e2e8f0);
+    line-height: 1;
+}
+
+.udt-stat-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+/* ========================================================= */
+/* GRID CARD MODERN VIEW (ManageUpsDevice Redesign)          */
+/* ========================================================= */
+.udt-device-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 16px;
+}
+
+.udt-device-card {
+    background: var(--ups-card-bg);
+    border: 1px solid var(--ups-card-border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.udt-device-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.udt-device-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent, rgba(99, 102, 241, 0.6)), transparent);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.udt-device-card:hover::before {
+    opacity: 1;
+}
+
+/* Card Top Bar */
+.udt-card-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.udt-card-cat-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--accent, #94a3b8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.udt-card-cat-tag i {
+    font-size: 0.75rem;
+}
+
+/* Status Pill */
+.udt-card-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.udt-card-status-pill.status-active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.udt-card-status-pill.status-active .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px #4ade80;
+}
+
+.udt-card-status-pill.status-inactive {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.udt-card-status-pill.status-inactive .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f87171;
+}
+
+/* Device Name (Full Width) */
+.udt-card-device-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1.35;
+    margin-bottom: 12px;
+    word-break: break-word;
+    min-height: 1.35em;
+}
+
+/* Card Meta Rows */
+.udt-card-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: auto;
+}
+
+.udt-card-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+}
+
+.udt-card-meta-row .label {
+    color: #64748b;
+    font-size: 0.74rem;
+}
+
+.udt-card-meta-row .val {
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.udt-card-meta-row .val.monospace {
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 0.76rem;
+    color: #94a3b8;
+}

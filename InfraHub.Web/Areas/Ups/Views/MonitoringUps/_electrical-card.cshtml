@@ -1,0 +1,54 @@
+@model IDictionary<string, object>
+@{
+    var cardId = Model.ContainsKey("card_id") ? Model["card_id"]?.ToString() : "ups-card";
+    var cardTitle = Model.ContainsKey("title") ? Model["title"]?.ToString() : "UPS Input";
+    var cardIconClass = Model.ContainsKey("icon_class") ? Model["icon_class"]?.ToString() : "fa-solid fa-plug-circle-bolt";
+    var cardIconVariant = Model.ContainsKey("icon_variant") ? Model["icon_variant"]?.ToString() : "input";
+    var cardValueId = Model.ContainsKey("value_id") ? Model["value_id"]?.ToString() : "";
+    var cardValue = Model.ContainsKey("value") ? Model["value"]?.ToString() : "--";
+    var cardUnit = Model.ContainsKey("unit") ? Model["unit"]?.ToString() : "V";
+    var cardSparklineId = Model.ContainsKey("sparkline_id") ? Model["sparkline_id"]?.ToString() : "";
+    var cardBadges = Model.ContainsKey("badges") ? Model["badges"] as IEnumerable<IDictionary<string, object>> : new List<IDictionary<string, object>>();
+}
+
+<div class="ups-glass-card" id="@cardId">
+    <div class="ups-card-header">
+        <div class="ups-card-icon ups-card-icon--@cardIconVariant">
+            <i class="@cardIconClass"></i>
+        </div>
+        <span class="ups-card-title">@cardTitle</span>
+    </div>
+
+    <div class="ups-card-body">
+        <div class="ups-card-value">
+            <span class="ups-value-number" id="@cardValueId">@cardValue</span>
+            <span class="ups-value-unit">@cardUnit</span>
+        </div>
+        @if (!string.IsNullOrEmpty(cardSparklineId))
+        {
+            <div class="ups-sparkline-container">
+                <canvas id="@cardSparklineId"></canvas>
+            </div>
+        }
+    </div>
+
+    <div class="ups-card-badges">
+        @if (cardBadges != null)
+        {
+            foreach(var badge in cardBadges)
+            {
+                <div class="ups-badge">
+                    @if(badge.ContainsKey("prefix") && badge["prefix"] != null)
+                    {
+                        <span class="ups-badge-unit">@badge["prefix"]</span>
+                    }
+                    <span class="ups-badge-value" id="@(badge.ContainsKey("value_id") ? badge["value_id"] : "")">@(badge.ContainsKey("value") ? badge["value"] : "-")</span>
+                    @if(badge.ContainsKey("suffix") && badge["suffix"] != null)
+                    {
+                        <span class="ups-badge-unit">@badge["suffix"]</span>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

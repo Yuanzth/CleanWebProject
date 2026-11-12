@@ -1,0 +1,252 @@
+@model List<ITAssetTrack.Models.AssetAssignment>
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Aset Saya";
+    ViewData["PageLabel"] = "Aset Saya";
+    var employee = ViewBag.Employee as ITAssetTrack.Models.Employee;
+    var pmHistory = ViewBag.PmHistory as List<ITAssetTrack.Models.ScheduledMaint> ?? new();
+    var nrp = ViewBag.NRP as string ?? "";
+    var fullName = ViewBag.FullName as string ?? User.FindFirst(ClaimTypes.GivenName)?.Value ?? "";
+}
+
+<style>
+    .my-asset-hero {
+        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 60%, #3b82f6 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .my-asset-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+    }
+    .asset-card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+    }
+    .asset-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+    }
+    .asset-card-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-bottom: 2px solid #e2e8f0;
+        padding: 1rem 1.25rem;
+    }
+    .spec-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-label { color: #64748b; font-size: 0.82rem; font-weight: 600; }
+    .spec-value { color: #1e293b; font-size: 0.85rem; font-weight: 500; }
+    .pm-badge-done { background: #dcfce7; color: #166534; }
+    .pm-badge-progress { background: #fef3c7; color: #92400e; }
+    .pm-badge-planned { background: #dbeafe; color: #1d4ed8; }
+    .no-asset-placeholder {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #94a3b8;
+    }
+</style>
+
+<!-- Hero Header -->
+<div class="my-asset-hero">
+    <div class="row align-items-center">
+        <div class="col-auto">
+            <div class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center" style="width:72px; height:72px;">
+                <i class="bi bi-person-fill fs-1 text-white"></i>
+            </div>
+        </div>
+        <div class="col">
+            <h4 class="fw-bold mb-1">@fullName</h4>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                @if (!string.IsNullOrEmpty(nrp))
+                {
+                    <span class="badge bg-white bg-opacity-20 px-3 py-2">
+                        <i class="bi bi-card-text me-1"></i>NRP: @nrp
+                    </span>
+                }
+                @if (employee?.Site != null)
+                {
+                    <span class="badge bg-white bg-opacity-20 px-3 py-2">
+                        <i class="bi bi-geo-alt me-1"></i>@employee.Site.Code
+                    </span>
+                }
+                @if (employee?.Division != null)
+                {
+                    <span class="badge bg-white bg-opacity-20 px-3 py-2">
+                        <i class="bi bi-building me-1"></i>@employee.Division.Code
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="col-auto d-none d-md-block">
+            <div class="text-end">
+                <div class="text-white-50 small">Total Perangkat Aktif</div>
+                <div class="fs-1 fw-bold">@Model.Count</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (employee == null)
+{
+    <!-- NRP tidak terdaftar di database Employee -->
+    <div class="no-asset-placeholder management-card p-5">
+        <i class="bi bi-person-x fs-1 text-warning d-block mb-3"></i>
+        <h5 class="text-muted">NRP Tidak Ditemukan</h5>
+        <p class="text-muted small">NRP <strong>@nrp</strong> belum terdaftar di database karyawan.<br/>Silakan hubungi Administrator untuk mendaftarkan NRP Anda.</p>
+    </div>
+}
+else if (Model.Count == 0)
+{
+    <!-- Employee ada tapi tidak ada aset -->
+    <div class="no-asset-placeholder management-card p-5">
+        <i class="bi bi-laptop fs-1 text-muted d-block mb-3"></i>
+        <h5 class="text-muted">Belum Ada Perangkat</h5>
+        <p class="text-muted small">Belum ada perangkat IT yang dialokasikan ke akun Anda saat ini.<br/>Silakan hubungi tim ITAssetTrack jika ada pertanyaan.</p>
+    </div>
+}
+else
+{
+    <!-- Daftar Aset Milik User -->
+    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-laptop text-primary me-2"></i>Perangkat Saya</h6>
+    <div class="row g-3 mb-4">
+        @foreach (var a in Model)
+        {
+            var asset = a.Asset;
+            var brand = asset.BrandObj?.Name ?? asset.Brand ?? "-";
+            var deviceType = asset.DeviceTypeObj?.Name ?? asset.DeviceType ?? "Perangkat";
+            var statusClass = asset.Status switch {
+                "InUse" => "success",
+                "UnderMaintenance" => "warning",
+                "UrgentRepair" => "danger",
+                _ => "secondary"
+            };
+            var statusLabel = asset.Status switch {
+                "InUse" => "Aktif Digunakan",
+                "UnderMaintenance" => "Dalam Maintenance",
+                "UrgentRepair" => "Perbaikan Mendesak",
+                _ => asset.Status
+            };
+
+            <div class="col-md-6 col-lg-4">
+                <div class="asset-card card h-100">
+                    <div class="asset-card-header">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold text-dark">@brand @asset.Model</div>
+                                <div class="text-muted small">@deviceType</div>
+                            </div>
+                            <span class="badge bg-@statusClass">@statusLabel</span>
+                        </div>
+                    </div>
+                    <div class="card-body px-3 py-2">
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-upc-scan me-1"></i>Serial Number</span>
+                            <span class="spec-value font-monospace">@asset.SerialNumber</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-pc me-1"></i>Computer Name</span>
+                            <span class="spec-value">@(string.IsNullOrEmpty(asset.ComputerName) ? "-" : asset.ComputerName)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-cpu me-1"></i>Processor</span>
+                            <span class="spec-value">@(string.IsNullOrEmpty(asset.Processor) ? "-" : asset.Processor)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-memory me-1"></i>RAM</span>
+                            <span class="spec-value">@(string.IsNullOrEmpty(asset.Ram) ? "-" : asset.Ram)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-hdd me-1"></i>Storage</span>
+                            <span class="spec-value">@(string.IsNullOrEmpty(asset.Storage) ? "-" : asset.Storage)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-windows me-1"></i>Windows</span>
+                            <span class="spec-value">@(string.IsNullOrEmpty(asset.WindowsVersion) ? "-" : asset.WindowsVersion)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label"><i class="bi bi-calendar3 me-1"></i>Mulai Digunakan</span>
+                            <span class="spec-value">@a.AssignDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Riwayat PM -->
+    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-clipboard2-check text-primary me-2"></i>Riwayat Preventive Maintenance</h6>
+    <div class="management-card p-3">
+        @if (!pmHistory.Any())
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+                Belum ada riwayat PM untuk perangkat Anda.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tanggal PM</th>
+                            <th>Serial Number</th>
+                            <th>Teknisi</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pm in pmHistory)
+                        {
+                            var pmBadge = pm.Status switch {
+                                "Completed" or "Complete" => "pm-badge-done",
+                                "In Progress" => "pm-badge-progress",
+                                _ => "pm-badge-planned"
+                            };
+                            <tr>
+                                <td>@(pm.PlanDate?.ToString("dd MMM yyyy") ?? pm.PlanMonth)</td>
+                                <td><code class="small">@pm.SerialNumber</code></td>
+                                <td>@(string.IsNullOrEmpty(pm.PerformedBy) ? "-" : pm.PerformedBy)</td>
+                                <td><span class="badge @pmBadge px-2 py-1">@pm.Status</span></td>
+                                <td class="text-muted small">@(string.IsNullOrEmpty(pm.Remark) ? "-" : pm.Remark)</td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(pm.UserHandoverSignature))
+                                    {
+                                        <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = pm.Id })" class="btn btn-sm btn-primary rounded-pill px-3 py-0">
+                                            <i class="bi bi-pencil-fill me-1"></i> TTD
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Signed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

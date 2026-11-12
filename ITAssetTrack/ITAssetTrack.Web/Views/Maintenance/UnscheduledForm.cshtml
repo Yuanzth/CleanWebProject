@@ -1,0 +1,376 @@
+@model ITAssetTrack.Models.UnscheduledMaint
+@{
+    ViewData["Title"] = "Form Unscheduled Maintenance";
+    ViewData["PageLabel"] = "Unscheduled PM";
+}
+
+@{
+    bool isApprover1 = User.IsInRole("Approver1");
+    bool isApprover2 = User.IsInRole("Approver2");
+    bool isApprover = isApprover1 || isApprover2;
+    bool canViewApprovals = isApprover || User.IsInRole("Admin") || User.IsInRole("Coordinator");
+    int pendingCount = ViewBag.PendingApprovalCount is int count ? count : 0;
+}
+
+
+<!-- Tab Nav -->
+<div class="tab-nav mb-3 p-2">
+    <div class="d-flex gap-1 gap-sm-2 w-100">
+        <a href="@Url.Action("UnscheduledForm", "Maintenance")" class="tab-btn flex-fill text-center justify-content-center active">
+            <i class="bi bi-file-earmark-text me-1"></i><span class="d-none d-sm-inline">Form Unscheduled</span><span class="d-inline d-sm-none">Form</span>
+        </a>
+        <a href="@Url.Action("UnscheduledList", "Maintenance", new { listTab = "list" })" class="tab-btn flex-fill text-center justify-content-center">
+            <i class="bi bi-list-ul me-1"></i><span class="d-none d-sm-inline">List Unscheduled</span><span class="d-inline d-sm-none">List Log</span>
+        </a>
+        @if (canViewApprovals)
+        {
+            <a href="@Url.Action("UnscheduledList", "Maintenance", new { listTab = "approval" })" class="tab-btn flex-fill text-center justify-content-center">
+                <i class="bi bi-patch-check me-1"></i><span class="d-none d-sm-inline">Approval Unscheduled</span><span class="d-inline d-sm-none">Approval</span>
+                @if (pendingCount > 0)
+                {
+                    <span class="badge bg-danger ms-1" style="font-size:10px;">@pendingCount</span>
+                }
+            </a>
+        }
+    </div>
+</div>
+
+<style>
+    .uf-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.07);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .uf-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 24px;
+        background: linear-gradient(135deg, #0f2b5b 0%, #1a4598 100%);
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.3px;
+    }
+    .uf-card-header i {
+        font-size: 16px;
+        opacity: 0.9;
+    }
+    .uf-card-body {
+        padding: 24px;
+    }
+    .uf-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    .uf-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+    }
+    .uf-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .uf-field label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #374151;
+    }
+    .uf-field label .req {
+        color: #dc2626;
+        margin-left: 2px;
+    }
+    .uf-input, .uf-select, .uf-textarea {
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 14px;
+        background: #fafafa;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        outline: none;
+        width: 100%;
+        font-family: inherit;
+        color: #111827;
+    }
+    .uf-input:focus, .uf-select:focus, .uf-textarea:focus {
+        border-color: #1a4598;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(26,69,152,0.1);
+    }
+    .uf-select {
+        appearance: auto;
+    }
+    .uf-textarea {
+        resize: vertical;
+        min-height: 90px;
+    }
+    .uf-photo-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 20px 24px;
+        background: #f8faff;
+        transition: border-color 0.2s, background 0.2s;
+        cursor: pointer;
+    }
+    .uf-photo-zone:hover {
+        border-color: #1a4598;
+        background: #eef3ff;
+    }
+    .uf-photo-zone .photo-icon {
+        font-size: 32px;
+        color: #1a4598;
+        opacity: 0.6;
+    }
+    .uf-photo-label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #374151;
+    }
+    .uf-badge-priority {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .uf-submit-btn {
+        background: linear-gradient(135deg, #1a4598, #0f2b5b);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 36px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(26,69,152,0.3);
+    }
+    .uf-submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(26,69,152,0.4);
+    }
+    .uf-hint {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 4px;
+    }
+    @@media (max-width: 768px) {
+        .uf-grid-2, .uf-grid-3 { grid-template-columns: 1fr; }
+    }
+</style>
+
+<form asp-action="UnscheduledForm" method="post" id="pmForm" enctype="multipart/form-data">
+
+    <!-- Identitas Aset & User -->
+    <div class="uf-card">
+        <div class="uf-card-header">
+            <i class="bi bi-pc-display"></i>
+            Identitas Aset & User
+        </div>
+        <div class="uf-card-body">
+            <div class="uf-grid-2 mb-4">
+                <div class="uf-field">
+                    <label>Serial Number <span class="req">*</span></label>
+                    <input type="text" class="uf-input" asp-for="SerialNumber" id="SerialNumber"
+                           placeholder="Ketik Serial Number lalu tekan Tab..." required />
+                    <span class="uf-hint"><i class="bi bi-lightning-charge me-1"></i>Otomatis mengisi data aset dari database</span>
+                </div>
+                <div class="uf-field">
+                    <label>Computer / Device Name <span class="req">*</span></label>
+                    <input type="text" class="uf-input" asp-for="ComputerName" id="ComputerName"
+                           placeholder="Nama komputer / perangkat" required />
+                </div>
+            </div>
+            <div class="uf-grid-2 mb-4">
+                <div class="uf-field">
+                    <label>Nama User Pelapor <span class="req">*</span></label>
+                    <input type="text" class="uf-input" asp-for="NamaUser" id="NamaUser"
+                           placeholder="Nama lengkap pengguna" required />
+                </div>
+                <div class="uf-field">
+                    <label>Site / Lokasi <span class="req">*</span></label>
+                    <select class="uf-select" asp-for="Site" id="Site" required>
+                        <option value="">-- Pilih Site --</option>
+                        <option>HQ_DEPT</option>
+                        <option>SITE_A</option>
+                        <option>SITE_B</option>
+                        <option>SITE_C</option>
+                        <option>SITE_D</option>
+                        <option>SITE_H</option>
+                        <option>SITE_G</option>
+                    </select>
+                </div>
+            </div>
+            <div class="uf-grid-3">
+                <div class="uf-field">
+                    <label>Tanggal Laporan <span class="req">*</span></label>
+                    <input type="date" class="uf-input" asp-for="Tanggal" required />
+                </div>
+                <div class="uf-field">
+                    <label>Kategori Trouble <span class="req">*</span></label>
+                    <select class="uf-select" asp-for="TroubleKategori">
+                        <option value="Audio">Audio</option>
+                        <option value="Battery">Battery</option>
+                        <option value="Camera">Camera</option>
+                        <option value="Charger">Charger</option>
+                        <option value="Cooling">Cooling</option>
+                        <option value="Display">Display</option>
+                        <option value="Hardware" selected>Hardware</option>
+                        <option value="Input Device">Input Device</option>
+                        <option value="Network">Network</option>
+                        <option value="Performance">Performance</option>
+                        <option value="Peripheral">Peripheral</option>
+                        <option value="Physical">Physical</option>
+                        <option value="Power">Power</option>
+                        <option value="Security">Security</option>
+                        <option value="Software">Software</option>
+                        <option value="Storage">Storage</option>
+                        <option value="UEFI">UEFI</option>
+                        <option value="Windows">Windows</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="uf-field">
+                    <label>Prioritas <span class="req">*</span></label>
+                    <select class="uf-select" asp-for="Priority">
+                        <option value="Normal">Normal</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Trouble -->
+    <div class="uf-card">
+        <div class="uf-card-header">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Detail Keluhan & Status Awal
+        </div>
+        <div class="uf-card-body">
+            <div class="uf-field mb-4">
+                <label>Deskripsi Keluhan / Trouble <span class="req">*</span></label>
+                <textarea class="uf-textarea" asp-for="Keluhan" rows="3" required
+                          placeholder="Jelaskan masalah secara detail — gejala, kapan terjadi, dampak terhadap pekerjaan..."></textarea>
+            </div>
+            <div class="uf-grid-2">
+                <div class="uf-field">
+                    <label>Status Awal <span class="req">*</span></label>
+                    <select class="uf-select" asp-for="Status">
+                        <option value="Open">Open — Belum Dikerjakan</option>
+                        <option value="InProgress">In Progress — Sedang Dikerjakan</option>
+                        <option value="WaitingSparepart">Waiting Sparepart — Menunggu Suku Cadang</option>
+                    </select>
+                </div>
+                <div class="uf-field">
+                    <label>Catatan Teknisi (Remark)</label>
+                    <input type="text" class="uf-input" asp-for="Remark"
+                           placeholder="Opsional — tindakan awal yang sudah dilakukan..." />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dokumentasi Foto -->
+    <div class="uf-card">
+        <div class="uf-card-header">
+            <i class="bi bi-camera-fill"></i>
+            Dokumentasi Foto Perbaikan
+        </div>
+        <div class="uf-card-body">
+            <div class="uf-field">
+                <label class="uf-photo-label">
+                    Upload Foto Dokumentasi <span class="req">*</span>
+                </label>
+                <label class="uf-photo-zone d-flex flex-column align-items-center gap-2 text-center" for="photosInput" style="cursor:pointer;">
+                    <i class="bi bi-cloud-upload photo-icon"></i>
+                    <div>
+                        <div style="font-weight:600; color:#1a4598; font-size:15px;">Klik untuk memilih foto</div>
+                        <div style="font-size:12px; color:#6b7280; margin-top:4px;">Mendukung JPG, PNG, WEBP — bisa pilih lebih dari 1 foto</div>
+                    </div>
+                    <input type="file" name="photos" id="photosInput" class="d-none" multiple accept="image/*" required />
+                </label>
+                <div id="photoPreview" class="d-flex flex-wrap gap-2 mt-3"></div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                    <span style="font-size:12px; font-weight:600; color:#dc2626;">Dokumentasi foto wajib diunggah minimal 1 foto sebelum submit.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Submit -->
+    <div class="d-flex justify-content-end mt-2 mb-5">
+        <a href="@Url.Action("UnscheduledList", "Maintenance")" class="btn btn-outline-secondary px-4 me-3" style="border-radius:12px; font-weight:600;">
+            <i class="bi bi-x-circle me-1"></i> Batal
+        </a>
+        <button type="submit" class="uf-submit-btn" id="submitBtn">
+            <i class="bi bi-send-fill"></i>
+            Submit Log Unscheduled
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        // Serial Number autofill
+        document.getElementById("SerialNumber").addEventListener("change", async function(e) {
+            const sn = e.target.value.trim();
+            if (!sn) return;
+            try {
+                const res = await fetch(`@Url.Action("GetAssetBySN","Maintenance")?sn=${encodeURIComponent(sn)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        document.getElementById("ComputerName").value = data.computerName || '';
+                        document.getElementById("NamaUser").value = data.namaUser || '';
+                        const siteSelect = document.getElementById("Site");
+                        if (siteSelect) siteSelect.value = data.site || '';
+                    }
+                }
+            } catch(e) { console.error(e); }
+        });
+
+        // Photo preview
+        document.getElementById("photosInput").addEventListener("change", function() {
+            const preview = document.getElementById("photoPreview");
+            preview.innerHTML = "";
+            Array.from(this.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = document.createElement("img");
+                    img.src = e.target.result;
+                    img.style.cssText = "width:80px;height:80px;object-fit:cover;border-radius:8px;border:2px solid #1a4598;";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+            if (this.files.length > 0) {
+                document.querySelector(".uf-photo-zone div div:first-child").textContent = `${this.files.length} foto dipilih`;
+            }
+        });
+
+        // Validation: mandatory photos
+        document.getElementById("pmForm").addEventListener("submit", function(e) {
+            const photosInput = document.getElementById("photosInput");
+            if (!photosInput || photosInput.files.length === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Dokumentasi Wajib',
+                    text: 'Silakan pilih minimal 1 foto dokumentasi perbaikan sebelum mengirim tiket.',
+                    confirmButtonColor: '#dc2626',
+                    customClass: { popup: 'rounded-4' }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,243 @@
+@{
+    ViewData["Title"] = "Manage Site & Zone";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-server fa-2x text-primary me-3"></i>
+        <h2 class="mb-0 fw-bold">Manage Asset Location</h2>
+    </div>
+    
+    <div class="manage-card card shadow-sm border-0 p-3">
+        <ul class="nav nav-tabs custom-tabs mb-4" id="manageTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-site" type="button" role="tab"><i class="fa-solid fa-location-dot"></i> Site (District)</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-zone" type="button" role="tab"><i class="fa-solid fa-layer-group"></i> Zone</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-site" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('site')"><i class="fa-solid fa-plus"></i> Add Site</button>
+                </div>
+                <table id="siteTable" class="table table-hover w-100 align-middle">
+                    <thead class="table-light"><tr><th>Site Code</th><th>Site Name</th><th>Coordinate</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+
+            <div class="tab-pane fade" id="tab-zone" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('zone')"><i class="fa-solid fa-plus"></i> Add Zone</button>
+                </div>
+                <table id="zoneTable" class="table table-hover w-100 align-middle">
+                    <thead class="table-light"><tr><th>Zone Code</th><th>Zone Name</th><th>Description</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* MODAL SITE *@
+<div class="modal fade" id="siteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="siteModalTitle">Form Site</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="siteForm">
+                <input type="hidden" id="site_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Site Code (District)</label><input type="text" id="site_code" name="SiteCode" class="form-control" required placeholder="ex: SITE_L"></div>
+                    <div class="mb-3"><label class="form-label">Site Name</label><input type="text" id="site_name" name="SiteName" class="form-control" placeholder="Full Name Site"></div>
+                    <div class="row">
+                        <div class="col-6 mb-3"><label class="form-label">Latitude</label><input type="number" step="any" id="latitude" name="Latitude" class="form-control"></div>
+                        <div class="col-6 mb-3"><label class="form-label">Longitude</label><input type="number" step="any" id="longitude" name="Longitude" class="form-control"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* MODAL ZONE *@
+<div class="modal fade" id="zoneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="zoneModalTitle">Form Zone</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="zoneForm">
+                <input type="hidden" id="zone_id_input" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Site</label>
+                        <select name="SiteId" id="site_id_select" class="form-select" required>
+                            <option value="">-- Choose Site --</option>
+                            @foreach(var site in ViewBag.Sites) { <option value="@site.Id">@site.SiteCode</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Zone Code <span class="text-danger">*</span></label>
+                        <input type="text" id="zone_code" name="ZoneCode" class="form-control" required placeholder="ex: SITE_L-A">
+                        <div class="form-text text-muted">Kode unik zona, contoh: SITE_C-A, SITE_L-B</div>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Zone Name</label><input type="text" id="zone_name" name="ZoneName" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Description</label><input type="text" id="zone_desc" name="Description" class="form-control"></div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+    let tSite, tZone;
+
+    $(document).ready(function() {
+        tSite = $('#siteTable').DataTable({
+            ajax: { url: "/Shared/ManageAreaSite/GetData", data: { type: 'site' } },
+            columns: [
+                { data: 'siteCode', render: function(d) { return `<strong>${d}</strong>`; } },
+                { data: 'siteName' },
+                { 
+                    data: 'latitude',
+                    render: function(data, type, row) {
+                        return `<small class="text-muted">${row.latitude}, ${row.longitude}</small>`;
+                    }
+                },
+                {
+                    data: 'id',
+                    orderable: false,
+                    className: 'text-center',
+                    render: function(data) {
+                        return `<button class="btn btn-sm btn-outline-primary me-1 edit-site-btn" data-id="${data}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger delete-site-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true,
+            language: { search: "_INPUT_", searchPlaceholder: "Search sites..." }
+        });
+
+        tZone = $('#zoneTable').DataTable({
+            ajax: { url: "/Shared/ManageAreaSite/GetData", data: { type: 'zone' } },
+            columns: [
+                { data: 'zoneCode', render: function(d) { return `<strong>${d}</strong>`; } },
+                { data: 'zoneName' },
+                { data: 'description' },
+                {
+                    data: 'id',
+                    orderable: false,
+                    className: 'text-center',
+                    render: function(data) {
+                        return `<button class="btn btn-sm btn-outline-primary me-1 edit-zone-btn" data-id="${data}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger delete-zone-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true,
+            language: { search: "_INPUT_", searchPlaceholder: "Search zones..." }
+        });
+
+        // Submit Site
+        $('#siteForm').submit(function(e) {
+            e.preventDefault();
+
+            // Format angka agar menggunakan titik (.) bukan koma (,) sebelum disubmit
+            let latInput = $('#latitude');
+            let lngInput = $('#longitude');
+            if (latInput.val()) latInput.val(latInput.val().replace(/,/g, '.'));
+            if (lngInput.val()) lngInput.val(lngInput.val().replace(/,/g, '.'));
+
+            let id = $('#site_id').val();
+            let url = id ? `/Shared/ManageAreaSite/Site/${id}` : "/Shared/ManageAreaSite/Site";
+            executeAjax(url, id ? 'PUT' : 'POST', $(this).serialize(), 'siteModal', [tSite, tZone]);
+        });
+
+        // Submit Zone
+        $('#zoneForm').submit(function(e) {
+            e.preventDefault();
+            let id = $('#zone_id_input').val();
+            let url = id ? `/Shared/ManageAreaSite/Zone/${id}` : "/Shared/ManageAreaSite/Zone";
+            executeAjax(url, id ? 'PUT' : 'POST', $(this).serialize(), 'zoneModal', [tZone]);
+        });
+
+        // Edit Site
+        $('body').on('click', '.edit-site-btn', function() {
+            $.get(`/Shared/ManageAreaSite/Site/${$(this).data('id')}`, function(data) {
+                $('#siteModalTitle').text('Edit Site');
+                $('#site_id').val(data.id);
+                $('#site_code').val(data.siteCode);
+                $('#site_name').val(data.siteName);
+                $('#latitude').val(data.latitude);
+                $('#longitude').val(data.longitude);
+                $('#siteModal').modal('show');
+            });
+        });
+
+        // Edit Zone
+        $('body').on('click', '.edit-zone-btn', function() {
+            $.get(`/Shared/ManageAreaSite/Zone/${$(this).data('id')}`, function(data) {
+                $('#zoneModalTitle').text('Edit Zone');
+                $('#zone_id_input').val(data.id);
+                $('#site_id_select').val(data.siteId);
+                $('#zone_code').val(data.zoneCode);
+                $('#zone_name').val(data.zoneName);
+                $('#zone_desc').val(data.description);
+                $('#zoneModal').modal('show');
+            });
+        });
+
+        // Delete
+        $('body').on('click', '.delete-site-btn', function() { deleteData(`/Shared/ManageAreaSite/Site/${$(this).data('id')}`, tSite); });
+        $('body').on('click', '.delete-zone-btn', function() { deleteData(`/Shared/ManageAreaSite/Zone/${$(this).data('id')}`, tZone); });
+    });
+
+    function showModal(type) {
+        $(`#${type}Form`)[0].reset();
+        if(type === 'site') { $('#site_id').val(''); $('#siteModalTitle').text('Add Site'); }
+        if(type === 'zone') { $('#zone_id_input').val(''); $('#zoneModalTitle').text('Add Zone'); }
+        $(`#${type}Modal`).modal('show');
+    }
+
+    function executeAjax(url, method, data, modalId, tablesToReload) {
+        $.ajax({
+            url: url, type: method, data: data,
+            success: function(res) {
+                $(`#${modalId}`).modal('hide');
+                tablesToReload.forEach(table => table.ajax.reload(null, false));
+                Swal.fire('Success', res.success, 'success');
+            },
+            error: function(xhr) {
+                let errorMsg = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : 'Check your form input.';
+                Swal.fire('Error', errorMsg, 'error');
+            }
+        });
+    }
+
+    function deleteData(url, table) {
+        Swal.fire({ title: 'Delete data?', text: 'Data cannot be restored!', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, Delete!' }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: url, type: 'DELETE',
+                    success: function(res) { table.ajax.reload(null, false); Swal.fire('Deleted', res.success, 'success'); },
+                    error: function(xhr) { Swal.fire('Error', 'Failed to delete data', 'error'); }
+                });
+            }
+        });
+    }
+    </script>
+}

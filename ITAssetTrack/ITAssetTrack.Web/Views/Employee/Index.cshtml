@@ -1,0 +1,166 @@
+@{
+    ViewData["Title"] = "Manajemen Data Employee";
+}
+
+<div class="management-card p-4">
+    <div class="table-responsive">
+        <table id="employeeTable" class="table management-table align-middle w-100">
+            <thead>
+                <tr>
+                    <th>Nama Employee</th>
+                    <th>NRP</th>
+                    <th>Site / Lokasi</th>
+                    <th>Department</th>
+                    <th>Division</th>
+                    <th>Aset Teralokasi (SN)</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const token = $('input[name="__RequestVerificationToken"]').val();
+
+            // DataTables Server-Side Processing (Yajra Style)
+            const table = $('#employeeTable').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: false,
+                ajax: {
+                    url: '/api/employee/datatables',
+                    type: 'POST'
+                },
+                columns: [
+                    {
+                        data: 'fullName',
+                        createdCell: function(td) { $(td).attr('data-label', 'Employee'); },
+                        render: function (data) {
+                            return `<span class="fw-bold text-dark">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'nrp',
+                        createdCell: function(td) { $(td).attr('data-label', 'NRP'); },
+                        render: function (data) {
+                            return `<span class="badge bg-light text-dark border font-monospace">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'site',
+                        createdCell: function(td) { $(td).attr('data-label', 'Site'); },
+                        render: function (data) {
+                            return `<span class="badge bg-info-subtle text-info">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'department',
+                        createdCell: function(td) { $(td).attr('data-label', 'Dept'); },
+                        render: function (data) {
+                            return `<span class="small text-muted">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'division',
+                        createdCell: function(td) { $(td).attr('data-label', 'Divisi'); },
+                        render: function (data) {
+                            return `<span class="badge bg-secondary-subtle text-secondary">${data || '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'activeAssetSN',
+                        createdCell: function(td) { $(td).attr('data-label', 'Aset SN'); },
+                        render: function (data) {
+                            if (data && data !== '-') {
+                                return `<span class="badge bg-primary-subtle text-primary font-monospace fw-bold"><i class="bi bi-laptop me-1"></i>${data}</span>`;
+                            }
+                            return `<span class="text-muted small">Tidak ada aset</span>`;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        createdCell: function(td) { $(td).attr('data-label', 'Aksi'); },
+                        render: function (data) {
+                            return `
+                                <div class="d-flex justify-content-end align-items-center gap-1">
+                                    <a href="/Employee/Edit/${data}" class="btn-action-icon btn-action-edit" title="Edit Employee">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn-action-icon btn-action-delete btn-delete-emp" data-id="${data}" title="Hapus Employee">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ],
+                language: {
+                    processing: '<div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div> Memuat data...',
+                    search: "",
+                    searchPlaceholder: "🔍 Cari (Nama / NRP / Site)...",
+                    lengthMenu: "Tampilkan _MENU_ baris",
+                    info: "_START_–_END_ dari _TOTAL_ employee",
+                    infoEmpty: "0 employee ditemukan",
+                    zeroRecords: "Tidak ada data yang cocok",
+                    paginate: { first: "Awal", last: "Akhir", next: "→", previous: "←" }
+                },
+                initComplete: function () {
+                    @if (!User.IsInRole("Viewer"))
+                    {
+                        <text>
+                        const filterWrapper = $('#employeeTable_filter');
+                        const searchInput = filterWrapper.find('input');
+                        if (searchInput.length && !filterWrapper.find('.filter-input-btn-group').length) {
+                            searchInput.wrap('<div class="filter-input-btn-group"></div>');
+                            filterWrapper.find('.filter-input-btn-group').append(`
+                                <a href="/Employee/Create" class="btn btn-primary btn-sm flex-shrink-0" style="font-size:12px; padding:6px 12px; border-radius:8px; white-space:nowrap;">
+                                    <i class="bi bi-person-plus-fill me-1"></i><span class="d-none d-sm-inline">Tambah Employee Baru</span><span class="d-inline d-sm-none">+ Employee</span>
+                                </a>
+                            `);
+                        }
+                        </text>
+                    }
+                }
+            });
+
+            // SweetAlert2 Delete Confirmation
+            $('#employeeTable').on('click', '.btn-delete-emp', function () {
+                const empId = $(this).data('id');
+                Swal.fire({
+                    title: 'Hapus Employee ini?',
+                    text: "Data karyawan yang dihapus tidak dapat dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal',
+                    customClass: { popup: 'rounded-4' }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: `/Employee/Delete/${empId}`,
+                            type: 'POST',
+                            data: { __RequestVerificationToken: token },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false });
+                                    table.ajax.reload();
+                                } else {
+                                    Swal.fire('Gagal!', res.message, 'error');
+                                }
+                            },
+                            error: function () { Swal.fire('Error!', 'Gagal menghubungi server.', 'error'); }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

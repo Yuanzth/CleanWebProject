@@ -1,0 +1,515 @@
+<div class="card h-100">
+    <div class="card-header map-header-info p-3">
+        <div id="selectedTowerInfo" class="map-detail-list">
+            <div id="towerDetailContainer" class="map-detail d-flex align-items-center">
+                <i id="currentTowerIcon" class="fa-solid fa-tower-cell text-primary me-2"></i>
+                <span id="currentTowerName" class="map-device-name">-</span>
+                <span id="currentTowerHeight" class="badge bg-secondary map-meta-badge" style="display: none;"></span>
+                <span id="currentTowerNetworkArea" class="badge bg-secondary map-meta-badge" style="display: none;"></span>
+            </div>
+            <div id="generatorDetailContainer" class="map-detail d-flex align-items-center">
+                <i id="currentGeneratorIcon" class="fa-solid fa-plug-circle-bolt text-primary me-2"></i>
+                <span id="currentGeneratorName" class="map-device-name">-</span>
+            </div>
+            <div class="map-detail map-coord-detail d-flex align-items-center">
+                <i class="fa-solid fa-location-dot text-danger me-2"></i>
+                <span id="currentCoordinates">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div id="map" style="width: 100%; height: 100%; min-height: 300px; border-radius: 0 0 10px 10px;"></div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+<script>
+    let map;
+    let markers = {};
+    let backControlBtn = null;
+    let mapViewLevel = 'all-sites';
+
+    async function loadAllSitesOnMap() {
+        
+        
+
+        try {
+            const response = await fetch('/api/monitoring/sidebar-sites', {
+                credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (!(result && result.status === 'success' && Array.isArray(result.data) && result.data.length > 0)) return;
+
+            const locations = result.data
+                .map(site => ({
+                    id: site.id,
+                    code: site.code,
+                    name: site.name,
+                    has_sensor_issue: !!site.has_sensor_issue,
+                    sensor_issue_count: parseInt(site.sensor_issue_count, 10) || 0,
+                    latitude: parseFloat(site.latitude),
+                    longitude: parseFloat(site.longitude)
+                }))
+                .filter(site => !isNaN(site.latitude) && !isNaN(site.longitude) && site.latitude !== 0 && site.longitude !== 0);
+
+            if (locations.length === 0) return;
+
+            window.updateMapMarkers(locations, 'site');
+            window.zoomToArea(locations);
+            setMapViewLevel('all-sites');
+        } catch (error) {
+            console.error('[Map] loadAllSitesOnMap error:', error);
+        }
+    }
+
+    function setBackControlEnabled(enabled) {
+        if (!backControlBtn) return;
+        backControlBtn.disabled = !enabled;
+        backControlBtn.style.opacity = '1';
+        backControlBtn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+        backControlBtn.title = enabled ? 'Back' : 'Select a site first';
+    }
+
+    function setMapViewLevel(level) {
+        const normalized = (level === 'zone' || level === 'site-zones') ? level : 'all-sites';
+        mapViewLevel = normalized;
+        setBackControlEnabled(normalized !== 'all-sites');
+    }
+
+    window.setMonitoringMapViewLevel = function (level) {
+        setMapViewLevel(level);
+    };
+
+    window.getMonitoringMapViewLevel = function () {
+        return mapViewLevel;
+    };
+
+    function createZoomBackControl() {
+        const ZoomBackControl = L.Control.extend({
+            options: { position: 'topleft' },
+
+            onAdd: function () {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+
+                const zoomIn = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
+                zoomIn.href = '#';
+                zoomIn.title = 'Zoom in';
+                zoomIn.innerHTML = '<span aria-hidden="true">+</span>';
+
+                const backBtn = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
+                backBtn.href = '#';
+                backBtn.title = 'Back';
+                backBtn.innerHTML = '<span aria-hidden="true"><i class="fa-solid fa-arrow-left"></i></span>';
+                backBtn.style.fontSize = '14px';
+
+                const zoomOut = L.DomUtil.create('a', 'leaflet-control-zoom-out', container);
+                zoomOut.href = '#';
+                zoomOut.title = 'Zoom out';
+                zoomOut.innerHTML = '<span aria-hidden="true">-</span>';
+
+                L.DomEvent.disableClickPropagation(container);
+
+                L.DomEvent.on(zoomIn, 'click', function (e) {
+                    L.DomEvent.preventDefault(e);
+                    map.zoomIn();
+                });
+
+                L.DomEvent.on(zoomOut, 'click', function (e) {
+                    L.DomEvent.preventDefault(e);
+                    map.zoomOut();
+                });
+
+                L.DomEvent.on(backBtn, 'click', function (e) {
+                    L.DomEvent.preventDefault(e);
+                    if (backBtn.disabled) return;
+
+                    if (mapViewLevel === 'zone' && typeof window.focusSelectedSiteZones === 'function') {
+                        window.focusSelectedSiteZones();
+                        return;
+                    }
+
+                    if (mapViewLevel === 'site-zones' && typeof window.focusAllSitesMap === 'function') {
+                        window.focusAllSitesMap();
+                    }
+                });
+
+                backControlBtn = backBtn;
+                setBackControlEnabled(false);
+
+                return container;
+            }
+        });
+
+        return new ZoomBackControl();
+    }
+
+    function smoothFlyTo(lat, lng, zoom, duration = 1.2) {
+        if (!map || isNaN(lat) || isNaN(lng)) return;
+        if (typeof map.stop === 'function') map.stop();
+        map.flyTo([lat, lng], zoom, {
+            animate: true,
+            duration: duration,
+            easeLinearity: 0.2
+        });
+    }
+
+    function autoFitSingleLineText(el, defaultSize, minSize) {
+        if (!el) return;
+        
+        let current = defaultSize;
+        el.style.fontSize = current + 'px';
+        
+        setTimeout(() => {
+            while (el.scrollWidth > el.clientWidth && current > minSize) {
+                current -= 0.5;
+                el.style.fontSize = current + 'px';
+            }
+        }, 10);
+    }
+
+    window.setCurrentDeviceInfo = function ({
+        towerName = null,
+        generatorName = null,
+        towerStatus = null,
+        generatorStatus = null,
+        towerHeight = null,
+        towerNetworkArea = null
+    } = {}) {
+        const towerNameEl        = document.getElementById('currentTowerName');
+        const generatorNameEl    = document.getElementById('currentGeneratorName');
+        const towerIconEl        = document.getElementById('currentTowerIcon');
+        const generatorIconEl    = document.getElementById('currentGeneratorIcon');
+        const towerCardEl        = document.getElementById('towerDetailContainer');
+        const generatorCardEl    = document.getElementById('generatorDetailContainer');
+        const towerHeightEl      = document.getElementById('currentTowerHeight');
+        const towerNetworkAreaEl = document.getElementById('currentTowerNetworkArea');
+
+        //hover
+        if (towerNameEl && towerName !== null) {
+            const txt = towerName || '-';
+            towerNameEl.textContent = txt;
+            autoFitSingleLineText(towerNameEl, 15, 10); 
+            if (txt && txt !== '-') {
+                towerNameEl.setAttribute('data-tooltip', txt);
+                towerNameEl.setAttribute('title', txt);
+            } else {
+                towerNameEl.removeAttribute('data-tooltip');
+                towerNameEl.removeAttribute('title');
+            }
+        }
+
+        if (generatorNameEl && generatorName !== null) {
+            const txt = generatorName || '-';
+            generatorNameEl.textContent = txt;
+            autoFitSingleLineText(generatorNameEl, 15, 10);
+            if (txt && txt !== '-') {
+                generatorNameEl.setAttribute('data-tooltip', txt);
+                generatorNameEl.setAttribute('title', txt);
+            } else {
+                generatorNameEl.removeAttribute('data-tooltip');
+                generatorNameEl.removeAttribute('title');
+            }
+        }
+
+        const resolvedNetworkArea = resolveTowerNetworkArea(towerNetworkArea, towerHeight);
+
+        if (towerHeightEl) {
+            if (towerHeight && !isNaN(towerHeight) && towerHeight > 0) {
+                towerHeightEl.textContent = towerHeight + 'm';
+                towerHeightEl.style.display = 'inline-block';
+            } else {
+                towerHeightEl.style.display = 'none';
+            }
+        }
+
+        if (towerNetworkAreaEl) {
+            if (resolvedNetworkArea) {
+                towerNetworkAreaEl.textContent = resolvedNetworkArea;
+                towerNetworkAreaEl.style.display = 'inline-block';
+            } else {
+                towerNetworkAreaEl.style.display = 'none';
+            }
+        }
+
+        if (towerCardEl && towerStatus !== null) {
+            const on = String(towerStatus).toLowerCase() === 'active' || String(towerStatus) === '1';
+            towerCardEl.style.transition = 'all 0.3s ease';
+            if (on) {
+                towerCardEl.style.backgroundColor = 'white';
+                towerCardEl.style.borderColor = '#f1f5f9';
+                if (towerNameEl) towerNameEl.style.color = '#334155';
+                if (towerIconEl) {
+                    towerIconEl.classList.remove('text-danger', 'text-white');
+                    towerIconEl.classList.add('text-primary');
+                }
+            } else {
+                towerCardEl.style.backgroundColor = 'rgba(239, 68, 68, 0.10)';
+                if (towerNameEl) towerNameEl.style.color = '#dc3545';
+                if (towerIconEl) {
+                    towerIconEl.classList.remove('text-primary', 'text-white');
+                    towerIconEl.classList.add('text-danger');
+                }
+            }
+        }
+
+        if (generatorCardEl && generatorStatus !== null) {
+            const on = String(generatorStatus).toLowerCase() === 'active' || String(generatorStatus) === '1';
+            generatorCardEl.style.transition = 'all 0.3s ease';
+            if (on) {
+                generatorCardEl.style.backgroundColor = 'white';
+                generatorCardEl.style.borderColor = '#f1f5f9';
+                if (generatorNameEl) generatorNameEl.style.color = '#334155';
+                if (generatorIconEl) {
+                    generatorIconEl.classList.remove('text-danger', 'text-white');
+                    generatorIconEl.classList.add('text-primary');
+                }
+            } else {
+                generatorCardEl.style.backgroundColor = 'rgba(239, 68, 68, 0.10)';
+                if (generatorNameEl) generatorNameEl.style.color = '#dc3545';
+                if (generatorIconEl) {
+                    generatorIconEl.classList.remove('text-primary', 'text-white');
+                    generatorIconEl.classList.add('text-danger');
+                }
+            }
+        }
+    };
+
+    function resolveTowerNetworkArea(rawNetworkArea, towerHeight) {
+        const input = String(rawNetworkArea || '').trim().toLowerCase();
+        if (input.includes('open') || input === 'oan') {
+            return 'OAN';
+        }
+        if (input.includes('campus') || input === 'can') {
+            return 'CAN';
+        }
+
+        const h = Number(towerHeight);
+        if (!isNaN(h) && h > 0) {
+            return h <= 45 ? 'OAN' : 'CAN';
+        }
+
+        return '';
+    }
+
+    window.updateCoordinateDisplay = function (lat, lng) {
+        const coordSpan = document.getElementById('currentCoordinates');
+        if (coordSpan && lat && lng) {
+            const a = parseFloat(lat), b = parseFloat(lng);
+            const full = `${Math.abs(a).toFixed(6)}°${a >= 0 ? 'N' : 'S'}  ${Math.abs(b).toFixed(6)}°E`;
+            const short = `${Math.abs(a).toFixed(4)}°${a >= 0 ? 'N' : 'S'} ${Math.abs(b).toFixed(4)}°E`;
+            coordSpan.textContent = short;
+            autoFitSingleLineText(coordSpan, 13, 9);
+            /* Tooltip hover tampilkan koordinat lengkap (6 desimal) */
+            coordSpan.setAttribute('data-tooltip', full);
+            coordSpan.setAttribute('title', full);
+        } else if (coordSpan) {
+            coordSpan.textContent = '-';
+            coordSpan.removeAttribute('data-tooltip');
+            coordSpan.removeAttribute('title');
+        }
+    };
+
+    // UPDATE: Menambahkan parameter zoneHeight
+    window.zoomToZone = function (lat, lng, zoneName = null, zoneHeight = null, zoneNetworkArea = null) {
+        if (!map || !lat || !lng) return;
+        const a = parseFloat(lat), b = parseFloat(lng);
+        smoothFlyTo(a, b, 15, 1.1);
+        window.updateCoordinateDisplay(a, b);
+        
+        if (zoneName) {
+            window.setCurrentDeviceInfo({ 
+                towerName: zoneName,
+                towerHeight: zoneHeight,
+                towerNetworkArea: zoneNetworkArea
+            });
+        }
+    };
+
+    window.zoomToArea = function (locations = []) {
+        if (!map || !Array.isArray(locations) || locations.length === 0) return;
+
+        const valid = locations
+            .map(loc => {
+                const latRaw = loc.latitude ?? loc.lat;
+                const lngRaw = loc.longitude ?? loc.lng;
+                const lat = parseFloat(latRaw);
+                const lng = parseFloat(lngRaw);
+                return [lat, lng];
+            })
+            .filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
+
+        if (valid.length === 0) return;
+
+        const bounds = L.latLngBounds(valid);
+        if (typeof map.stop === 'function') map.stop();
+        map.flyToBounds(bounds.pad(0.2), {
+            animate: true,
+            duration: 1.2,
+            easeLinearity: 0.2,
+            maxZoom: 16     
+        });
+    };
+
+    window.updateMapMarkers = function (locations, type) {
+        if (!map) return;
+        Object.values(markers).forEach(m => map.removeLayer(m));
+        markers = {};
+
+        locations.forEach(loc => {
+            const m_lat = parseFloat(loc.latitude ?? loc.lat);
+            const m_lng = parseFloat(loc.longitude ?? loc.lng);
+            if (isNaN(m_lat) || isNaN(m_lng) || m_lat === 0 || m_lng === 0) return;
+
+            let marker;
+
+            if (type === 'tower') {
+                const color = (loc.status === 'active' || loc.zone_status === 'active')
+                    ? '#0d6efd'
+                    : (loc.status === 'maintenance' || loc.zone_status === 'partial' || loc.zone_status === 'maintenance')
+                        ? '#f97316'
+                        : '#dc3545';
+
+                const hasSensorIssue = !!loc.sensor_issue;
+                const sensorIssueBadge = hasSensorIssue
+                    ? '<span class="tower-marker-alert-dot" title="Sensor null/mati"></span>'
+                    : '';
+
+                const icon = L.divIcon({
+                    html: `<div class="tower-marker-wrap" style="--tower-color:${color};">
+                            <div class="tower-marker-main">
+                                <i class="fa-solid fa-tower-cell" style="font-size:9px;"></i>
+                            </div>
+                            ${sensorIssueBadge}
+                           </div>`,
+                    className: 'custom-tower-icon',
+                    iconSize: [20, 20], iconAnchor: [10, 10]
+                });
+                marker = L.marker([m_lat, m_lng], { icon: icon }).addTo(map);
+                marker.bindTooltip(
+                    `<b>${loc.zone_name || loc.name || '-'}</b>`,
+                    { direction: 'top', offset: [0, -18] }
+                );
+                marker.on('click', () => {
+                    smoothFlyTo(parseFloat(m_lat), parseFloat(m_lng), 16, 0.9);
+                    document.dispatchEvent(new CustomEvent('zone-selected', {
+                        detail: {
+                            zone_id:               loc.zone_id  || loc.id,
+                            site_id:               loc.site_id  || null,
+                            zone_name:             loc.zone_name || loc.name,
+                            tower_device_name:     loc.tower_device_name     || null,
+                            generator_device_name: loc.generator_device_name || null,
+                            tower_status:          loc.tower_status          || null,
+                            generator_status:      loc.generator_status      || null,
+                            lat: m_lat,
+                            lng: m_lng,
+                            asset_height:          loc.asset_height          || null, // Amankan jika ada di data
+                            network_area:          loc.network_area          || null
+                        }
+                    }));
+                });
+            } else {
+                const siteHasIssue = !!(
+                    loc.has_sensor_issue ||
+                    loc.sensor_issue ||
+                    ((parseInt(loc.sensor_issue_count, 10) || 0) > 0)
+                );
+                const siteIcon = L.divIcon({
+                    html: `<div class="site-marker-wrap" style="--site-color:${siteHasIssue ? '#dc3545' : '#0d6efd'};">
+                            <div class="site-marker-main">
+                                <i class="fa-solid fa-location-dot" style="font-size:8px;"></i>
+                            </div>
+                            ${siteHasIssue ? '<span class="site-marker-alert-dot" title="Ada BTS critical/null pada site ini"></span>' : ''}
+                           </div>`,
+                    className: 'custom-site-icon',
+                    iconSize: [16, 16], iconAnchor: [8, 8]
+                });
+
+                marker = L.marker([m_lat, m_lng], { icon: siteIcon }).addTo(map);
+                marker.bindTooltip(`${loc.code || ''} ${loc.name || ''}`.trim());
+                marker.on('click', () => {
+                    const siteId = loc.id || loc.site_id || null;
+                    if (siteId && typeof window.selectSite === 'function') {
+                        window.selectSite(siteId);
+                        return;
+                    }
+
+                    // Fallback minimal: tetap fokus ke titik site jika resolver site belum tersedia.
+                    smoothFlyTo(parseFloat(m_lat), parseFloat(m_lng), 13, 1.0);
+                });
+            }
+            markers[loc.id || loc.zone_id || loc.name] = marker;
+        });
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        map = L.map('map', { zoomControl: false }).setView([-2.5, 118], 5);
+        createZoomBackControl().addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles © Esri'
+        }).addTo(map);
+
+        var initialLocations = @Html.Raw(Json.Serialize(ViewBag.InitialLocations ?? new string[] {}));
+        if (initialLocations.length > 0) {
+            window.updateMapMarkers(initialLocations, 'site');
+            var group = new L.featureGroup(Object.values(markers));
+            if (group.getLayers().length > 0) map.fitBounds(group.getBounds().pad(0.1));
+            setMapViewLevel('all-sites');
+        } else {
+            map.setView([-2.5489, 118.0149], 4);
+            loadAllSitesOnMap();
+        }
+
+        document.addEventListener('site-focus', function (e) {
+            var data = e.detail;
+            var siteLat = parseFloat(data.lat);
+            var siteLng = parseFloat(data.lng);
+
+            setMapViewLevel('site-zones');
+
+            if (!isNaN(siteLat) && !isNaN(siteLng) && siteLat !== 0 && siteLng !== 0) {
+                smoothFlyTo(siteLat, siteLng, 13, 1.1);
+                window.updateCoordinateDisplay(siteLat, siteLng);
+            }
+
+            if (data.zones && data.zones.length > 0) {
+                window.updateMapMarkers(data.zones, 'tower');
+                setTimeout(function () {
+                    window.zoomToArea(data.zones);
+                }, 1200);
+            }
+        });
+
+        document.addEventListener('region-selected', function (e) {
+            var locations = (e.detail && e.detail.locations) ? e.detail.locations : [];
+            if (locations.length > 0) {
+                setMapViewLevel('all-sites');
+                window.setCurrentDeviceInfo({
+                    towerName: '-', generatorName: '-',
+                    towerStatus: 'active', generatorStatus: 'active',
+                    towerHeight: null // Reset saat ganti region
+                });
+                window.updateCoordinateDisplay(null, null);
+                window.zoomToArea(locations);
+                window.updateMapMarkers(locations, 'site');
+            }
+        });
+
+        document.addEventListener('zone-selected', function () {
+            setMapViewLevel('zone');
+        });
+
+        window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
+    });
+</script>
+
+
+
+
+

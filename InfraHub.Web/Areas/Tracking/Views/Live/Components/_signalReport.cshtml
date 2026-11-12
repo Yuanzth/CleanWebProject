@@ -1,0 +1,162 @@
+@* Signal Strength Report Panel *@
+<aside class="signal-report-panel" id="signalReportPanel">
+    @* Panel Header *@
+    <div class="signal-report-header">
+        <div class="signal-report-title-row">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Signal Report Today</span>
+        </div>
+        <button class="signal-report-close" id="signalReportClose" title="Close Report">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    @* Unit Info Badge *@
+    <div class="signal-report-unit-badge" id="signalReportUnitBadge">
+        <img src="/assets/img/Tracking/HeavyDutyTruck/HD_Green.png" alt="Unit" id="signalReportUnitIcon" class="signal-report-unit-icon">
+        <div class="signal-report-site-icon" id="signalReportSiteIcon" style="display: none; width: 36px; height: 36px; align-items: center; justify-content: center; font-size: 20px; color: #D4952B; background: #fef3c7; border-radius: 8px;">
+            <i class="fa-solid fa-tower-broadcast"></i>
+        </div>
+        <div class="signal-report-unit-info">
+            <span class="signal-report-unit-name" id="signalReportUnitName">-</span>
+            <span class="signal-report-unit-date" id="signalReportUnitDate">-</span>
+        </div>
+    </div>
+
+    @* Summary Stats Row *@
+    <div class="signal-report-stats-row">
+        <div class="signal-stat-mini" id="signalStatTotal">
+            <span class="signal-stat-mini-value">0</span>
+            <span class="signal-stat-mini-label">Data Points</span>
+        </div>
+        <div class="signal-stat-mini" id="signalStatAvgRsrp">
+            <span class="signal-stat-mini-value">- dBm</span>
+            <span class="signal-stat-mini-label">Avg RSRP</span>
+        </div>
+        <div class="signal-stat-mini" id="signalStatAvgSinr">
+            <span class="signal-stat-mini-value">- dB</span>
+            <span class="signal-stat-mini-label">Avg SINR</span>
+        </div>
+    </div>
+
+    @* Donut Chart *@
+    <div class="signal-report-chart-container">
+        <canvas id="signalDonutChart" width="180" height="180"></canvas>
+        <div class="signal-donut-center" id="signalDonutCenter">
+            <span class="signal-donut-center-pct" id="signalDonutCenterPct">-</span>
+            <span class="signal-donut-center-label">Coverage</span>
+        </div>
+    </div>
+
+    @* Legend / Breakdown Bars *@
+    <div class="signal-report-breakdown" id="signalReportBreakdown">
+        @* Excellent *@
+        <div class="signal-bar-row" data-level="excellent">
+            <div class="signal-bar-indicator" style="background: #3b82f6;"></div>
+            <div class="signal-bar-info">
+                <span class="signal-bar-label">Excellent</span>
+                <span class="signal-bar-range">≥ -85 dBm</span>
+            </div>
+            <div class="signal-bar-track">
+                <div class="signal-bar-fill" id="signalBarExcellent" style="width:0%; background: #3b82f6;"></div>
+            </div>
+            <span class="signal-bar-pct" id="signalPctExcellent">0%</span>
+        </div>
+        @* Good *@
+        <div class="signal-bar-row" data-level="good">
+            <div class="signal-bar-indicator" style="background: #22c55e;"></div>
+            <div class="signal-bar-info">
+                <span class="signal-bar-label">Good</span>
+                <span class="signal-bar-range">-85 ~ -100</span>
+            </div>
+            <div class="signal-bar-track">
+                <div class="signal-bar-fill" id="signalBarGood" style="width:0%; background: #22c55e;"></div>
+            </div>
+            <span class="signal-bar-pct" id="signalPctGood">0%</span>
+        </div>
+        @* Fair *@
+        <div class="signal-bar-row" data-level="fair">
+            <div class="signal-bar-indicator" style="background: #eab308;"></div>
+            <div class="signal-bar-info">
+                <span class="signal-bar-label">Fair</span>
+                <span class="signal-bar-range">-100 ~ -105</span>
+            </div>
+            <div class="signal-bar-track">
+                <div class="signal-bar-fill" id="signalBarFair" style="width:0%; background: #eab308;"></div>
+            </div>
+            <span class="signal-bar-pct" id="signalPctFair">0%</span>
+        </div>
+        @* Poor *@
+        <div class="signal-bar-row" data-level="poor">
+            <div class="signal-bar-indicator" style="background: #ef4444;"></div>
+            <div class="signal-bar-info">
+                <span class="signal-bar-label">Poor</span>
+                <span class="signal-bar-range">-105 ~ -115</span>
+            </div>
+            <div class="signal-bar-track">
+                <div class="signal-bar-fill" id="signalBarPoor" style="width:0%; background: #ef4444;"></div>
+            </div>
+            <span class="signal-bar-pct" id="signalPctPoor">0%</span>
+        </div>
+        @* Very Poor *@
+        <div class="signal-bar-row" data-level="verypoor">
+            <div class="signal-bar-indicator" style="background: #a855f7;"></div>
+            <div class="signal-bar-info">
+                <span class="signal-bar-label">Very Poor</span>
+                <span class="signal-bar-range">&lt; -115 dBm</span>
+            </div>
+            <div class="signal-bar-track">
+                <div class="signal-bar-fill" id="signalBarverypoor" style="width:0%; background: #a855f7;"></div>
+            </div>
+            <span class="signal-bar-pct" id="signalPctverypoor">0%</span>
+        </div>
+    </div>
+
+    @* Detailed Signal Metrics *@
+    <div class="signal-report-metrics">
+        <div class="signal-metric-card" id="metricRssi" data-param="rssi" title="Klik untuk menampilkan breakdown & trace RSSI">
+            <div class="signal-metric-icon"><i class="fa-solid fa-signal"></i></div>
+            <div class="signal-metric-body">
+                <span class="signal-metric-title">RSSI</span>
+                <div class="signal-metric-values">
+                    <span class="signal-metric-val" id="metricRssiMin">Min: -</span>
+                    <span class="signal-metric-val" id="metricRssiMax">Max: -</span>
+                    <span class="signal-metric-val signal-metric-avg" id="metricRssiAvg">Avg: -</span>
+                </div>
+            </div>
+        </div>
+        <div class="signal-metric-card active" id="metricRsrp" data-param="rsrp" title="Klik untuk menampilkan breakdown & trace RSRP">
+            <div class="signal-metric-icon"><i class="fa-solid fa-tower-broadcast"></i></div>
+            <div class="signal-metric-body">
+                <span class="signal-metric-title">RSRP</span>
+                <div class="signal-metric-values">
+                    <span class="signal-metric-val" id="metricRsrpMin">Min: -</span>
+                    <span class="signal-metric-val" id="metricRsrpMax">Max: -</span>
+                    <span class="signal-metric-val signal-metric-avg" id="metricRsrpAvg">Avg: -</span>
+                </div>
+            </div>
+        </div>
+        <div class="signal-metric-card" id="metricRsrq" data-param="rsrq" title="Klik untuk menampilkan breakdown & trace RSRQ">
+            <div class="signal-metric-icon"><i class="fa-solid fa-wave-square"></i></div>
+            <div class="signal-metric-body">
+                <span class="signal-metric-title">RSRQ</span>
+                <div class="signal-metric-values">
+                    <span class="signal-metric-val" id="metricRsrqMin">Min: -</span>
+                    <span class="signal-metric-val" id="metricRsrqMax">Max: -</span>
+                    <span class="signal-metric-val signal-metric-avg" id="metricRsrqAvg">Avg: -</span>
+                </div>
+            </div>
+        </div>
+        <div class="signal-metric-card" id="metricSinr" data-param="sinr" title="Klik untuk menampilkan breakdown & trace SINR">
+            <div class="signal-metric-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="signal-metric-body">
+                <span class="signal-metric-title">SINR</span>
+                <div class="signal-metric-values">
+                    <span class="signal-metric-val" id="metricSinrMin">Min: -</span>
+                    <span class="signal-metric-val" id="metricSinrMax">Max: -</span>
+                    <span class="signal-metric-val signal-metric-avg" id="metricSinrAvg">Avg: -</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>

@@ -1,0 +1,52 @@
+@{
+    ViewData["Title"] = "Alokasi Perangkat Ke Employee";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1 fw-bold text-dark"><i class="bi bi-person-plus-fill text-primary me-2"></i>Alokasikan Perangkat Ke Employee</h4>
+        <p class="text-muted small mb-0">Pilih perangkat yang tersedia (Available) dan hubungkan dengan Employee pemakai</p>
+    </div>
+    <a href="@Url.Action("Index", "AssetAssignment")" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+        <i class="bi bi-arrow-left me-1"></i> Kembali
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+        <form asp-action="Assign" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Pilih Perangkat (Asset Available) <span class="text-danger">*</span></label>
+                    <select name="assetId" class="form-select rounded-3" required>
+                        <option value="">-- Pilih Asset Available --</option>
+                        @foreach (var asset in (IEnumerable<ITAssetTrack.Models.Asset>)ViewBag.AvailableAssets)
+                        {
+                            <option value="@asset.Id">SN: @asset.SerialNumber - @asset.Model (@asset.DeviceType)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Pilih Employee Pemakai <span class="text-danger">*</span></label>
+                    <select name="employeeId" class="form-select rounded-3" required>
+                        <option value="">-- Pilih Employee --</option>
+                        @foreach (var emp in (IEnumerable<ITAssetTrack.Models.Employee>)ViewBag.Employees)
+                        {
+                            <option value="@emp.Id">@emp.FullName (NRP: @(string.IsNullOrEmpty(emp.NRP) ? "-" : emp.NRP)) - Site: @(emp.Site?.Code ?? "-")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Catatan / Alasan Penugasan</label>
+                    <textarea name="notes" class="form-control rounded-3" rows="3" placeholder="Contoh: Penyerahan laptop baru dinas proyek HQ_DEPT"></textarea>
+                </div>
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-check-circle me-1"></i> Simpan Penugasan
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

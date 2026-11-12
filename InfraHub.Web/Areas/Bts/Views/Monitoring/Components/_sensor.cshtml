@@ -1,0 +1,68 @@
+@model dynamic
+
+@{
+    var title = Model.GetType().GetProperty("title") != null ? Model.title?.ToString() ?? "" : "";
+    var slugTitle = title.ToLower().Replace(" ", "-").Replace("&", "and");
+    bool compact = Model.GetType().GetProperty("compact") != null ? (bool)Model.compact : false;
+    var color = Model.GetType().GetProperty("color") != null ? Model.color?.ToString() ?? "#e0f2fe" : "#e0f2fe";
+    var iconClass = Model.GetType().GetProperty("iconClass") != null ? Model.iconClass?.ToString() ?? "fa-solid fa-gauge" : "fa-solid fa-gauge";
+    var iconColor = Model.GetType().GetProperty("iconColor") != null ? Model.iconColor?.ToString() ?? "#0284c7" : "#0284c7";
+    var rawValue = Model.GetType().GetProperty("value") != null ? Model.value?.ToString() ?? "" : "";
+    
+    string displayValue = rawValue;
+    if (double.TryParse(rawValue, out double num)) {
+        displayValue = num.ToString("0.00");
+    }
+}
+
+<div id="card-@slugTitle"
+    class="card text-center @(compact ? "p-2" : "p-3")"
+    style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;">
+
+    <h6 class="text-muted @(compact ? "mb-2" : "mb-3")" style="font-size: @(compact ? "12px" : "14px");
+               height: @(compact ? "30px" : "40px");
+               display: flex;
+               align-items: center;
+               justify-content: center;
+               overflow: hidden;
+               margin-bottom: 0 !important;
+               flex-shrink: 0;">
+        @title
+    </h6>
+
+    <div class="d-flex justify-content-center @(compact ? "mb-2" : "mb-3")"
+        style="flex-shrink: 0; margin-top: 10px;">
+        <div id="box-@slugTitle" style="width: @(compact ? "35px" : "50px");
+                    height: @(compact ? "35px" : "50px");
+                    background-color: @color;
+                    border-radius: @(compact ? "8px" : "12px");
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;">
+
+            <i id="icon-@slugTitle" class="@iconClass"
+                style="font-size: @(compact ? "16px" : "24px");
+                      color: @iconColor;">
+            </i>
+        </div>
+    </div>
+
+    <div id="val-@slugTitle" class="fw-bold" style="font-size: @(compact ? "14px" : "18px");
+                color: #334155;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                white-space: normal;
+                text-align: center;
+                line-height: 1.2;
+                min-height: 2.4em;
+                word-break: break-word;
+                overflow: hidden;">
+        @displayValue
+    </div>
+
+</div>
+
+

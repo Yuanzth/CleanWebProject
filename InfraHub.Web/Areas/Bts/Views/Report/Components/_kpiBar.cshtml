@@ -1,0 +1,106 @@
+@{
+    var report = ViewBag.Report;
+    var kpi = report?["kpi"];
+}
+
+<div class="rpt-kpi-bar">
+    <!-- 1. Overall Health -->
+    @{
+        var healthSev = (string)(kpi?["overall_health"]?["status"] ?? "ok");
+    }
+    <div class="rpt-kpi-card rpt-kpi-card--@(healthSev)" id="kpiCard-overall_health">
+        <div class="rpt-kpi-icon rpt-kpi-icon--@(healthSev == "crit" ? "crit" : (healthSev == "warn" ? "warn" : "ok"))">
+            <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <div class="rpt-kpi-body">
+            <div class="rpt-kpi-label">
+                <span>Overall Health</span>
+                <span class="rpt-badge rpt-badge--@(healthSev)" id="kpiBadge-overall_health">@(kpi?["overall_health"]?["badge"])</span>
+            </div>
+            <div class="rpt-kpi-value">
+                <span id="kpiVal-overall_health">@(kpi?["overall_health"]?["value"])</span><span class="rpt-kpi-unit">%</span>
+            </div>
+            <div class="rpt-kpi-sub" id="kpiSub-overall_health">@(kpi?["overall_health"]?["sub"])</div>
+        </div>
+    </div>
+
+    <!-- 2. Power Analytics -->
+    @{
+        var pwrSev = (string)(kpi?["power"]?["status"] ?? "ok");
+    }
+    <div class="rpt-kpi-card rpt-kpi-card--@(pwrSev)" id="kpiCard-power">
+        <div class="rpt-kpi-icon rpt-kpi-icon--@(pwrSev == "crit" ? "crit" : (pwrSev == "warn" ? "warn" : "ok"))">
+            <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="rpt-kpi-body">
+            <div class="rpt-kpi-label">
+                <span>Avg Voltage</span>
+                <span class="rpt-badge rpt-badge--@(pwrSev)" id="kpiBadge-power">@(kpi?["power"]?["badge"])</span>
+            </div>
+            <div class="rpt-kpi-value">
+                <span id="kpiVal-power">@(kpi?["power"]?["value"])</span><span class="rpt-kpi-unit">V</span>
+            </div>
+            <div class="rpt-kpi-sub" id="kpiSub-power">@(kpi?["power"]?["sub"])</div>
+        </div>
+    </div>
+
+    <!-- 3. Weather Conditions -->
+    @{
+        var wthSev = (string)(kpi?["weather"]?["status"] ?? "ok");
+    }
+    <div class="rpt-kpi-card rpt-kpi-card--@(wthSev)" id="kpiCard-weather">
+        <div class="rpt-kpi-icon rpt-kpi-icon--@(wthSev == "crit" ? "crit" : (wthSev == "warn" ? "warn" : "ok"))">
+            <i class="fa-solid fa-cloud-sun"></i>
+        </div>
+        <div class="rpt-kpi-body">
+            <div class="rpt-kpi-label">
+                <span>Avg Wind</span>
+                <span class="rpt-badge rpt-badge--@(wthSev)" id="kpiBadge-weather">@(kpi?["weather"]?["badge"])</span>
+            </div>
+            <div class="rpt-kpi-value">
+                <span id="kpiVal-weather">@(kpi?["weather"]?["value"])</span><span class="rpt-kpi-unit">km/h</span>
+            </div>
+            <div class="rpt-kpi-sub" id="kpiSub-weather">@(kpi?["weather"]?["sub"])</div>
+        </div>
+    </div>
+
+    <!-- 4. Tower Health -->
+    @{
+        var twrSev = (string)(kpi?["tower"]?["status"] ?? "ok");
+    }
+    <div class="rpt-kpi-card rpt-kpi-card--@(twrSev)" id="kpiCard-tower">
+        <div class="rpt-kpi-icon rpt-kpi-icon--@(twrSev == "crit" ? "crit" : (twrSev == "warn" ? "warn" : "ok"))">
+            <i class="fa-solid fa-tower-cell"></i>
+        </div>
+        <div class="rpt-kpi-body">
+            <div class="rpt-kpi-label">
+                <span>Avg Tilt</span>
+                <span class="rpt-badge rpt-badge--@(twrSev)" id="kpiBadge-tower">@(kpi?["tower"]?["badge"])</span>
+            </div>
+            <div class="rpt-kpi-value">
+                <span id="kpiVal-tower">@(kpi?["tower"]?["value"])</span><span class="rpt-kpi-unit">°</span>
+            </div>
+            <div class="rpt-kpi-sub" id="kpiSub-tower">@(kpi?["tower"]?["sub"])</div>
+        </div>
+    </div>
+
+    <!-- 5. Incidents -->
+    @{
+        var incSev = (string)(kpi?["incidents"]?["status"] ?? "ok");
+    }
+    <div class="rpt-kpi-card rpt-kpi-card--@(incSev)" id="kpiCard-incidents">
+        <div class="rpt-kpi-icon rpt-kpi-icon--@(incSev == "crit" ? "crit" : (incSev == "warn" ? "warn" : "ok"))">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="rpt-kpi-body">
+            <div class="rpt-kpi-label">
+                <span>Total Incidents</span>
+                <span class="rpt-badge rpt-badge--@(incSev)" id="kpiBadge-incidents">@(kpi?["incidents"]?["badge"])</span>
+            </div>
+            <div class="rpt-kpi-value">
+                <span id="kpiVal-incidents">@(kpi?["incidents"]?["value"])</span>
+            </div>
+            <div class="rpt-kpi-sub" id="kpiSub-incidents">@(kpi?["incidents"]?["sub"])</div>
+        </div>
+    </div>
+</div>

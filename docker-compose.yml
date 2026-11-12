@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # ─── 1. DATABASE MSSQL SERVER 2022 ───
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: infrahub-sqlserver
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=AdminPass123!
+      - MSSQL_PID=Developer
+      - TZ=Asia/Jakarta
+    ports:
+      - "14333:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P AdminPass123! -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P AdminPass123! -C -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - infrahub-net
+
+  # ─── 2. OTOMASI INISIALISASI & RESTORE DATABASE ───
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: infrahub-db-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./database/init-scripts:/init-scripts
+      - ./database/run_init.sh:/run_init.sh
+    entrypoint: ["/bin/bash", "/run_init.sh"]
+    restart: "no"
+    networks:
+      - infrahub-net
+
+  # ─── 3. PYTHON DUMMY TELEMETRY & HEARTBEAT GENERATOR ───
+  data-generator:
+    build:
+      context: ./data-generator
+      dockerfile: Dockerfile
+    container_name: infrahub-data-generator
+    restart: unless-stopped
+    depends_on:
+      - sqlserver
+      - db-init
+    environment:
+      - DB_SERVER=sqlserver
+      - DB_PORT=1433
+      - DB_USER=sa
+      - DB_PASSWORD=AdminPass123!
+      - INTERVAL_SECONDS=30
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./data-generator:/app
+    networks:
+      - infrahub-net
+
+volumes:
+  mssql_data:
+
+networks:
+  infrahub-net:
+    driver: bridge

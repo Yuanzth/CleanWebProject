@@ -1,0 +1,48 @@
+@{
+    var isAdmin = ViewData["IsAdmin"] as bool? ?? false;
+    var authorizedSites = ViewData["AuthorizedSites"] as List<string> ?? new List<string>();
+    var districts = ViewData["Districts"] as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var selected = ViewData["Selected"] as string ?? "all";
+}
+
+<div class="db-site-filter">
+    @if(!isAdmin && authorizedSites.Count <= 1)
+    {
+        <div class="form-control bg-light text-muted" style="cursor: default;">
+            @if(districts.Any())
+            {
+                var first = districts.First();
+                <text>@first.site_code — @first.site_name</text>
+            }
+            else
+            {
+                <text>No site assigned</text>
+            }
+        </div>
+        <input type="hidden" id="siteFilter" value="@(districts.Any() ? districts.First().id : "")">
+    }
+    else
+    {
+        <select id="siteFilter" class="form-select"
+                onchange="document.dispatchEvent(new CustomEvent('dashboard-site-changed', { detail: { siteId: this.value } }))">
+            @if(isAdmin)
+            {
+                <option value="all">All Sites</option>
+            }
+            @foreach(var s in districts)
+            {
+                if (selected == s.id.ToString())
+                {
+                    <option value="@s.id" selected>@s.site_code — @s.site_name</option>
+                }
+                else
+                {
+                    <option value="@s.id">@s.site_code — @s.site_name</option>
+                }
+            }
+        </select>
+    }
+</div>
+
+
+

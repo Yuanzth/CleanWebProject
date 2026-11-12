@@ -1,0 +1,517 @@
+@model ITAssetTrack.Models.SerahTerima
+@{
+    ViewData["Title"] = "Detail & Pengesahan Serah Terima";
+    ViewData["PageLabel"] = "Serah Terima";
+    var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    bool isPenyerahan = (Model.Tipe ?? "").Equals("Penyerahan", StringComparison.OrdinalIgnoreCase);
+    string themeColor = isPenyerahan ? "#06b6d4" : "#f59e0b";
+    string themeGradient = isPenyerahan ? "linear-gradient(135deg, #f0fdfe 0%, #e0f7fa 100%)" : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)";
+    string themeBorder = isPenyerahan ? "#cffafe" : "#fde68a";
+    string themeText = isPenyerahan ? "#0e7490" : "#92400e";
+}
+
+@if (TempData["Success"] != null)
+{
+    <span id="tempDataSuccess" style="display:none;">@TempData["Success"]</span>
+}
+
+<style>
+    .edit-container { max-width: 1200px; margin: 0 auto; }
+
+    /* Modern Tabs */
+    .tab-nav-modern {
+        display: flex; gap: 6px; margin-bottom: 20px;
+        background: #f8fafc; border-radius: 12px; padding: 5px;
+    }
+    .tab-btn-modern {
+        flex: 1; padding: 10px 18px; border-radius: 8px; border: none;
+        background: transparent; font-size: 13px; font-weight: 600; color: #64748b;
+        cursor: pointer; text-align: center; text-decoration: none;
+        display: inline-flex; align-items: center; justify-content: center;
+        gap: 7px; transition: all 0.2s;
+    }
+    .tab-btn-modern:hover { color: @themeText; }
+    .tab-btn-modern.active { background: #fff; color: @themeText; box-shadow: 0 2px 8px rgba(30,41,59,0.08); }
+
+    /* Cards */
+    .step-card {
+        background: #fff; border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(30,41,59,0.06);
+        border: 1px solid #f1f5f9; overflow: hidden; margin-bottom: 14px;
+    }
+    .step-card-header {
+        padding: 12px 20px;
+        background: @themeGradient;
+        border-bottom: 1px solid @themeBorder;
+        display: flex; align-items: center; justify-content: space-between;
+        font-weight: 700; font-size: 13px; color: @themeText;
+    }
+    .step-card-header .title-group { display: flex; align-items: center; gap: 10px; }
+    .step-card-header i { font-size: 16px; }
+    .step-card-body { padding: 18px 20px; }
+
+    /* Field Display */
+    .detail-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .detail-item {
+        display: flex; flex-direction: column; gap: 4px;
+    }
+    .detail-item .label {
+        font-size: 11px; font-weight: 700; color: #64748b;
+        text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .detail-item .val {
+        font-size: 14px; font-weight: 600; color: #1e293b;
+        background: #f8fafc; padding: 8px 12px; border-radius: 8px;
+        border: 1px solid #e2e8f0; word-break: break-word;
+    }
+    .detail-item .val.highlight {
+        background: @(isPenyerahan ? "#ecfeff" : "#fffbeb");
+        border-color: @(isPenyerahan ? "#a5f3fc" : "#fde68a");
+        color: @themeText;
+    }
+
+    /* Badges */
+    .badge-status {
+        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+        display: inline-flex; align-items: center; gap: 5px; text-transform: uppercase;
+    }
+    .badge-submitted { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-draft { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-tipe { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+    /* Signature Box */
+    .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .sig-card { border: 1.5px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; }
+    .sig-card-header {
+        padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+        font-size: 12px; font-weight: 600; color: #475569;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .sig-canvas-wrap { padding: 12px; background: #fafafa; }
+    .sig-canvas-wrap canvas {
+        width: 100%; height: 130px; border: 1.5px dashed #cbd5e1;
+        border-radius: 8px; cursor: crosshair; background: #fff; display: block;
+    }
+    .sig-actions { padding: 8px 12px; display: flex; gap: 8px; }
+    .sig-name-input { padding: 8px 12px; }
+    .btn-sig-clear {
+        padding: 5px 12px; border-radius: 6px; border: 1px solid #e2e8f0;
+        background: #fff; font-size: 11px; font-weight: 600; color: #ef4444; cursor: pointer;
+    }
+    .sig-signed {
+        min-height: 130px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 10px; background: #fff;
+    }
+    .sig-signed img { max-height: 110px; max-width: 100%; object-fit: contain; }
+    .sig-locked {
+        min-height: 130px; display: flex; align-items: center;
+        justify-content: center; background: #f8fafc; color: #94a3b8; font-size: 13px; gap: 6px;
+    }
+
+    /* Photos */
+    .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .photo-card { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .photo-card img { width: 100%; height: 140px; object-fit: cover; }
+    .photo-card .caption { padding: 6px 10px; font-size: 11px; color: #64748b; background: #f8fafc; }
+
+    /* Footer Buttons */
+    .edit-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 0; gap: 12px;
+    }
+    .btn-action {
+        padding: 11px 24px; border-radius: 10px; font-size: 13px; font-weight: 600;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+        transition: all 0.2s; border: none; text-decoration: none;
+    }
+    .btn-action-outline { background: #fff; border: 1.5px solid #e2e8f0; color: #475569; }
+    .btn-action-outline:hover { border-color: @themeColor; color: @themeText; }
+    .btn-action-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff; box-shadow: 0 3px 12px rgba(16,185,129,0.3);
+    }
+    .btn-action-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(16,185,129,0.4); }
+
+    @@media (max-width: 768px) {
+        .sig-grid { grid-template-columns: 1fr; }
+        .detail-grid { grid-template-columns: 1fr 1fr; }
+    }
+</style>
+
+<!-- Modern Tabs -->
+<nav class="tab-nav-modern">
+    <a href="@Url.Action("Index","SerahTerima")" class="tab-btn-modern">
+        <i class="bi bi-list-task"></i> Daftar Serah Terima
+    </a>
+    <a href="@Url.Action("Penyerahan","SerahTerima")" class="tab-btn-modern @(isPenyerahan ? "active" : "")">
+        <i class="bi bi-box-arrow-up"></i> Penyerahan Baru
+    </a>
+    <a href="@Url.Action("Pengembalian","SerahTerima")" class="tab-btn-modern @(!isPenyerahan ? "active" : "")">
+        <i class="bi bi-box-arrow-in-down"></i> Pengembalian Baru
+    </a>
+</nav>
+
+<form asp-action="Edit" method="post" id="stForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" name="SignaturePenyerahData" id="SignaturePenyerahData" />
+    <input type="hidden" name="SignaturePenerimaData" id="SignaturePenerimaData" />
+    <input type="hidden" name="SignatureDiketahuiData" id="SignatureDiketahuiData" />
+
+    <div class="edit-container">
+
+        <!-- Header Card -->
+        <div class="step-card">
+            <div class="step-card-header">
+                <div class="title-group">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                    <span>Dokumen Serah Terima — @Model.NoDokumen</span>
+                </div>
+                <div>
+                    <span class="badge-status badge-tipe"><i class="bi bi-tag-fill"></i> @Model.Tipe</span>
+                    @if (Model.Status == "Submitted")
+                    {
+                        <span class="badge-status badge-submitted"><i class="bi bi-check-circle-fill"></i> Submitted</span>
+                    }
+                    else
+                    {
+                        <span class="badge-status badge-draft"><i class="bi bi-hourglass-split"></i> Draft / In Progress</span>
+                    }
+                </div>
+            </div>
+            <div class="step-card-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Tanggal Dokumen</span>
+                        <span class="val">@Model.Tanggal.ToString("dd MMMM yyyy")</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">No. Dokumen</span>
+                        <span class="val highlight">@Model.NoDokumen</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Nama User / Penerima</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.NamaUser) ? "-" : Model.NamaUser)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">NRP</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.NRP) ? "-" : Model.NRP)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Site</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Site) ? "-" : Model.Site)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Divisi / Departemen</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Division) ? "-" : Model.Division)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Specs Card -->
+        <div class="step-card">
+            <div class="step-card-header">
+                <div class="title-group">
+                    <i class="bi bi-laptop-fill"></i>
+                    <span>Spesifikasi Hardware &amp; Aset</span>
+                </div>
+            </div>
+            <div class="step-card-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="label">Serial Number (SN)</span>
+                        <span class="val highlight" style="font-family:monospace;">@Model.SerialNumber</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Tipe Perangkat</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.DeviceType) ? "-" : Model.DeviceType)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Computer Name</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.ComputerName) ? "-" : Model.ComputerName)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Series / Model</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Series) ? "-" : Model.Series)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">RAM</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Ram) ? "-" : Model.Ram)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Storage</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Storage) ? "-" : Model.Storage)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Operating System</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.OperatingSystem) ? "-" : Model.OperatingSystem)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accessories & Catatan -->
+        <div class="step-card">
+            <div class="step-card-header">
+                <div class="title-group">
+                    <i class="bi bi-keyboard-fill"></i>
+                    <span>Aksesoris &amp; Hardware Tambahan</span>
+                </div>
+            </div>
+            <div class="step-card-body">
+                <div class="detail-grid" style="margin-bottom:14px;">
+                    <div class="detail-item">
+                        <span class="label">Keyboard S.N</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.KeyboardSN) ? "-" : Model.KeyboardSN)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Mouse S.N</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.MouseSN) ? "-" : Model.MouseSN)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Monitor S.N</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.MonitorSN) ? "-" : Model.MonitorSN)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Hardware Tambahan</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.AdditionalHardware) ? "-" : Model.AdditionalHardware)</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.Catatan) || !string.IsNullOrEmpty(Model.Remarks))
+                {
+                    <div class="detail-item">
+                        <span class="label">Catatan / Remarks</span>
+                        <span class="val">@(string.IsNullOrEmpty(Model.Catatan) ? Model.Remarks : Model.Catatan)</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Documentation Photos if available -->
+        @{
+            var photos = ViewBag.Photos as List<ITAssetTrack.Models.SerahTerimaPhoto>;
+        }
+        @if (photos != null && photos.Any())
+        {
+            <div class="step-card">
+                <div class="step-card-header">
+                    <div class="title-group">
+                        <i class="bi bi-camera-fill"></i>
+                        <span>Dokumentasi Foto Serah Terima</span>
+                    </div>
+                </div>
+                <div class="step-card-body">
+                    <div class="photo-gallery">
+                        @foreach (var photo in photos)
+                        {
+                            <div class="photo-card">
+                                <img src="@photo.FilePath" alt="@photo.Caption" />
+                                @if (!string.IsNullOrEmpty(photo.Caption))
+                                {
+                                    <div class="caption">@photo.Caption</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Signatures Card -->
+        <div class="step-card">
+            <div class="step-card-header">
+                <div class="title-group">
+                    <i class="bi bi-pen-fill"></i>
+                    <span>Pengesahan Tanda Tangan Digital</span>
+                </div>
+            </div>
+            <div class="step-card-body">
+                <div class="sig-grid">
+
+                    <!-- 1. Diserahkan Oleh -->
+                    <div>
+                        <div class="sig-card">
+                            <div class="sig-card-header">
+                                <i class="bi bi-person-check-fill"></i> Diserahkan Oleh <span style="font-weight:400;color:#64748b;">(IT Staff)</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.SignaturePenyerah))
+                            {
+                                <div class="sig-signed">
+                                    <img src="@Model.SignaturePenyerah" alt="Signature Penyerah" />
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="@Model.NamaPenyerah" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                            else if (role == "Admin" || role == "Coordinator" || role == "Technician")
+                            {
+                                <div class="sig-canvas-wrap">
+                                    <canvas id="canvasPenyerah"></canvas>
+                                </div>
+                                <div class="sig-actions">
+                                    <button type="button" class="btn-sig-clear" onclick="clearSig('canvasPenyerah','SignaturePenyerahData','padPenyerah')">Hapus</button>
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" asp-for="NamaPenyerah" placeholder="Nama jelas IT..." style="font-size:12px;" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="sig-locked"><i class="bi bi-lock-fill"></i> Belum Ditandatangani</div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="Belum diisi" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- 2. Diterima Oleh -->
+                    <div>
+                        <div class="sig-card">
+                            <div class="sig-card-header">
+                                <i class="bi bi-person-check-fill"></i> Diterima Oleh <span style="font-weight:400;color:#64748b;">(User)</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.SignaturePenerima))
+                            {
+                                <div class="sig-signed">
+                                    <img src="@Model.SignaturePenerima" alt="Signature Penerima" />
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="@Model.NamaPenerima" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                            else if (role == "Admin" || (role == "Viewer" && !string.IsNullOrEmpty(User.FindFirst("NRP")?.Value) && User.FindFirst("NRP")?.Value == Model.NRP))
+                            {
+                                <div class="sig-canvas-wrap">
+                                    <canvas id="canvasPenerima"></canvas>
+                                </div>
+                                <div class="sig-actions">
+                                    <button type="button" class="btn-sig-clear" onclick="clearSig('canvasPenerima','SignaturePenerimaData','padPenerima')">Hapus</button>
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" asp-for="NamaPenerima" placeholder="Nama jelas user..." style="font-size:12px;" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="sig-locked"><i class="bi bi-lock-fill"></i> Belum Ditandatangani</div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="Belum diisi" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- 3. Diketahui Oleh -->
+                    <div>
+                        <div class="sig-card">
+                            <div class="sig-card-header">
+                                <i class="bi bi-person-check-fill"></i> Diketahui Oleh <span style="font-weight:400;color:#64748b;">(Leader)</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.SignatureDiketahui))
+                            {
+                                <div class="sig-signed">
+                                    <img src="@Model.SignatureDiketahui" alt="Signature Diketahui" />
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="@Model.NamaDiketahui" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                            else if (role == "Admin" || role == "Coordinator" || role == "Approver1")
+                            {
+                                <div class="sig-canvas-wrap">
+                                    <canvas id="canvasDiketahui"></canvas>
+                                </div>
+                                <div class="sig-actions">
+                                    <button type="button" class="btn-sig-clear" onclick="clearSig('canvasDiketahui','SignatureDiketahuiData','padDiketahui')">Hapus</button>
+                                </div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" asp-for="NamaDiketahui" placeholder="Nama jelas leader..." style="font-size:12px;" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="sig-locked"><i class="bi bi-lock-fill"></i> Belum Ditandatangani</div>
+                                <div class="sig-name-input">
+                                    <input type="text" class="field-input" value="Belum diisi" readonly style="font-size:12px;background:#f8fafc;" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="edit-footer">
+            <a href="@Url.Action("Index","SerahTerima")" class="btn-action btn-action-outline">
+                <i class="bi bi-arrow-left"></i> Kembali ke Daftar
+            </a>
+            <div style="display:flex;gap:8px;">
+                @if (isPenyerahan && Model.Status == "Submitted" && (role == "Admin" || role == "Coordinator" || role == "Technician"))
+                {
+                    <a href="@Url.Action("Pengembalian","SerahTerima", new { id = Model.Id })" class="btn-action btn-action-outline" style="border-color:#f59e0b;color:#d97706;background:#fffbeb;">
+                        <i class="bi bi-box-arrow-in-down"></i> Proses Pengembalian Aset Ini
+                    </a>
+                }
+                <a href="@Url.Action("Print","SerahTerima", new { id = Model.Id })" target="_blank" class="btn-action btn-action-outline">
+                    <i class="bi bi-printer-fill"></i> Cetak Official PDF / Print
+                </a>
+                <button type="submit" class="btn-action btn-action-primary" onclick="collectSigs()">
+                    <i class="bi bi-send-check-fill"></i> Simpan Tanda Tangan
+                </button>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script>
+    let padPenyerah, padPenerima, padDiketahui;
+
+    function initPads() {
+        function setupPad(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+            canvas.width = canvas.offsetWidth || 220;
+            canvas.height = 130;
+            return new SignaturePad(canvas, {
+                backgroundColor: 'rgba(255,255,255,0)',
+                penColor: '#1e293b',
+                minWidth: 1,
+                maxWidth: 2.5
+            });
+        }
+        padPenyerah  = setupPad('canvasPenyerah');
+        padPenerima  = setupPad('canvasPenerima');
+        padDiketahui = setupPad('canvasDiketahui');
+    }
+
+    function clearSig(canvasId, hidId, padName) {
+        const pads = { padPenyerah, padPenerima, padDiketahui };
+        if (pads[padName]) pads[padName].clear();
+        const hid = document.getElementById(hidId);
+        if (hid) hid.value = '';
+    }
+
+    function collectSigs() {
+        if (padPenyerah  && !padPenyerah.isEmpty())  document.getElementById('SignaturePenyerahData').value  = padPenyerah.toDataURL();
+        if (padPenerima  && !padPenerima.isEmpty())  document.getElementById('SignaturePenerimaData').value  = padPenerima.toDataURL();
+        if (padDiketahui && !padDiketahui.isEmpty()) document.getElementById('SignatureDiketahuiData').value = padDiketahui.toDataURL();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initPads, 150);
+    });
+
+    const toast = document.getElementById('tempDataSuccess');
+    if (toast) alert('✅ ' + toast.textContent);
+</script>
+}

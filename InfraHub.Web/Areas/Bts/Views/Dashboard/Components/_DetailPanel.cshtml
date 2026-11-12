@@ -1,0 +1,226 @@
+@{
+    var towerDownItems = ViewData["towerDownItems"] as IEnumerable<dynamic>;
+    var generatorDownItems = ViewData["generatorDownItems"] as IEnumerable<dynamic>;
+    var btsDownItems = ViewData["btsDownItems"] as IEnumerable<dynamic>;
+}
+
+@* Tower Down *@
+<div class="db-detail-panel" id="detailPanel-tower-down" style="display:none;">
+    <div class="db-detail-panel__header">
+        <div class="db-detail-panel__title-group">
+            <div class="db-detail-panel__icon-wrap db-detail-panel__icon-wrap--warning">
+                <i class="fa-solid fa-tower-cell"></i>
+            </div>
+            <span class="db-detail-panel__title">Tower Down</span>
+            <span class="db-badge db-badge--warning db-badge--xs" id="detailCount-tower-down">
+                @(towerDownItems?.Count() ?? 0) Tower
+            </span>
+        </div>
+        <button class="db-detail-panel__close" onclick="closeDetailPanel()" title="Tutup">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="db-detail-panel__body" id="detailBody-tower-down">
+        @if(towerDownItems != null && towerDownItems.Any())
+        {
+            foreach(var item in towerDownItems)
+            {
+                var zone_id = item.GetType().GetProperty("zone_id") != null ? item.zone_id : null;
+                var hasZone = !string.IsNullOrEmpty(zone_id?.ToString());
+                var status = item.GetType().GetProperty("status") != null ? item.status : "warning";
+                
+                if (hasZone)
+                {
+                    <a href="/monitoring?zone_id=@zone_id" class="db-detail-item db-detail-item--@status db-detail-item--clickable" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;cursor:pointer;width:100%;pointer-events:auto;position:relative;">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-tower-cell db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </a>
+                }
+                else
+                {
+                    <div class="db-detail-item db-detail-item--@status">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-tower-cell db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <div class="db-detail-panel__empty">
+                <i class="fa-solid fa-circle-check" style="color:#22c55e;"></i>
+                <span>Semua tower normal</span>
+            </div>
+        }
+    </div>
+</div>
+
+@* Generator Down *@
+<div class="db-detail-panel" id="detailPanel-generator-down" style="display:none;">
+    <div class="db-detail-panel__header">
+        <div class="db-detail-panel__title-group">
+            <div class="db-detail-panel__icon-wrap db-detail-panel__icon-wrap--warning">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="db-detail-panel__title">Generator Down</span>
+            <span class="db-badge db-badge--warning db-badge--xs" id="detailCount-generator-down">
+                @(generatorDownItems?.Count() ?? 0) Generator
+            </span>
+        </div>
+        <button class="db-detail-panel__close" onclick="closeDetailPanel()" title="Tutup">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="db-detail-panel__body" id="detailBody-generator-down">
+        @if(generatorDownItems != null && generatorDownItems.Any())
+        {
+            foreach(var item in generatorDownItems)
+            {
+                var zone_id = item.GetType().GetProperty("zone_id") != null ? item.zone_id : null;
+                var hasZone = !string.IsNullOrEmpty(zone_id?.ToString());
+                var status = item.GetType().GetProperty("status") != null ? item.status : "warning";
+                
+                if (hasZone)
+                {
+                    <a href="/monitoring?zone_id=@zone_id" class="db-detail-item db-detail-item--@status db-detail-item--clickable" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;cursor:pointer;width:100%;pointer-events:auto;position:relative;">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-bolt db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </a>
+                }
+                else
+                {
+                    <div class="db-detail-item db-detail-item--@status">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-bolt db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <div class="db-detail-panel__empty">
+                <i class="fa-solid fa-circle-check" style="color:#22c55e;"></i>
+                <span>Semua generator normal</span>
+            </div>
+        }
+    </div>
+</div>
+
+@* BTS Tower Down *@
+<div class="db-detail-panel" id="detailPanel-bts-tower-down" style="display:none;">
+    <div class="db-detail-panel__header">
+        <div class="db-detail-panel__title-group">
+            <div class="db-detail-panel__icon-wrap db-detail-panel__icon-wrap--critical">
+                <i class="fa-solid fa-tower-broadcast"></i>
+            </div>
+            <span class="db-detail-panel__title">BTS Tower Down</span>
+            <span class="db-badge db-badge--critical db-badge--xs" id="detailCount-bts-tower-down">
+                @(btsDownItems?.Count() ?? 0) BTS
+            </span>
+        </div>
+        <button class="db-detail-panel__close" onclick="closeDetailPanel()" title="Tutup">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="db-detail-panel__body" id="detailBody-bts-tower-down">
+        @if(btsDownItems != null && btsDownItems.Any())
+        {
+            foreach(var item in btsDownItems)
+            {
+                var zone_id = item.GetType().GetProperty("zone_id") != null ? item.zone_id : null;
+                var hasZone = !string.IsNullOrEmpty(zone_id?.ToString());
+                var status = item.GetType().GetProperty("status") != null ? item.status : "critical";
+                
+                if (hasZone)
+                {
+                    <a href="/monitoring?zone_id=@zone_id" class="db-detail-item db-detail-item--@status db-detail-item--clickable" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;cursor:pointer;width:100%;pointer-events:auto;position:relative;">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-tower-broadcast db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </a>
+                }
+                else
+                {
+                    <div class="db-detail-item db-detail-item--@status">
+                        <div class="db-detail-item__left">
+                            <i class="fa-solid fa-tower-broadcast db-detail-item__icon"></i>
+                            <div class="db-detail-item__info">
+                                <span class="db-detail-item__name">@(item.GetType().GetProperty("name") != null ? item.name : "-")</span>
+                                <span class="db-detail-item__site">@(item.GetType().GetProperty("site") != null ? item.site : "-")</span>
+                            </div>
+                        </div>
+                        <div class="db-detail-item__right">
+                            @if(item.GetType().GetProperty("last_seen") != null && !string.IsNullOrEmpty(item.last_seen?.ToString()))
+                            {
+                                <span class="db-detail-item__time">@item.last_seen</span>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <div class="db-detail-panel__empty">
+                <i class="fa-solid fa-circle-check" style="color:#22c55e;"></i>
+                <span>Semua BTS tower normal</span>
+            </div>
+        }
+    </div>
+</div>
+
+

@@ -1,0 +1,38 @@
+@{ ViewData["Title"] = "Reports & Analytics - BTS Monitoring"; }
+
+@section Styles {
+    <link rel="stylesheet" href="/assets/css/report.css">
+}
+
+@section Scripts {
+    <script>
+        window.REPORT_DATA = @Html.Raw(ViewBag.ReportJson ?? "null");
+        window.REPORT_API_URL = "/Bts/Report/Summary";
+        window.CSRF_TOKEN = "";
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="/assets/js/bts/report.js"></script>
+}
+
+<div class="rpt-page">
+    @await Html.PartialAsync("Components/_headerPage")
+    
+    @if(!string.IsNullOrEmpty((string)ViewBag.AreaId)) {
+        @await Html.PartialAsync("Components/_kpiBar")
+        @await Html.PartialAsync("Components/_incidentPanel")
+        @await Html.PartialAsync("Components/_powerPanel")
+        @await Html.PartialAsync("Components/_towerPanel")
+        @await Html.PartialAsync("Components/_environmentalPanel")
+    } else {
+        <div class="rpt-panel" style="padding: 36px 24px; text-align: center;">
+            <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Pilih Site Terlebih Dahulu</div>
+            <div style="color: #64748b; font-size: 13px;">Report akan ditampilkan setelah Anda memilih site pada filter di atas.</div>
+        </div>
+    }
+</div>
+
+
+
+

@@ -1,0 +1,278 @@
+@model ITAssetTrack.Models.Asset
+
+@{
+    ViewData["Title"] = "Detail Asset - " + Model.SerialNumber;
+}
+
+<style>
+    .asset-detail-card {
+        border-radius: 14px !important;
+        background: #ffffff;
+    }
+    .spec-grid {
+        display: flex;
+        flex-direction: column;
+    }
+    .spec-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 4px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 12.5px;
+    }
+    .spec-item:last-child {
+        border-bottom: none;
+    }
+    .spec-label {
+        color: #64748b;
+        font-weight: 500;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+    .spec-value {
+        text-align: right;
+        word-break: break-word;
+        color: #0f172a;
+        font-weight: 600;
+    }
+    @@media (max-width: 768px) {
+        .spec-item {
+            padding: 8px 2px !important;
+            font-size: 12px !important;
+        }
+        .spec-label {
+            font-size: 11.5px !important;
+        }
+        .asset-detail-card .card-header {
+            padding: 12px 14px 6px 14px !important;
+        }
+        .asset-detail-card .card-body {
+            padding: 10px 14px 14px 14px !important;
+        }
+    }
+</style>
+
+<style>
+    .asset-detail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .header-action-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .header-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border-radius: 50px;
+        font-size: 12.5px;
+        font-weight: 600;
+        text-decoration: none !important;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+        white-space: nowrap;
+        width: auto;
+    }
+    .header-btn-primary {
+        background: #2563eb !important;
+        color: #ffffff !important;
+        border: 1px solid #2563eb !important;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+    }
+    .header-btn-secondary {
+        background: #ffffff !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .header-btn-secondary:hover {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border-color: #94a3b8 !important;
+    }
+
+    @@media (max-width: 768px) {
+        .asset-detail-header {
+            margin-bottom: 12px;
+        }
+        .header-title-block {
+            display: none !important;
+        }
+        .header-action-group {
+            width: 100%;
+        }
+        .header-btn {
+            flex: 1;
+            padding: 8px 12px;
+        }
+    }
+</style>
+
+<!-- Top Header Toolbar -->
+<div class="asset-detail-header">
+    <div class="header-title-block d-flex align-items-center gap-2">
+        <h5 class="fw-bold text-dark m-0"><i class="bi bi-pc-display text-primary me-1"></i>Detail Asset</h5>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1" style="font-size:12px;">@Model.SerialNumber</span>
+    </div>
+    <div class="header-action-group">
+        <a href="@Url.Action("Edit", "Asset", new { id = Model.Id })" class="header-btn header-btn-primary">
+            <i class="bi bi-pencil-square"></i> Edit Asset
+        </a>
+        <a href="@Url.Action("Index", "Asset")" class="header-btn header-btn-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Specifications Card -->
+    <div class="col-lg-7 col-md-12">
+        <div class="card border-0 shadow-sm asset-detail-card h-100">
+            <div class="card-header bg-white border-0 pt-3 px-4">
+                <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;"><i class="bi bi-cpu text-primary me-2"></i>Spesifikasi Perangkat</h6>
+            </div>
+            <div class="card-body px-4 pb-3">
+                <div class="spec-grid">
+                    <div class="spec-item">
+                        <span class="spec-label">Serial Number (SN)</span>
+                        <span class="spec-value font-monospace text-primary fw-bold">@Model.SerialNumber</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Asset Tag / No SN</span>
+                        <span class="spec-value">@(string.IsNullOrEmpty(Model.NoSN) ? "-" : Model.NoSN)</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Host Name / Computer Name</span>
+                        <span class="spec-value"><span class="badge bg-light text-dark border font-monospace px-2 py-1">@(string.IsNullOrEmpty(Model.ComputerName) ? "-" : Model.ComputerName)</span></span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Tipe Perangkat</span>
+                        <span class="spec-value">@(Model.DeviceTypeObj?.Name ?? Model.DeviceType)</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Kategori</span>
+                        <span class="spec-value text-muted font-normal">@(Model.DeviceCategoryObj?.Name ?? "-")</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Merk / Vendor</span>
+                        <span class="spec-value">@(Model.BrandObj?.Name ?? Model.Brand) / @(Model.VendorObj?.Name ?? "-")</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Model / Series</span>
+                        <span class="spec-value">@Model.Model</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Processor</span>
+                        <span class="spec-value">@(string.IsNullOrEmpty(Model.Processor) ? "-" : Model.Processor)</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">RAM / Storage</span>
+                        <span class="spec-value"><span class="badge bg-light text-dark border px-2 py-1">@Model.Ram / @Model.Storage</span></span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">GPU</span>
+                        <span class="spec-value">@(string.IsNullOrEmpty(Model.Gpu) ? "-" : Model.Gpu)</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">OS / Windows Ver</span>
+                        <span class="spec-value">@Model.OperatingSystem @Model.WindowsVersion</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Status Aset</span>
+                        <span class="spec-value">
+                            @if (Model.Status == "Available")
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:11px;"><i class="bi bi-check-circle-fill me-1"></i>Available (Belum Digunakan)</span>
+                            }
+                            else if (Model.Status == "InUse")
+                            {
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill" style="font-size:11px;"><i class="bi bi-laptop-fill me-1"></i>In Use (Sedang Digunakan)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill" style="font-size:11px;"><i class="bi bi-tools me-1"></i>@Model.Status</span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active User & Assignment History Card -->
+    <div class="col-lg-5 col-md-12">
+        <div class="card border-0 shadow-sm asset-detail-card h-100">
+            <div class="card-header bg-white border-0 pt-3 px-4">
+                <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;"><i class="bi bi-person-badge text-primary me-2"></i>Pengguna Aset Aktif</h6>
+            </div>
+            <div class="card-body px-4 pb-3">
+                @{
+                    var activeAssign = Model.AssetAssignments.FirstOrDefault(a => a.IsActive);
+                    var activeEmployee = activeAssign?.Employee;
+                }
+
+                @if (activeEmployee != null)
+                {
+                    <div class="p-3 rounded-3 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="bg-primary text-white d-flex align-items-center justify-content-center fw-bold rounded-circle" style="width:34px;height:34px;font-size:13px;flex-shrink:0;">
+                                @(activeEmployee.FullName?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                            <div class="min-w-0">
+                                <h6 class="fw-bold text-dark m-0 text-truncate" style="font-size:13px;">@activeEmployee.FullName</h6>
+                                <span class="text-muted extra-small" style="font-size:11px;">NRP: <strong>@(string.IsNullOrEmpty(activeEmployee.NRP) ? "-" : activeEmployee.NRP)</strong></span>
+                            </div>
+                        </div>
+                        <div class="p-2 rounded-2 bg-white border mb-2" style="font-size:11.5px; color:#475569;">
+                            <div class="mb-1">Site: <strong>@(activeEmployee.Site?.Code ?? "-")</strong> &bull; Div: <strong>@(activeEmployee.Division?.Code ?? "-")</strong></div>
+                            <div class="text-truncate">Dept: <strong>@(activeEmployee.Department?.Name ?? "-")</strong></div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" style="font-size:10.5px;">
+                            <i class="bi bi-clock-history me-1"></i>Mulai Pakai: @(activeAssign?.AssignDate.ToString("dd MMM yyyy") ?? "-")
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 bg-light text-center rounded-3 mb-3 border border-dashed">
+                        <i class="bi bi-inbox fs-3 text-muted mb-1 d-block"></i>
+                        <p class="fw-semibold mb-1 text-dark small">Perangkat Belum Dialokasikan</p>
+                        <p class="text-muted extra-small mb-2" style="font-size:11px;">Status <strong>Available</strong> dan siap dialokasikan ke Employee.</p>
+                        <a href="@Url.Action("Assign", "AssetAssignment")" class="btn btn-sm btn-primary rounded-pill px-3 py-1" style="font-size:12px;">
+                            <i class="bi bi-person-plus me-1"></i> Alokasikan Ke Employee
+                        </a>
+                    </div>
+                }
+
+                <h6 class="fw-bold mb-2 text-dark" style="font-size:13px;"><i class="bi bi-history me-1"></i>Riwayat Alokasi (History)</h6>
+                <ul class="list-group list-group-flush small">
+                    @if (Model.AssetAssignments != null && Model.AssetAssignments.Any())
+                    {
+                        foreach (var history in Model.AssetAssignments.OrderByDescending(a => a.AssignDate))
+                        {
+                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center" style="border-bottom:1px solid #f1f5f9;">
+                                <div>
+                                    <span class="fw-semibold text-dark d-block" style="font-size:12px;">@(history.Employee?.FullName ?? "-")</span>
+                                    <span class="text-muted" style="font-size:10.5px;">@history.AssignDate.ToString("dd/MM/yyyy") - @(history.ReturnDate?.ToString("dd/MM/yyyy") ?? "Sekarang")</span>
+                                </div>
+                                <span class="badge @(history.IsActive ? "bg-success-subtle text-success border border-success-subtle" : "bg-secondary-subtle text-secondary border border-secondary-subtle")" style="font-size:10px;">@(history.IsActive ? "Aktif" : "Selesai")</span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item px-0 py-2 text-muted text-center" style="font-size:11px;">Belum ada riwayat alokasi.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,227 @@
+@{
+    ViewData["Title"] = "Manage Users & Roles";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="/assets/css/manage.css">
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <i class="fa-solid fa-users-gear fa-2x text-primary me-3"></i>
+        <h2 class="mb-0 fw-bold">Manage Users & Roles</h2>
+    </div>
+    
+    <div class="manage-card card shadow-sm border-0 p-3">
+        <ul class="nav nav-tabs custom-tabs mb-4" id="manageTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-user" type="button">Users</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-assign" type="button">User Assignments</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-user">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('user')"><i class="fa-solid fa-plus"></i> Add User</button>
+                </div>
+                <table id="userTable" class="table table-hover w-100">
+                    <thead class="table-light"><tr><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+            
+            <div class="tab-pane fade" id="tab-assign">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-primary" onclick="showModal('assign')"><i class="fa-solid fa-plus"></i> Add Assignment</button>
+                </div>
+                <table id="assignTable" class="table table-hover w-100">
+                    <thead class="table-light"><tr><th>Name</th><th>Site Name</th><th>Site Code</th><th>Action</th></tr></thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="userModalTitle">Form User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="userForm">
+                <input type="hidden" id="user_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Full Name</label><input type="text" id="name" name="Name" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Username</label><input type="text" id="username" name="Username" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Email</label><input type="email" id="email" name="Email" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Password <small class="text-muted">(Leave blank if not changed)</small></label><input type="password" id="password" name="Password" class="form-control"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="role_id" name="RoleId" class="form-select" required>
+                            <option value="">-- Choose Role --</option>
+                            @foreach(var role in ViewBag.Roles) { <option value="@role.Id">@role.RoleName</option> }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="assignModalTitle">Form User Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="assignForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">User</label>
+                        <select name="UserId" id="assign_user_id" class="form-select" required>
+                            <option value="">-- Choose User --</option>
+                            @foreach(var user in ViewBag.Users) { <option value="@user.Id">@user.Name</option> }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Site Area</label>
+                        <select name="SiteId" id="assign_site_id" class="form-select" required>
+                            <option value="">-- Choose Site --</option>
+                            @foreach(var site in ViewBag.Sites) { <option value="@site.Id">@site.SiteCode - @site.SiteName</option> }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-primary">Submit</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+    let tUser, tAssign;
+
+    $(document).ready(function() {
+        tUser = $('#userTable').DataTable({ 
+            ajax: { url: "/Shared/ManageUserRole/GetData", data: { type: 'user' } }, 
+            columns: [
+                {data: 'name', render: function(d) { return `<strong>${d}</strong>`; }},
+                {data: 'email'}, 
+                {data: 'username'}, 
+                {data: 'roleName'}, 
+                {
+                    data: 'id', orderable: false, searchable: false, className: 'text-center',
+                    render: function(data) {
+                        return `<button class="btn btn-sm btn-outline-primary me-1 edit-user-btn" data-id="${data}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger delete-user-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true,
+            language: { search: "_INPUT_", searchPlaceholder: "Search users..." }
+        });
+        
+        tAssign = $('#assignTable').DataTable({ 
+            ajax: { url: "/Shared/ManageUserRole/GetData", data: { type: 'assignment' } }, 
+            columns: [
+                {data: 'userName'}, 
+                {data: 'siteName'}, 
+                {data: 'siteCode'}, 
+                {
+                    data: 'id', orderable: false, searchable: false, className: 'text-center',
+                    render: function(data) {
+                        return `<button class="btn btn-sm btn-outline-danger delete-assign-btn" data-id="${data}" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                }
+            ],
+            responsive: true,
+            language: { search: "_INPUT_", searchPlaceholder: "Search assignments..." }
+        });
+        
+        $('#userForm').submit(function(e) { 
+            e.preventDefault(); 
+            let id = $('#user_id').val(); 
+            let url = id ? `/Shared/ManageUserRole/User/${id}` : "/Shared/ManageUserRole/User";
+            submitData(url, id ? 'PUT' : 'POST', $(this).serialize(), 'userModal', tUser); 
+        });
+        
+        $('#assignForm').submit(function(e) { 
+            e.preventDefault(); 
+            submitData("/Shared/ManageUserRole/Assignment", 'POST', $(this).serialize(), 'assignModal', tAssign); 
+        });
+        
+        $('body').on('click', '.edit-user-btn', function() { 
+            $.get(`/Shared/ManageUserRole/User/${$(this).data('id')}`, function(data) { 
+                $('#userModalTitle').text('Edit User');
+                $('#user_id').val(data.id); 
+                $('#name').val(data.name); 
+                $('#username').val(data.username); 
+                $('#email').val(data.email); 
+                $('#role_id').val(data.role_id); 
+                $('#password').val(''); 
+                $('#password').removeAttr('required');
+                $('#userModal').modal('show'); 
+            }); 
+        });
+        
+        $('body').on('click', '.delete-user-btn', function() { deleteData(`/Shared/ManageUserRole/User/${$(this).data('id')}`, tUser); });
+        $('body').on('click', '.delete-assign-btn', function() { deleteData(`/Shared/ManageUserRole/Assignment/${$(this).data('id')}`, tAssign); });
+    });
+
+    function showModal(type) { 
+        $(`#${type}Form`)[0].reset(); 
+        if(type==='user') {
+            $('#user_id').val('');
+            $('#userModalTitle').text('Add User');
+            $('#password').attr('required', 'required');
+        }
+        if(type==='assign') {
+            $('#assignModalTitle').text('Add Assignment');
+        }
+        $(`#${type}Modal`).modal('show'); 
+    }
+
+    function submitData(url, method, data, modalId, table) { 
+        $.ajax({ 
+            url: url, type: method, data: data, 
+            success: function(res) { 
+                $(`#${modalId}`).modal('hide'); 
+                table.ajax.reload(null, false); 
+                Swal.fire('Berhasil', res.success, 'success'); 
+            }, 
+            error: function(xhr) { 
+                let msg = 'Check form input.';
+                if(xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+                Swal.fire('Error', msg, 'error'); 
+            } 
+        }); 
+    }
+
+    function deleteData(url, table) { 
+        Swal.fire({ 
+            title: 'Delete data?', 
+            text: 'Data cannot be restored!',
+            icon: 'warning', 
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, Delete!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: url, type: 'DELETE',
+                    success: function(res) { table.ajax.reload(null, false); Swal.fire('Deleted', res.success, 'success'); },
+                    error: function(xhr) { Swal.fire('Error', 'Failed to delete data', 'error'); }
+                });
+            }
+        });
+    }
+    </script>
+}

@@ -1,0 +1,699 @@
+@{ Layout = "_Layout"; }
+
+@{ ViewData["Title"] = "Monitoring - BTS Monitoring"; }
+
+
+
+<link rel="stylesheet" href="~/assets/css/monitoring.css">
+
+    <div class="page-header mb-3">
+        <h1>BTS Monitoring System</h1>
+        <p>Real Time Monitoring current status BTS Tower and Generator</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            @await Html.PartialAsync("Components/_site")
+        </div>
+
+        <div class="col-md-6">
+            @await Html.PartialAsync("Components/_map", new {
+                coordinates = "-"
+            })
+        </div>
+
+        <div class="col-md-3">
+            @await Html.PartialAsync("Components/_powerMonitor", new {
+                voltage     = 0,
+                ampere      = 0,
+                watt        = 0,
+                frequency   = 0,
+                powerfactor = 0,
+                energy      = 0
+            })
+
+            @await Html.PartialAsync("Components/_weather", new {
+                humidityTemp   = 0,
+                weather = "No Data"
+            })
+        </div>
+    </div>
+
+    <div class="d-flex flex-nowrap gap-3 mt-4 w-100">
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Fuel Level",
+            value = "0 %",
+            iconClass = "fa-solid fa-gas-pump",
+            color = "#e0f2fe",
+            iconColor = "#0284c7"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Wind Status",
+            value = "0 Km/h (-)",
+            iconClass = "fa-solid fa-wind",
+            color = "#f0fdf4",
+            iconColor = "#16a34a"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Lightning Strike",
+            value = "0/50",
+            iconClass = "fa-solid fa-bolt-lightning",
+            color = "#ecfeff",
+            iconColor = "#0891b2"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Earth Resistance",
+            value = "0 Ω",
+            iconClass = "fa-solid fa-earth-americas",
+            color = "#f5f5f4",
+            iconColor = "#78716c"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Pole Inclination",
+            value = "0 cm",
+            iconClass = "fa-solid fa-ruler-vertical",
+            color = "#f3e8ff",
+            iconColor = "#9333ea"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Luminosity",
+            value = "0 lux",
+            iconClass = "fa-solid fa-sun",
+            color = "#f0fdf4",
+            iconColor = "#65a30d"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "Precipitation",
+            value = "0 mm",
+            iconClass = "fa-solid fa-cloud-rain",
+            color = "#e0f2fe",
+            iconColor = "#0284c7"
+        })
+        @await Html.PartialAsync("Components/_sensor", new {
+            title = "PM10 Level",
+            value = "0 µg/m³ (-)",
+            iconClass = "fa-solid fa-smog",
+            color = "#f0f9ff",
+            iconColor = "#0369a1"
+        })
+    </div>
+
+
+
+@section Scripts {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const header = document.querySelector('.main-header');
+        if (header) {
+            header.classList.add('header-bts');
+        }
+    });
+</script>
+
+<script>
+    var currentZoneId    = null;
+    var autoRefreshTimer = null;
+    var sidebarMapRefreshTimer = null;
+    var ZONE_REFRESH_INTERVAL_MS = 15000;
+    var SIDEBAR_MAP_REFRESH_INTERVAL_MS = 120000;
+
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        
+
+        startSidebarMapAutoRefresh();
+
+        var params = new URLSearchParams(window.location.search);
+        var zoneId = params.get('zone_id');
+
+        if (zoneId) {
+            history.replaceState(null, '', window.location.pathname);
+            fetchZoneData(zoneId);
+        }
+    });
+
+    // HELPER
+    function cleanNum(val, fixed) {
+        if (fixed === undefined) fixed = 2;
+        if (val === undefined || val === null || val === '') return '0';
+        var n = Number(val);
+        return isNaN(n) ? '0' : n.toFixed(fixed);
+    }
+
+    function isNullish(val) {
+        return val === null || val === undefined || val === '';
+    }
+
+    function formatSensorValue(val, decimals, suffix) {
+        if (isNullish(val) || isNaN(val)) {
+            return 'NULL';
+        }
+        return Number(val).toFixed(decimals) + (suffix || '');
+    }
+
+    function firstNonNullish(values) {
+        if (!Array.isArray(values)) return null;
+        for (var i = 0; i < values.length; i++) {
+            if (!isNullish(values[i])) {
+                return values[i];
+            }
+        }
+        return null;
+    }
+
+    function resolvePm10Raw(data) {
+        if (!data || typeof data !== 'object') return null;
+        return firstNonNullish([
+            data.pm10,
+            data.pm_10,
+            data.dust_level,
+            data.PM10,
+            data.PM_10,
+            data.DUST_LEVEL,
+            data.dustLevel
+        ]);
+    }
+
+    function hasSensorIssueInPayload(data) {
+        if (!data || typeof data !== 'object') return true;
+
+        if (typeof data.sensor_issue === 'boolean') {
+            return data.sensor_issue;
+        }
+
+        var lightningRawForNull = !isNullish(data.lightning_total)
+            ? data.lightning_total
+            : (isNullish(data.lightning) ? data.spd_count : data.lightning);
+        var luminosityRawForNull = !isNullish(data.lux) ? data.lux : data.luminosity;
+        var dustRawForNull = resolvePm10Raw(data);
+
+        var nullChecks = [
+            data.fuel_level,
+            data.voltage,
+            data.frequency,
+            isNullish(data.power_factor) ? data.powerfactor : data.power_factor,
+            isNullish(data.temperature) ? data.temp : data.temperature,
+            data.humidity,
+            data.wind_speed,
+            lightningRawForNull,
+            data.ground_resistance,
+            data.tilt_x,
+            data.tilt_y,
+            luminosityRawForNull,
+            data.precipitation,
+            dustRawForNull
+        ];
+
+        for (var i = 0; i < nullChecks.length; i++) {
+            var val = nullChecks[i];
+            if (isNullish(val) || String(val).toUpperCase() === 'NULL') {
+                return true;
+            }
+        }
+
+        var fuel = parseFloat(data.fuel_level);
+        if (!isNaN(fuel) && fuel < 25) return true;
+
+        var voltage = parseFloat(data.voltage);
+        if (!isNaN(voltage) && (voltage < 200 || voltage > 240)) return true;
+
+        var frequency = parseFloat(data.frequency);
+        if (!isNaN(frequency) && (frequency < 49 || frequency > 51)) return true;
+
+        var pfRaw = isNullish(data.power_factor) ? data.powerfactor : data.power_factor;
+        var pf = parseFloat(pfRaw);
+        if (!isNaN(pf) && pf < 0.85) return true;
+
+        var wind = parseFloat(data.wind_speed);
+        if (!isNaN(wind) && wind > 80) return true;
+
+        var lightningRaw = !isNullish(data.lightning_total)
+            ? data.lightning_total
+            : (isNullish(data.lightning) ? data.spd_count : data.lightning);
+        var lightning = parseFloat(lightningRaw);
+        if (!isNaN(lightning) && lightning > 50) return true;
+
+        var earth = parseFloat(data.ground_resistance);
+        if (!isNaN(earth) && earth >= 5.0) return true;
+
+        var luxRaw = !isNullish(data.lux) ? data.lux : data.luminosity;
+        var lux = parseFloat(luxRaw);
+        if (!isNaN(lux) && lux <= 750) return true;
+
+        var precip = parseFloat(data.precipitation);
+        if (!isNaN(precip) && precip > 50) return true;
+
+        var airQuality = String(data.air_quality || '').toUpperCase();
+        if (airQuality === 'HAZARDOUS' || airQuality === 'UNHEALTHY' || airQuality === 'NULL') return true;
+
+        var assetHeight = parseFloat(data.asset_height);
+        var deviationM = parseFloat(data.deviation_m);
+        if (!isNaN(assetHeight) && assetHeight > 0 && !isNaN(deviationM)) {
+            var dangerLimitM = assetHeight * Math.tan(1.0 * Math.PI / 180);
+            if (deviationM >= dangerLimitM) return true;
+        } else {
+            var tiltX = parseFloat(data.tilt_x);
+            var tiltY = parseFloat(data.tilt_y);
+            if (isNaN(tiltX) || isNaN(tiltY)) return true;
+            var tiltTotal = Math.sqrt(Math.pow(tiltX, 2) + Math.pow(tiltY, 2));
+            if (tiltTotal >= 1.0) return true;
+        }
+
+        return false;
+    }
+
+    function updateDashboardText(id, value, maxSizeOverride = null, minSizeOverride = null) {
+        var el = document.getElementById(id);
+        if (!el) return;
+
+        el.textContent = value;
+        
+        var isCompact = el.closest('.p-2') !== null;
+        var baseSize  = maxSizeOverride || (isCompact ? 14 : 18);
+        var minSize   = minSizeOverride || 10; 
+        var current   = baseSize;
+        
+        el.style.fontSize = current + 'px';
+
+        el.style.transition = 'color 0.3s';
+        el.style.color = '#0284c7';
+        setTimeout(function () { 
+            const parentCard = el.closest('.card');
+            if (parentCard) {
+                const bg = parentCard.style.backgroundColor;
+                if (bg.includes('rgba(239, 68, 68')) { 
+                    el.style.color = '#dc2626';
+                } else if (bg.includes('rgba(255, 159, 64')) { 
+                    el.style.color = '#f59e0b';
+                } else {
+                    el.style.color = ''; 
+                }
+            } else {
+                el.style.color = ''; 
+            }
+        }, 1000);
+    }
+
+    function updateSensorState(slug, isWarning, isDanger, normalColors = {}) {
+        const cardView = document.getElementById('card-' + slug);
+        const boxView  = document.getElementById('box-' + slug);
+        const iconView = document.getElementById('icon-' + slug);
+        const valView  = document.getElementById('val-' + slug);
+
+        if (!cardView) return;
+
+        cardView.style.transition = 'all 0.4s ease';
+        if (boxView) boxView.style.transition = 'all 0.4s ease';
+        if (iconView) iconView.style.transition = 'all 0.4s ease';
+        if (valView) valView.style.transition = 'all 0.4s ease';
+
+        if (isDanger) {
+            cardView.style.backgroundColor = 'rgba(239, 68, 68, 0.10)';
+            if (boxView) boxView.style.backgroundColor = 'transparent';
+            if (iconView) iconView.style.color = '#dc2626';
+            if (valView) valView.style.color = '#dc2626';
+        } 
+        else if (isWarning) {
+            cardView.style.backgroundColor = 'rgba(255, 159, 64, 0.10)';
+            if (boxView) boxView.style.backgroundColor = 'transparent';
+            if (iconView) iconView.style.color = '#f59e0b';
+            if (valView) valView.style.color = '#f59e0b';
+        } else {
+            cardView.style.backgroundColor = ''; 
+            if (boxView) boxView.style.backgroundColor = normalColors.bg || '';
+            if (iconView) iconView.style.color = normalColors.icon || '';
+        }
+    }
+
+    function updatePowerItemState(pmId, value, warnMin, warnMax, dangerMin, dangerMax) {
+        const el = document.getElementById(pmId);
+        if (!el) return;
+        const val = parseFloat(value);
+
+        if (isNullish(value) || isNaN(val)) {
+            el.style.background = 'rgba(239, 68, 68, 0.25)';
+            el.style.color = '#dc2626';
+            el.style.transition = 'all 0.4s ease';
+            return;
+        }
+
+        if (val <= 0) { el.style.cssText = ''; return; }
+
+        let isDanger = false;
+        let isWarning = false;
+
+        if (dangerMin !== undefined && dangerMax !== undefined) {
+            isDanger = val < dangerMin || val > dangerMax;
+        }
+        if (warnMin !== undefined && warnMax !== undefined) {
+            isWarning = !isDanger && (val < warnMin || val > warnMax);
+        }
+
+        if (isDanger) {
+            el.style.background = 'rgba(239, 68, 68, 0.25)';
+            el.style.color = '#dc2626';
+        } else if (isWarning) {
+            el.style.background = 'rgba(245, 158, 11, 0.25)';
+            el.style.color = '#d97706';
+        } else {
+            el.style.cssText = '';
+        }
+        el.style.transition = 'all 0.4s ease';
+    }
+
+    // UPDATE SEMUA SENSOR UI
+    function refreshDashboard(data) {
+        if (!data) return;
+
+        // Power Monitor
+        var ampereVal = (data.current !== undefined && data.current !== null) ? data.current : data.ampere;
+        var wattVal   = (data.watt !== undefined && data.watt !== null) ? data.watt : data.power_kw;
+        var energyVal = (data.energy !== undefined && data.energy !== null) ? data.energy : data.energy_kwh;
+        var pfVal     = (data.power_factor !== undefined && data.power_factor !== null) ? data.power_factor : data.powerfactor;
+
+        updateDashboardText('val-voltage',     formatSensorValue(data.voltage, 1, ''));
+        updateDashboardText('val-ampere',      formatSensorValue(ampereVal, 2, ''));
+        updateDashboardText('val-watt',        formatSensorValue(wattVal, 0, ''));
+        updateDashboardText('val-frequency',   formatSensorValue(data.frequency, 1, ''));
+        updateDashboardText('val-energy',      formatSensorValue(energyVal, 1, ''));
+        updateDashboardText('val-powerfactor', formatSensorValue(pfVal, 2, ''));
+
+        updatePowerItemState('pm-voltage',   data.voltage,   215, 225, 210, 230);
+        updatePowerItemState('pm-ampere',    ampereVal);
+        updatePowerItemState('pm-watt',      wattVal);
+        updatePowerItemState('pm-frequency', data.frequency, 49.5, 50.5, 49, 51);
+        updatePowerItemState('pm-energy',    energyVal);
+        updatePowerItemState('pm-powerfactor', pfVal);
+
+        // Weather & Earth
+        var humVal = isNullish(data.humidity) ? null : Number(data.humidity);
+        var tempRaw = data.temperature || data.temp;
+        var tempVal = isNullish(tempRaw) ? null : Number(tempRaw);
+        if (isNullish(humVal) || isNaN(humVal) || isNullish(tempVal) || isNaN(tempVal)) {
+            updateDashboardText('val-humidity-and-temp', 'NULL');
+        } else {
+            updateDashboardText('val-humidity-and-temp', humVal.toFixed(0) + '% / ' + tempVal.toFixed(1) + '\u00b0C');
+        }
+        updateDashboardText('val-weather', data.weather_status || data.weather || 'NULL');
+        updateDashboardText('val-earth-resistance', formatSensorValue(data.ground_resistance, 2, ' Ω'));
+
+        // Extraksi Nilai Sensor
+        var fuelVal = isNullish(data.fuel_level) ? null : parseFloat(data.fuel_level);
+        updateDashboardText('val-fuel-level', formatSensorValue(fuelVal, 0, ' %'));
+        
+        var wSpeedRaw = isNullish(data.wind_speed) ? null : parseFloat(data.wind_speed);
+        // Monitoring displays cumulative lightning (all-time), while thresholds use today's count.
+        var strikeTotalRaw = !isNullish(data.lightning_total)
+            ? data.lightning_total
+            : (isNullish(data.lightning) ? data.spd_count : data.lightning);
+        var strikeTodayRaw = !isNullish(data.lightning_today) ? data.lightning_today : strikeTotalRaw;
+
+        var strikeTotal = isNullish(strikeTotalRaw) ? null : parseFloat(strikeTotalRaw);
+        var strikeToday = isNullish(strikeTodayRaw) ? null : parseFloat(strikeTodayRaw);
+        var earth  = isNullish(data.ground_resistance) ? null : parseFloat(data.ground_resistance);
+        var luxRaw = !isNullish(data.lux) ? data.lux : data.luminosity;
+        var lux    = isNullish(luxRaw) ? null : parseFloat(luxRaw);
+        var precipRaw = data.precipitation;
+        var precip = isNullish(precipRaw) ? null : parseFloat(precipRaw);
+        var dustRaw = resolvePm10Raw(data);
+        var dust = isNullish(dustRaw) ? null : parseFloat(dustRaw);
+
+        // LOGIKA DYNAMIC THRESHOLD UNTUK KEMIRINGAN TOWER (BARU)
+        var isPoleWarning = false;
+        var isPoleDanger = false;
+        
+        if (data.asset_height && data.asset_height > 0 && data.deviation_m != null) {
+            // Hitung batas toleransi dalam satuan meter
+            // Warning: Jika setara miring 0.5 derajat
+            var warnLimitM = data.asset_height * Math.tan(0.5 * Math.PI / 180);
+            // Danger: Jika setara miring 1.0 derajat
+            var dangerLimitM = data.asset_height * Math.tan(1.0 * Math.PI / 180);
+            
+            isPoleDanger = data.deviation_m >= dangerLimitM;
+            isPoleWarning = (data.deviation_m >= warnLimitM) && !isPoleDanger;
+            
+            var deviationCm = formatSensorValue(data.deviation_m * 100, 1, ' cm');
+            updateDashboardText('val-pole-inclination', deviationCm);
+        } else {
+            // Fallback (Cadangan) jika tinggi tidak diisi: Pakai derajat langsung
+            var tiltX = parseFloat(data.tilt_x);
+            var tiltY = parseFloat(data.tilt_y);
+
+            if (isNaN(tiltX) || isNaN(tiltY)) {
+                isPoleDanger = true;
+                isPoleWarning = false;
+                updateDashboardText('val-pole-inclination', 'NULL');
+            } else {
+            var tiltTotal = Math.sqrt(Math.pow(tiltX, 2) + Math.pow(tiltY, 2));
+            
+            isPoleDanger = tiltTotal >= 1.0;
+            isPoleWarning = tiltTotal >= 0.5 && !isPoleDanger;
+            
+            updateDashboardText('val-pole-inclination', formatSensorValue(tiltTotal, 2, '\u00b0'));
+            }
+        }
+
+        // Terapkan warna berdasarkan batas dinamis
+        updateSensorState('pole-inclination', isPoleWarning, isPoleDanger, { bg: '#f3e8ff', icon: '#9333ea' });
+
+        // Thresholds Warning Statis (Lainnya)
+        updateSensorState('fuel-level', !isNullish(fuelVal) && fuelVal < 35, isNullish(fuelVal) || fuelVal < 25, { bg: '#e0f2fe', icon: '#0284c7' });
+        updateSensorState('wind-status', !isNullish(wSpeedRaw) && wSpeedRaw > 35, isNullish(wSpeedRaw) || wSpeedRaw > 80, { bg: '#f0fdf4', icon: '#16a34a' });
+        updateSensorState('lightning-strike', !isNullish(strikeTotal) && strikeTotal >= 40, isNullish(strikeTotal) || strikeTotal > 50, { bg: '#ecfeff', icon: '#0891b2' });
+        updateSensorState('earth-resistance', !isNullish(earth) && earth >= 3.5, isNullish(earth) || earth >= 5.0, { bg: '#f5f5f4', icon: '#78716c' });
+        updateSensorState('luminosity', !isNullish(lux) && lux <= 900, isNullish(lux) || lux <= 750, { bg: '#f0fdf4', icon: '#65a30d' });
+        
+        if (isNullish(wSpeedRaw) || isNaN(wSpeedRaw)) {
+            updateDashboardText('val-wind-status', 'NULL');
+        } else {
+            var wDirString = data.wind_cardinal || '-';
+            var wSpeedDisp = Number(wSpeedRaw).toFixed(1);
+            updateDashboardText('val-wind-status', wSpeedDisp + ' Km/h (' + wDirString + ')');
+        }
+        
+        updateDashboardText('val-luminosity',    formatSensorValue(lux, 0, ' lux'));
+        updateDashboardText('val-precipitation', formatSensorValue(precip, 1, ' mm'));
+        updateSensorState('precipitation', !isNullish(precip) && precip > 30, isNullish(precip) || precip > 50, { bg: '#e0f2fe', icon: '#0284c7' });
+        
+        var aqiStatus = data.air_quality || 'NULL';
+        var dustVal = formatSensorValue(dust, 1, '');
+        if (dustVal === 'NULL') {
+            updateDashboardText('val-pm10-level', 'NULL');
+        } else {
+            updateDashboardText('val-pm10-level', dustVal + ' µg/m³ (' + aqiStatus + ')');
+        }
+        
+        var isDustWarn = (aqiStatus === 'Dusty' || aqiStatus === 'Moderate'); 
+        var isDustDanger = isNullish(dust) || (aqiStatus === 'Hazardous' || aqiStatus === 'Unhealthy' || aqiStatus === 'NULL'); 
+        updateSensorState('pm10-level', isDustWarn, isDustDanger, { bg: '#f0f9ff', icon: '#0369a1' });
+
+        updateDashboardText('val-lightning-strike', formatSensorValue(strikeTotal, 0, '/50'));
+    }
+
+    // ============================================================
+    // FETCH SENTRAL
+    // ============================================================
+    function fetchZoneData(zoneId, isAutoRefresh = false, skipSidebarSync = false) {
+        if (!zoneId) return;
+        currentZoneId = zoneId;
+
+        
+
+        fetch('/api/monitoring/zone-status?zone_id=' + zoneId, {
+            credentials: 'same-origin', headers: { 'Accept': 'application/json' }
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (res) {
+            if (res.status === 'success' && res.data) {
+                var data = res.data;
+
+                refreshDashboard(data);
+
+                var towerName = data.tower_device_name || data.zone_name || 'Tower';
+                var generatorName = data.generator_device_name || '-';
+                var towerStatus = (data.tower_status !== undefined && data.tower_status !== null) ? data.tower_status : data.tower_is_active;
+                var generatorStatus = (data.generator_status !== undefined && data.generator_status !== null) ? data.generator_status : data.generator_is_active;
+                var towerActive = String(towerStatus).toLowerCase() === 'active' || String(towerStatus) === '1';
+                var generatorActive = String(generatorStatus).toLowerCase() === 'active' || String(generatorStatus) === '1';
+                var zoneMarkerStatus = (towerActive && generatorActive) ? 'active' : ((towerActive || generatorActive) ? 'maintenance' : 'down');
+
+                var lat = parseFloat(data.latitude);
+                var lng = parseFloat(data.longitude);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    var sensorIssue = (typeof data.sensor_issue === 'boolean')
+                        ? data.sensor_issue
+                        : hasSensorIssueInPayload(data);
+
+                    if (!isAutoRefresh && typeof window.zoomToZone === 'function') {
+                        // Memastikan data.asset_height terlempar dengan aman ke komponen peta
+                        window.zoomToZone(lat, lng, towerName, data.asset_height, data.network_area);
+                    }
+
+                    if (typeof window.setCurrentDeviceInfo === 'function') {
+                        // FIX: Menambahkan koma yang tadi terlupa!
+                        window.setCurrentDeviceInfo({
+                            towerName: towerName,
+                            generatorName: generatorName,
+                            towerStatus: towerStatus,
+                            generatorStatus: generatorStatus, 
+                            towerHeight: data.asset_height,
+                            towerNetworkArea: data.network_area
+                        });
+                    }
+
+                    if (typeof window.updateMapMarkers === 'function') {
+                        window.updateMapMarkers([{
+                            id: zoneId,
+                            zone_id: zoneId,
+                            site_id: data.site_id || null,
+                            name: towerName,
+                            zone_name: data.zone_name || towerName,
+                            tower_device_name: towerName,
+                            generator_device_name: generatorName,
+                            tower_status: towerStatus,
+                            generator_status: generatorStatus,
+                            lat: lat,
+                            lng: lng,
+                            status: zoneMarkerStatus,
+                            sensor_issue: sensorIssue,
+                            asset_height: data.asset_height,
+                            network_area: data.network_area
+                        }], 'tower');
+                    }
+                }
+
+                if (!skipSidebarSync && typeof window.highlightSidebarZone === 'function') {
+                    var siteId = data.site_id || null;
+                    if (siteId) {
+                        window.highlightSidebarZone(siteId, data.zone_name || towerName);
+                    } else {
+                        window.highlightSidebarZone(zoneId, data.zone_name || towerName);
+                    }
+                }
+            }
+        })
+        .catch(function (err) {
+            console.error('[Monitoring] fetchZoneData error:', err);
+        });
+
+        if (!autoRefreshTimer) {
+            autoRefreshTimer = setInterval(function () {
+                if (currentZoneId) {
+                    fetchZoneData(currentZoneId, true, true);
+                }
+            }, ZONE_REFRESH_INTERVAL_MS);
+        }
+    }
+
+    function startSidebarMapAutoRefresh() {
+        if (sidebarMapRefreshTimer) {
+            clearInterval(sidebarMapRefreshTimer);
+        }
+
+        sidebarMapRefreshTimer = setInterval(function () {
+            document.dispatchEvent(new CustomEvent('monitoring-refresh'));
+        }, SIDEBAR_MAP_REFRESH_INTERVAL_MS);
+    }
+
+    // ============================================================
+    // RESET DASHBOARD
+    // ============================================================
+    function resetDashboard() {
+        if (autoRefreshTimer) {
+            clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+        }
+        currentZoneId = null;
+
+        var fields = [
+            'val-voltage', 'val-ampere', 'val-watt', 'val-frequency',
+            'val-energy', 'val-powerfactor', 'val-earth-resistance',
+            'val-fuel-level', 'val-lightning-strike', 'val-luminosity',
+            'val-precipitation', 'val-humidity-and-temp'
+        ];
+        fields.forEach(function (f) { updateDashboardText(f, '0'); });
+        
+        updateDashboardText('val-pole-inclination', '0 cm');
+        
+        updateDashboardText('val-wind-status', '0 Km/h (-)');
+        updateDashboardText('val-pm10-level', '0 µg/m³ (-)');
+        
+        updateDashboardText('val-weather',       'No Data');
+        updateDashboardText('val-humidity-and-temp', '0% / 0\u00b0C');
+
+        ['pm-voltage', 'pm-ampere', 'pm-watt', 'pm-frequency', 'pm-energy', 'pm-powerfactor'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.cssText = '';
+        });
+
+        updateSensorState('fuel-level', false, false, { bg: '#e0f2fe', icon: '#0284c7' });
+        updateSensorState('wind-status', false, false, { bg: '#f0fdf4', icon: '#16a34a' });
+        updateSensorState('lightning-strike', false, false, { bg: '#ecfeff', icon: '#0891b2' });
+        updateSensorState('earth-resistance', false, false, { bg: '#f5f5f4', icon: '#78716c' });
+        updateSensorState('pole-inclination', false, false, { bg: '#f3e8ff', icon: '#9333ea' });
+        updateSensorState('luminosity', false, false, { bg: '#f0fdf4', icon: '#65a30d' });
+        updateSensorState('pm10-level', false, false, { bg: '#f0f9ff', icon: '#0369a1' });
+
+        var towerNameSpan  = document.getElementById('currentTowerName');
+        var generatorNameSpan = document.getElementById('currentGeneratorName');
+        var coordSpan = document.getElementById('currentCoordinates');
+        if (towerNameSpan)  towerNameSpan.textContent  = '-';
+        if (generatorNameSpan) generatorNameSpan.textContent = '-';
+        if (coordSpan) coordSpan.textContent = '-';
+
+        if (typeof window.setCurrentDeviceInfo === 'function') {
+            window.setCurrentDeviceInfo({
+                towerName: '-',
+                generatorName: '-',
+                towerStatus: 'active',
+                generatorStatus: 'active',
+                towerHeight: null,
+                towerNetworkArea: null
+            });
+        }
+    }
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    document.addEventListener('tower-selected', function (e) {
+        var targetId = e.detail.zone_id || e.detail.id || e.detail.device_id;
+        if (targetId) {
+            fetchZoneData(targetId);
+        } else {
+            refreshDashboard(e.detail);
+            if (e.detail.lat && e.detail.lng && typeof window.zoomToZone === 'function') {
+                window.zoomToZone(e.detail.lat, e.detail.lng, e.detail.name, e.detail.asset_height, e.detail.network_area);
+            }
+        }
+    });
+
+    document.addEventListener('zone-selected',   function (e) {
+        if (e.detail.zone_id) fetchZoneData(e.detail.zone_id);
+    });
+
+    document.addEventListener('zone-redirect', function (e) {
+        if (e.detail.zone_id) fetchZoneData(e.detail.zone_id, true, true);
+    });
+
+    document.addEventListener('region-selected', function () {
+        resetDashboard();
+    });
+
+    document.addEventListener('site-focus', function () {
+        resetDashboard();
+    });
+</script>
+
+
+}
+
+
+
+
+
+

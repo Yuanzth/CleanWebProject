@@ -1,0 +1,62 @@
+# Build folders
+bin/
+obj/
+graphify-out/
+.agents/
+
+# Temp Excel files
+~$*
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / VS Code folders
+.vs/
+.vscode/
+.idea/
+
+# Local databases (SQLite)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Environment / App settings
+appsettings.json
+appsettings.*.json
+PamaAssetTrack.Web/appsettings.json
+PamaAssetTrack.Web/appsettings.*.json
+
+# Windows OS metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local uploads & scratch scripts
+wwwroot/uploads/
+PamaAssetTrack.Web/wwwroot/uploads/
+scratch_reset_db.ps1
+dashboard.html
+*.xlsx
+
+# Python & PyInstaller build outputs
+__pycache__/
+*.pyc
+Services/__pycache__/
+Services/ExportPython/build/
+Services/ExportPython/dist/
+Services/ExportPython/build_method_*/
+Services/ExportPython/__pycache__/
+
+# WiX & Installer outputs
+*.wixobj
+*.wixpdb
+Services/ExportPython/dist_installer/*.wixpdb
+
+# Evidence Reports (Telemetry Archive)
+Services/evidence_reports/
+
+

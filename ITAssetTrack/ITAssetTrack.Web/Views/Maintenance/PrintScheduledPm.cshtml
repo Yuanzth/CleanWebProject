@@ -1,0 +1,584 @@
+@model ITAssetTrack.Models.ScheduledMaint
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FORM PREVENTIVE MAINTENANCE - @Model.SerialNumber</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .pm-form-container {
+            max-width: 820px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 15px 20px;
+            background: #fff;
+        }
+
+        .pm-header {
+            text-align: center;
+            border-bottom: 2px double #000;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .pm-header h2 {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pm-header h3 {
+            font-size: 13px;
+            font-weight: 700;
+            margin: 2px 0;
+            color: #1a252f;
+        }
+
+        .pm-header .doc-no {
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .section-banner {
+            background-color: #e2e8f0;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 4px 8px;
+            border: 1px solid #000;
+            margin-top: 10px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .table-form-detail {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .table-form-detail td {
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .check-box {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+            text-align: center;
+            line-height: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-right: 3px;
+        }
+
+        .table-checklist {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .table-checklist th, .table-checklist td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+        }
+
+        .table-checklist th {
+            background-color: #f1f5f9;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .signature-table th, .signature-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .signature-table th {
+            background-color: #f8fafc;
+            font-size: 10px;
+        }
+
+        .sig-box-img {
+            height: 70px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .sig-empty {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-style: italic;
+            font-size: 10px;
+        }
+
+        .no-print-toolbar {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @@media print {
+            .no-print-toolbar {
+                display: none !important;
+            }
+            body {
+                padding: 0;
+            }
+            .pm-form-container {
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Print Toolbar -->
+    <div class="no-print-toolbar d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-sm btn-primary shadow">
+            <i class="bi bi-printer me-1"></i> Cetak Form PDF
+        </button>
+        <button onclick="window.close()" class="btn btn-sm btn-secondary shadow">
+            <i class="bi bi-x-lg me-1"></i> Tutup
+        </button>
+    </div>
+
+    <div class="pm-form-container">
+        <!-- Header -->
+        <div class="pm-header">
+            <h2>PREVENTIVE MAINTENANCE FORM</h2>
+            <h3>SEAT MANAGEMENT PROJECT - PT InfraHubPERSADA NUSANTARA</h3>
+            <div class="doc-no">No. Dokumen: @(string.IsNullOrEmpty(Model.NoDocument) ? $"InfraHub/HQ_DEPT/PM/{DateTime.Now.Year}/001" : Model.NoDocument)</div>
+        </div>
+
+        <!-- Detail Header -->
+        <table class="table-form-detail">
+            <tr>
+                <td style="width:15%; font-weight:bold;">Tanggal</td>
+                <td style="width:35%;">: @(Model.ActualDate.HasValue ? Model.ActualDate.Value.ToString("dd MMMM yyyy") : Model.Tanggal.ToString("dd MMMM yyyy"))</td>
+                <td style="width:15%; font-weight:bold;">Site / Dept</td>
+                <td style="width:35%;">: @Model.Site / @Model.Division</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Nama User</td>
+                <td>: @Model.NamaUser (@(string.IsNullOrEmpty(Model.NRP) ? "-" : Model.NRP))</td>
+                <td style="font-weight:bold;">Computer Name</td>
+                <td>: @Model.ComputerName</td>
+            </tr>
+            <tr>
+                <td style="font-weight:bold;">Kontak / Email</td>
+                <td>: @Model.ContactInfo / @Model.Email</td>
+                <td style="font-weight:bold;">Start / End Time</td>
+                <td>: @(DateTime.Today.Add(Model.StartTime).ToString("HH:mm")) / @(Model.EndTime == TimeSpan.Zero ? "-" : DateTime.Today.Add(Model.EndTime).ToString("HH:mm"))</td>
+            </tr>
+        </table>
+
+        <!-- Banner 1 -->
+        <div class="section-banner">HARDWARE &amp; SOFTWARE DETAIL</div>
+
+        <!-- Spec Table -->
+        <table class="table-checklist">
+            <thead>
+                <tr>
+                    <th style="width:25%;">Komponen Perangkat</th>
+                    <th style="width:45%;">Spesifikasi &amp; Detail</th>
+                    <th style="width:15%; text-align:center;">Baik</th>
+                    <th style="width:15%; text-align:center;">Rusak</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Tipe Device</strong></td>
+                    <td>
+                        <span class="check-box">@(Model.DeviceType != null && Model.DeviceType.Contains("Desktop", StringComparison.OrdinalIgnoreCase) ? "v" : "")</span> Desktop
+                        &nbsp;&nbsp;
+                        <span class="check-box">@(Model.DeviceType != null && (Model.DeviceType.Contains("Notebook", StringComparison.OrdinalIgnoreCase) || Model.DeviceType.Contains("Laptop", StringComparison.OrdinalIgnoreCase)) ? "v" : "")</span> Notebook
+                    </td>
+                    <td class="text-center"><span class="check-box">@(Model.DeviceKondisi == "Baik" ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(Model.DeviceKondisi == "Rusak" ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Merk &amp; Model</strong></td>
+                    <td>@Model.Brand @Model.Model (S/N: @Model.SerialNumber)</td>
+                    <td class="text-center"><span class="check-box">v</span></td>
+                    <td class="text-center"><span class="check-box"></span></td>
+                </tr>
+                <tr>
+                    <td><strong>Processor</strong></td>
+                    <td>@Model.Processor</td>
+                    <td class="text-center"><span class="check-box">@(Model.ProcessorKondisi == "Baik" ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(Model.ProcessorKondisi == "Rusak" ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>RAM</strong></td>
+                    <td>@Model.Ram</td>
+                    <td class="text-center"><span class="check-box">@(Model.RamKondisi == "Baik" ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(Model.RamKondisi == "Rusak" ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Storage (SSD/HDD)</strong></td>
+                    <td>@Model.Storage</td>
+                    <td class="text-center"><span class="check-box">@(Model.StorageKondisi == "Baik" ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(Model.StorageKondisi == "Rusak" ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Windows Version</strong></td>
+                    <td colspan="3">@Model.WindowsVersion</td>
+                </tr>
+                @if (Model.KeyboardAda)
+                {
+                    <tr>
+                        <td><strong>Keyboard</strong></td>
+                        <td>Merk: @(string.IsNullOrEmpty(Model.KeyboardBrand) ? "-" : Model.KeyboardBrand)</td>
+                        <td class="text-center"><span class="check-box">@(Model.KeyboardKondisi == "Baik" ? "v" : "")</span></td>
+                        <td class="text-center"><span class="check-box">@(Model.KeyboardKondisi == "Rusak" ? "v" : "")</span></td>
+                    </tr>
+                }
+                @if (Model.MouseAda)
+                {
+                    <tr>
+                        <td><strong>Mouse</strong></td>
+                        <td>Merk: @(string.IsNullOrEmpty(Model.MouseBrand) ? "-" : Model.MouseBrand)</td>
+                        <td class="text-center"><span class="check-box">@(Model.MouseKondisi == "Baik" ? "v" : "")</span></td>
+                        <td class="text-center"><span class="check-box">@(Model.MouseKondisi == "Rusak" ? "v" : "")</span></td>
+                    </tr>
+                }
+                @if (Model.MonitorAda)
+                {
+                    <tr>
+                        <td><strong>Monitor</strong></td>
+                        <td>Merk: @(string.IsNullOrEmpty(Model.MonitorBrand) ? "-" : Model.MonitorBrand)@(!string.IsNullOrEmpty(Model.MonitorModel) ? $" | Model: {Model.MonitorModel}" : "")</td>
+                        <td class="text-center"><span class="check-box">@(Model.MonitorKondisi == "Baik" ? "v" : "")</span></td>
+                        <td class="text-center"><span class="check-box">@(Model.MonitorKondisi == "Rusak" ? "v" : "")</span></td>
+                    </tr>
+                }
+                @if (Model.ChargerAda)
+                {
+                    <tr>
+                        <td><strong>Charger / Adaptor</strong></td>
+                        <td>Charger Original / Bawaan</td>
+                        <td class="text-center"><span class="check-box">v</span></td>
+                        <td class="text-center"><span class="check-box"></span></td>
+                    </tr>
+                }
+                @if (Model.TasLaptopAda)
+                {
+                    <tr>
+                        <td><strong>Tas Laptop</strong></td>
+                        <td>Softcase / Tas Laptop</td>
+                        <td class="text-center"><span class="check-box">v</span></td>
+                        <td class="text-center"><span class="check-box"></span></td>
+                    </tr>
+                }
+                @if (Model.MultiportAda)
+                {
+                    <tr>
+                        <td><strong>Multiport / Hub</strong></td>
+                        <td>USB Hub / Docking Station</td>
+                        <td class="text-center"><span class="check-box">v</span></td>
+                        <td class="text-center"><span class="check-box"></span></td>
+                    </tr>
+                }
+                @if (!Model.KeyboardAda && !Model.MouseAda && !Model.MonitorAda && !Model.ChargerAda && !Model.TasLaptopAda && !Model.MultiportAda)
+                {
+                    <tr>
+                        <td><strong>Aksesoris</strong></td>
+                        <td colspan="3" style="color:#6b7280;font-style:italic;">Tidak ada aksesoris tambahan</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Banner 2 -->
+        <div class="section-banner">PREVENTIVE MAINTENANCE CHECKLIST</div>
+
+        <table class="table-checklist">
+            <thead>
+                <tr>
+                    <th style="width:70%;">Item Pemeriksaan</th>
+                    <th style="width:15%; text-align:center;">Ya / Baik</th>
+                    <th style="width:15%; text-align:center;">Tidak / Rusak</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Pemeriksaan Fisik Komputer:</strong> Kondisi unit dalam keadaan baik dan bersih secara keseluruhan</td>
+                    <td class="text-center"><span class="check-box">@(Model.FisikKondisiBaik ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.FisikKondisiBaik ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>UEFI Setting:</strong> UEFI Password telah distandarisasi</td>
+                    <td class="text-center"><span class="check-box">@(Model.UEFIPassword ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.UEFIPassword ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>UEFI Setting:</strong> Boot order hanya melalui storage</td>
+                    <td class="text-center"><span class="check-box">@(Model.BootOrderStorage ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.BootOrderStorage ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>UEFI Setting:</strong> Menu boot order di-disable</td>
+                    <td class="text-center"><span class="check-box">@(Model.BootOrderDisable ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.BootOrderDisable ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Sistem Setting:</strong> Disable administrator</td>
+                    <td class="text-center"><span class="check-box">@(Model.DisableAdmin ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.DisableAdmin ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Sistem Setting:</strong> Melakukan Disk Clean Up Drive C dan D</td>
+                    <td class="text-center"><span class="check-box">@(Model.DiskCleanUp ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.DiskCleanUp ? "v" : "")</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Sistem Setting:</strong> Memastikan space SSD drive C dan D yang tersisa masing-masing drive min. 10%</td>
+                    <td class="text-center"><span class="check-box">@(Model.SpaceSSD ? "v" : "")</span></td>
+                    <td class="text-center"><span class="check-box">@(!Model.SpaceSSD ? "v" : "")</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- PM Execution Info -->
+        @if (Model.PmStartedAt.HasValue || Model.PmCompletedAt.HasValue || !string.IsNullOrEmpty(Model.PerformedBy))
+        {
+            <div class="section-banner">PM EXECUTION DETAIL</div>
+            <table class="table-form-detail">
+                <tr>
+                    <td style="width:20%; font-weight:bold;">Teknisi Pelaksana</td>
+                    <td style="width:30%;">: @(string.IsNullOrWhiteSpace(Model.PerformedBy) ? "Teknisi ITAssetTrack" : Model.PerformedBy)</td>
+                    <td style="width:20%; font-weight:bold;">PM Start / End</td>
+                    <td style="width:30%;">: @(Model.PmStartedAt?.ToString("dd MMM yyyy HH:mm") ?? "-") / @(Model.PmCompletedAt?.ToString("HH:mm") ?? "-")</td>
+                </tr>
+                @if (Model.PmStartedAt.HasValue && Model.PmCompletedAt.HasValue)
+                {
+                    var dur = Model.PmCompletedAt.Value - Model.PmStartedAt.Value;
+                    <tr>
+                        <td style="font-weight:bold;">Durasi PM</td>
+                        <td colspan="3">: @((int)dur.TotalMinutes) menit</td>
+                    </tr>
+                }
+            </table>
+        }
+
+        <!-- Reschedule History -->
+        @if (Model.Reschedule1Date.HasValue || Model.Reschedule2Date.HasValue || Model.Reschedule3Date.HasValue)
+        {
+            <div class="section-banner">RIWAYAT RESCHEDULE</div>
+            <table class="table-checklist">
+                <thead>
+                    <tr>
+                        <th style="width:10%;">#</th>
+                        <th style="width:30%;">Tanggal Baru</th>
+                        <th style="width:60%;">Alasan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.OriginalPlanDate.HasValue)
+                    {
+                        <tr>
+                            <td class="text-center">-</td>
+                            <td>Tanggal Asli: @Model.OriginalPlanDate.Value.ToString("dd MMM yyyy")</td>
+                            <td>-</td>
+                        </tr>
+                    }
+                    @if (Model.Reschedule1Date.HasValue)
+                    {
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td>@Model.Reschedule1Date.Value.ToString("dd MMM yyyy")</td>
+                            <td>@(string.IsNullOrEmpty(Model.Reschedule1Reason) ? "-" : Model.Reschedule1Reason)</td>
+                        </tr>
+                    }
+                    @if (Model.Reschedule2Date.HasValue)
+                    {
+                        <tr>
+                            <td class="text-center">2</td>
+                            <td>@Model.Reschedule2Date.Value.ToString("dd MMM yyyy")</td>
+                            <td>@(string.IsNullOrEmpty(Model.Reschedule2Reason) ? "-" : Model.Reschedule2Reason)</td>
+                        </tr>
+                    }
+                    @if (Model.Reschedule3Date.HasValue)
+                    {
+                        <tr>
+                            <td class="text-center">3</td>
+                            <td>@Model.Reschedule3Date.Value.ToString("dd MMM yyyy")</td>
+                            <td>@(string.IsNullOrEmpty(Model.Reschedule3Reason) ? "-" : Model.Reschedule3Reason)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <!-- Return / Handover Info -->
+        @if (Model.ReturnedAt.HasValue)
+        {
+            <div class="section-banner">PENGEMBALIAN LAPTOP KE USER</div>
+            <table class="table-form-detail">
+                <tr>
+                    <td style="width:20%; font-weight:bold;">Waktu Kembali</td>
+                    <td style="width:30%;">: @Model.ReturnedAt.Value.ToString("dd MMM yyyy HH:mm")</td>
+                    <td style="width:20%; font-weight:bold;">User Hadir</td>
+                    <td style="width:30%;">: @(Model.UserNotPresent ? "Tidak Ada" : "Ya, Hadir")</td>
+                </tr>
+                @if (!string.IsNullOrEmpty(Model.ReturnNotes))
+                {
+                    <tr>
+                        <td style="font-weight:bold;">Catatan Return</td>
+                        <td colspan="3">: @Model.ReturnNotes</td>
+                    </tr>
+                }
+            </table>
+        }
+
+        <!-- Signatures Table (4 Tanda Tangan: ITAssetTrack + User + 2 Approval) -->
+        <table class="signature-table">
+            <thead>
+                <tr>
+                    <th style="width:25%;">Dibuat Oleh</th>
+                    <th style="width:25%;">Diterima Oleh</th>
+                    <th style="width:25%;">Diketahui Oleh</th>
+                    <th style="width:25%;">Diketahui Oleh</th>
+                </tr>
+                <tr>
+                    <td style="font-size:9px; font-weight:bold;">Team SMO / IT Site<br/>(ITAssetTrack / Manage Service)</td>
+                    <td style="font-size:9px; font-weight:bold;">User Penerima Laptop<br/>(Handover)</td>
+                    <td style="font-size:9px; font-weight:bold;">Koordinator MS / IT Site<br/>(ITAssetTrack Leader / IT Site)</td>
+                    <td style="font-size:9px; font-weight:bold;">ITOS &amp; DC Sect. Head<br/>(Koordinator IT Site)</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <!-- Sign 1: Executed By (ITAssetTrack) -->
+                    <td>
+                        @if (!string.IsNullOrEmpty(Model.ExecBySignature))
+                        {
+                            <img src="@Model.ExecBySignature" class="sig-box-img" alt="Sign ITAssetTrack" />
+                        }
+                        else
+                        {
+                            <div class="sig-empty">( TTD ITAssetTrack )</div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.PerformedBy))
+                        {
+                            <div style="font-size:9px; margin-top:2px;">@Model.PerformedBy</div>
+                        }
+                    </td>
+                    <!-- Sign 2: User Handover -->
+                    <td>
+                        @if (!string.IsNullOrEmpty(Model.UserHandoverSignature))
+                        {
+                            <img src="@Model.UserHandoverSignature" class="sig-box-img" alt="Sign User" />
+                        }
+                        else if (Model.UserNotPresent)
+                        {
+                            <div class="sig-empty" style="color:#b45309;">( User Tidak Ada )</div>
+                        }
+                        else
+                        {
+                            <div class="sig-empty">( TTD User )</div>
+                        }
+                    </td>
+                    <!-- Sign 3: Leader (Checkbox) -->
+                    <td>
+                        @if (Model.LeaderApproved)
+                        {
+                            <div style="font-size:24px; color:#059669;">✓</div>
+                            <div style="font-size:9px;">@(Model.LeaderApprovedBy ?? "-")</div>
+                            @if (Model.LeaderApprovedAt.HasValue)
+                            {
+                                <div style="font-size:8px; color:#64748b;">@Model.LeaderApprovedAt.Value.ToString("dd/MM/yy HH:mm")</div>
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(Model.LeaderSignature))
+                        {
+                            <img src="@Model.LeaderSignature" class="sig-box-img" alt="Sign Leader" />
+                        }
+                        else
+                        {
+                            <div class="sig-empty">( Belum Disetujui )</div>
+                        }
+                    </td>
+                    <!-- Sign 4: Section Head (Checkbox) -->
+                    <td>
+                        @if (Model.LeaderApproved && Model.SectionHeadApproved)
+                        {
+                            <div style="font-size:24px; color:#059669;">✓</div>
+                            <div style="font-size:9px;">@(Model.SectionHeadApprovedBy ?? "-")</div>
+                            @if (Model.SectionHeadApprovedAt.HasValue)
+                            {
+                                <div style="font-size:8px; color:#64748b;">@Model.SectionHeadApprovedAt.Value.ToString("dd/MM/yy HH:mm")</div>
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(Model.ItosSectionHeadSignature))
+                        {
+                            <img src="@Model.ItosSectionHeadSignature" class="sig-box-img" alt="Sign ITOS" />
+                        }
+                        else
+                        {
+                            <div class="sig-empty">( Belum Disetujui )</div>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Evidence Photos -->
+        @{
+            var photos = ViewBag.Photos as List<ITAssetTrack.Models.MaintenancePhoto>;
+        }
+        @if (photos != null && photos.Any())
+        {
+            <div class="section-banner">EVIDENCE FOTO PM</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                @foreach (var ph in photos)
+                {
+                    <div style="text-align:center;">
+                        <img src="@ph.FilePath" style="width:120px;height:90px;object-fit:cover;border:1px solid #000;" alt="@ph.PhotoType" />
+                        <div style="font-size:8px; font-weight:bold;">@ph.PhotoType</div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Internal Use / Remark -->
+        <div style="border:1px solid #000; padding:6px; font-size:10px; margin-top:8px;">
+            <strong>INTERNAL USE:</strong><br/>
+            <strong>Keluhan User:</strong> @(string.IsNullOrWhiteSpace(Model.Keluhan) ? "Tidak ada keluhan yang dilaporkan (Pre-PM)" : Model.Keluhan)<br/>
+            <strong>Catatan / Remark:</strong> @(string.IsNullOrWhiteSpace(Model.Remark) ? "Preventive Maintenance selesai dilakukan, kondisi perangkat baik." : Model.Remark)
+        </div>
+    </div>
+
+</body>
+</html>

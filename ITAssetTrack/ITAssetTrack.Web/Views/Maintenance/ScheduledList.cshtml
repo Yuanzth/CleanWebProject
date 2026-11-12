@@ -1,0 +1,472 @@
+@model List<ITAssetTrack.Models.ScheduledMaint>
+@{
+    ViewData["Title"] = "List Scheduled Maintenance (Preventive Maintenance)";
+    ViewData["PageLabel"] = "Scheduled PM Target";
+
+    string activeTab = ViewBag.ActiveTab as string ?? "pending";
+    string historyFilter = ViewBag.HistoryFilter as string ?? "all";
+    string activeMonthYear = ViewBag.ActiveMonthYear as string ?? DateTime.Today.ToString("yyyy-MM");
+    var availableMonths = ViewBag.AvailableMonths as List<string> ?? new List<string> { activeMonthYear };
+
+    int targetCount = ViewBag.TargetCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int historySignedUserCount = ViewBag.HistorySignedUserCount ?? 0;
+    int historyUnsignedUserCount = ViewBag.HistoryUnsignedUserCount ?? 0;
+}
+
+@if (TempData["Success"] != null)
+{
+    <div id="tempDataSuccess" class="d-none">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div id="tempDataError" class="d-none">@TempData["Error"]</div>
+}
+
+
+<!-- Toolbar Card -->
+<div class="card border-0 shadow-sm mb-3" style="border-radius:14px; background:#fff; padding:12px 14px;">
+    <!-- Desktop & Tablet Layout -->
+    <div class="d-none d-md-flex align-items-center justify-content-between flex-wrap gap-2">
+        <!-- Left: Month & Tabs -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <form method="get" id="monthForm" class="m-0 p-0 d-inline-flex align-items-center">
+                <input type="hidden" name="tab" value="@activeTab" />
+                <input type="hidden" name="historyFilter" value="@historyFilter" />
+                <div class="d-inline-flex align-items-center bg-light border rounded-pill px-2.5 py-1" style="font-size:11.5px; height:32px;">
+                    <i class="bi bi-funnel text-primary me-1.5"></i>
+                    <span class="text-muted me-1">Bulan:</span>
+                    <select name="monthYear" class="form-select form-select-sm fw-bold border-0 bg-transparent text-primary p-0 shadow-none" style="cursor: pointer; width: auto; font-size: 11.5px;" onchange="document.getElementById('monthForm').submit()">
+                        @foreach (var m in availableMonths)
+                        {
+                            <option value="@m" selected="@(m == activeMonthYear ? "selected" : null)">@m</option>
+                        }
+                    </select>
+                </div>
+            </form>
+
+            <div class="vr opacity-25" style="height:20px;"></div>
+
+            <div class="d-flex align-items-center gap-1">
+                <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = activeMonthYear, tab = "pending" })"
+                   class="tab-btn text-nowrap @(activeTab == "pending" ? "active" : "")" style="height:32px; padding:0 10px; font-size:11.5px; display:inline-flex; align-items:center;">
+                    <i class="bi bi-calendar-event me-1"></i> Target Rencana PM
+                    <span class="badge bg-warning text-dark ms-1">@pendingCount</span>
+                </a>
+                <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = activeMonthYear, tab = "completed" })"
+                   class="tab-btn text-nowrap @(activeTab == "completed" ? "active" : "")" style="height:32px; padding:0 10px; font-size:11.5px; display:inline-flex; align-items:center;">
+                    <i class="bi bi-clock-history me-1"></i> History PM
+                    <span class="badge bg-success ms-1">@completedCount</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Right: Actions -->
+        @if (!User.IsInRole("Viewer"))
+        {
+            <div class="d-flex align-items-center gap-1.5 flex-wrap ms-auto ms-md-0">
+                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator"))
+                {
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-2.5 text-nowrap fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#importPlanModal" style="height:32px; font-size: 11.5px;">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Import Excel
+                    </button>
+                }
+                <a href="@Url.Action("ScheduledForm", "Maintenance")" class="btn btn-primary btn-sm rounded-pill px-2.5 text-nowrap fw-semibold shadow-xs" style="height:32px; display:inline-flex; align-items:center; font-size: 11.5px;">
+                    <i class="bi bi-plus-lg me-1"></i> Tambah Target
+                </a>
+                @if ((User.IsInRole("Admin") || User.IsInRole("Coordinator")) && targetCount > 0)
+                {
+                    <form asp-action="DeleteScheduledPlanMonth" method="post" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS SELURUH Rencana PM Bulan @activeMonthYear?');" class="m-0 p-0 d-inline-flex">
+                        <input type="hidden" name="monthYear" value="@activeMonthYear" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 text-nowrap fw-semibold shadow-xs" title="Hapus Seluruh Target Bulan Ini" style="height:32px; font-size: 11.5px;">
+                            <i class="bi bi-trash me-1"></i> Hapus Plan
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Mobile Layout (d-flex d-md-none) -->
+    <div class="d-flex d-md-none flex-column gap-2">
+        <!-- Row 1: Month Filter -->
+        <div class="d-flex align-items-center justify-content-between w-100">
+            <form method="get" id="monthFormMobile" class="m-0 p-0 w-100">
+                <input type="hidden" name="tab" value="@activeTab" />
+                <input type="hidden" name="historyFilter" value="@historyFilter" />
+                <div class="d-flex align-items-center justify-content-between bg-light border rounded-pill px-3 py-1 w-100" style="font-size:12px; height:34px;">
+                    <span class="text-muted fw-semibold"><i class="bi bi-funnel text-primary me-1.5"></i>Filter Bulan:</span>
+                    <select name="monthYear" class="form-select form-select-sm fw-bold border-0 bg-transparent text-primary p-0 shadow-none text-end" style="cursor: pointer; width: auto; font-size: 12px;" onchange="this.form.submit()">
+                        @foreach (var m in availableMonths)
+                        {
+                            <option value="@m" selected="@(m == activeMonthYear ? "selected" : null)">@m</option>
+                        }
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Row 2: Status Tabs (50%/50% width) -->
+        <div class="d-flex align-items-center gap-1.5 w-100">
+            <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = activeMonthYear, tab = "pending" })"
+               class="tab-btn flex-fill text-nowrap text-center @(activeTab == "pending" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="bi bi-calendar-event me-1"></i> Target Rencana
+                <span class="badge bg-warning text-dark ms-1">@pendingCount</span>
+            </a>
+            <a href="@Url.Action("ScheduledList", "Maintenance", new { monthYear = activeMonthYear, tab = "completed" })"
+               class="tab-btn flex-fill text-nowrap text-center @(activeTab == "completed" ? "active" : "")" style="height:34px; padding:0 8px; font-size:11.5px; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="bi bi-clock-history me-1"></i> History PM
+                <span class="badge bg-success ms-1">@completedCount</span>
+            </a>
+        </div>
+
+        <!-- Row 3: Action Buttons (Equal horizontal row) -->
+        @if (!User.IsInRole("Viewer"))
+        {
+            <div class="d-flex align-items-center gap-1.5 w-100 pt-1 border-top">
+                <a href="@Url.Action("ScheduledForm", "Maintenance")" class="btn btn-primary btn-sm rounded-pill flex-fill text-nowrap fw-semibold shadow-xs" style="height:32px; display:inline-flex; align-items:center; justify-content:center; font-size: 11.5px; padding:0 10px;">
+                    <i class="bi bi-plus-lg me-1"></i> Tambah Target
+                </a>
+                @if (User.IsInRole("Admin") || User.IsInRole("Coordinator"))
+                {
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill flex-fill text-nowrap fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#importPlanModal" style="height:32px; font-size: 11.5px; padding:0 10px;">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Import
+                    </button>
+                }
+                @if ((User.IsInRole("Admin") || User.IsInRole("Coordinator")) && targetCount > 0)
+                {
+                    <form asp-action="DeleteScheduledPlanMonth" method="post" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS SELURUH Rencana PM Bulan @activeMonthYear?');" class="m-0 p-0 d-inline-flex flex-shrink-0">
+                        <input type="hidden" name="monthYear" value="@activeMonthYear" />
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill text-nowrap fw-semibold shadow-xs" title="Hapus Seluruh Target Bulan Ini" style="height:32px; font-size: 11.5px; padding:0 10px;">
+                            <i class="bi bi-trash me-1"></i> Hapus
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+
+
+
+
+<div class="management-card p-4">
+    <div class="table-responsive">
+        <table id="pmTable" class="table management-table align-middle w-100">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tanggal Rencana</th>
+                    <th>Serial Number (SN)</th>
+                    <th>Computer Name</th>
+                    <th>Nama User</th>
+                    <th>Divisi / Site</th>
+                    <th>Perangkat / Model</th>
+                    <th>Status</th>
+                    <th class="text-end">Aksi / Eksekusi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int idx = 1;
+                    foreach (var item in Model)
+                    {
+                        string statusBadgeClass = item.Status switch
+                        {
+                            "Completed" => "badge-available",
+                            "In Progress" => "badge-inuse",
+                            _ => "badge-maintenance"
+                        };
+                        bool isToday = (item.PlanDate ?? item.Tanggal).Date == DateTime.Today;
+
+                        <tr class="@(isToday && activeTab == "pending" ? "table-warning bg-opacity-25" : "")">
+                            <td data-label="#">@(idx++)</td>
+                            <td data-label="Plan Date">
+                                <i class="bi bi-calendar3 text-primary me-1"></i>
+                                <strong>@(item.PlanDate.HasValue ? item.PlanDate.Value.ToString("dd MMM yyyy") : item.Tanggal.ToString("dd MMM yyyy"))</strong>
+                                @if (isToday)
+                                {
+                                    <span class="badge bg-danger ms-1 text-uppercase px-2" style="font-size:9px;">Hari Ini</span>
+                                }
+                            </td>
+                            <td data-label="SN"><span class="font-monospace fw-bold text-dark">@item.SerialNumber</span></td>
+                            <td data-label="Computer"><span class="fw-semibold">@item.ComputerName</span></td>
+                            <td data-label="Nama User">
+                                <div class="fw-bold">@item.NamaUser</div>
+                                <div class="text-muted small">NRP: @(string.IsNullOrEmpty(item.NRP) ? "-" : item.NRP)</div>
+                            </td>
+                            <td data-label="Divisi/Site">
+                                <div>@item.Division</div>
+                                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>@item.Site</div>
+                            </td>
+                            <td data-label="Perangkat">
+                                <div class="fw-semibold">@item.Brand @item.Model</div>
+                                <div class="text-muted small">@item.DeviceType</div>
+                            </td>
+                            <td data-label="Status">
+                                    @if (item.Status == "Completed" || item.Status == "PmDone" || item.Status == "Returned")
+                                    {
+                                        <span class="badge-status badge-available" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalDoc-@item.Id" title="Klik untuk lihat Dokumentasi Foto & Serah Terima">
+                                            <i class="bi bi-camera-fill me-1"></i> Completed
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status @statusBadgeClass">
+                                            <i class="bi bi-circle-fill me-1" style="font-size:8px;"></i>
+                                            @(item.Status == "Planned" ? "Belum PM" : item.Status)
+                                        </span>
+                                    }
+                                    @if (item.StartTimeRecorded)
+                                    {
+                                        <div class="text-success small fw-semibold mt-1">
+                                            <i class="bi bi-clock me-1"></i>Ambil: @(DateTime.Today.Add(item.StartTime).ToString("HH:mm"))
+                                        </div>
+                                    }
+                                </td>
+                                <td data-label="Aksi" class="text-end">
+                                     <div class="d-flex justify-content-end align-items-center gap-1">
+                                        @if (item.Status == "Completed" || item.Status == "PmDone" || item.Status == "Returned")
+                                        {
+                                            <!-- Tombol Cetak Form PM (PDF) -->
+                                            <a href="@Url.Action("PrintScheduledPm", "Maintenance", new { id = item.Id })" target="_blank" class="btn btn-sm btn-success rounded-pill px-2 py-1 fs-8 text-nowrap shadow-sm">
+                                                <i class="bi bi-printer me-1"></i> Cetak PDF
+                                            </a>
+                                        }
+
+                                        <!-- Tombol Edit Form PM (Draft terisi) -->
+                                        @if (!(User.IsInRole("Approver1") || User.IsInRole("Approver2")) || item.Status == "Completed" || item.Status == "PmDone" || item.Status == "Returned" || !item.PlanDate.HasValue || item.PlanDate.Value.Date <= DateTime.Today)
+                                        {
+                                            <a href="@Url.Action("ScheduledForm", "Maintenance", new { id = item.Id })" class="btn-action-icon btn-action-edit" title="Edit Form PM">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
+
+                                        <!-- Tombol Hapus Item Target -->
+                                        @if (User.IsInRole("Admin") || User.IsInRole("Coordinator"))
+                                        {
+                                            <form asp-action="DeleteScheduledPlanItem" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Yakin ingin menghapus target PM ini?');" class="d-inline">
+                                                <button type="submit" class="btn-action-icon btn-action-delete" title="Hapus Target PM">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                            Tidak ada data PM untuk kriteria ini. Silakan gunakan tombol <strong>"Import Excel Plan PM"</strong> untuk mengunggah rencana bulanan.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    var photosMap = ViewBag.PhotosMap as Dictionary<Guid, List<ITAssetTrack.Models.MaintenancePhoto>> ?? new();
+    foreach (var item in Model.Where(s => s.Status == "Completed" || s.Status == "PmDone" || s.Status == "Returned"))
+    {
+        var photos = photosMap.ContainsKey(item.Id) ? photosMap[item.Id] : new List<ITAssetTrack.Models.MaintenancePhoto>();
+        <div class="modal fade" id="modalDoc-@item.Id" tabindex="-1" aria-labelledby="modalDocLabel-@item.Id" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold" id="modalDocLabel-@item.Id">
+                            <i class="bi bi-camera-fill me-2"></i>Dokumentasi PM &amp; Serah Terima — @item.NamaUser
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3 mb-4 bg-light p-3 rounded border">
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">No. Dokumen FORM PM:</small>
+                                <span class="fw-bold text-dark">@(string.IsNullOrEmpty(item.NoDocument) ? "-" : item.NoDocument)</span>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Perangkat / SN:</small>
+                                <span class="fw-bold font-monospace text-primary">@item.Brand @item.Model (@item.SerialNumber)</span>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">User &amp; Divisi / Site:</small>
+                                <span class="fw-semibold text-dark">@item.NamaUser (NRP: @(item.NRP ?? "-")) | @item.Division - @item.Site</span>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Status Penyerahan Device:</small>
+                                @if (item.UserNotPresent)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-person-x me-1"></i>User Tidak Ada di Meja</span>
+                                }
+                                else if (!string.IsNullOrEmpty(item.UserHandoverSignature))
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Sudah Diterima &amp; TTD User</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info"><i class="bi bi-check-all me-1"></i>PM Selesai (Completed)</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Gallery Foto Evidence -->
+                        <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                            <i class="bi bi-images text-primary me-2"></i>Foto Dokumen Evidence &amp; Serah Terima Device
+                        </h6>
+
+                        @if (photos.Any())
+                        {
+                            <div class="row g-3">
+                                @foreach (var ph in photos)
+                                {
+                                    string badgeClass = ph.PhotoType switch
+                                    {
+                                        "StartPM" => "bg-primary",
+                                        "EndPM" => "bg-success",
+                                        "UserAbsent" => "bg-warning text-dark",
+                                        _ => "bg-secondary"
+                                    };
+                                    string badgeTitle = ph.PhotoType switch
+                                    {
+                                        "StartPM" => "Pre-PM (Pengambilan)",
+                                        "EndPM" => "Selesai PM",
+                                        "UserAbsent" => "Bukti Meja Kosong",
+                                        _ => ph.PhotoType
+                                    };
+
+                                    <div class="col-md-4 col-6">
+                                        <div class="card h-100 border shadow-sm">
+                                            <img src="@ph.FilePath" class="card-img-top" style="height:150px; object-fit:cover; cursor:pointer;" onclick="window.open('@ph.FilePath', '_blank')" alt="@badgeTitle" />
+                                            <div class="card-body p-2 text-center">
+                                                <span class="badge @badgeClass" style="font-size:0.7rem;">@badgeTitle</span>
+                                                <small class="text-muted d-block mt-1" style="font-size:0.65rem;">@ph.UploadedAt.ToString("dd MMM HH:mm")</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4 text-muted bg-light rounded border">
+                                <i class="bi bi-camera-video-off fs-3 d-block mb-1 text-secondary"></i>
+                                Belum ada foto fisik yang diunggah untuk PM ini.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer bg-light justify-content-end">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<!-- Modal Import Excel Plan PM -->
+<div class="modal fade" id="importPlanModal" tabindex="-1" aria-labelledby="importPlanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="ImportScheduledPlan" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="importPlanModalLabel"><i class="bi bi-file-earmark-excel text-success me-2"></i>Import File Rencana PM (Excel)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info border-0 rounded-3 mb-3">
+                        <i class="bi bi-info-circle me-1"></i> File Excel `Plan PM [Bulan] [Tahun].xlsx` memuat daftar target laptop dan user yang akan dilakukan PM pada bulan terkait.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pilih Bulan &amp; Tahun Target:</label>
+                        <input type="month" name="monthYear" class="form-control" value="@activeMonthYear" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Upload File Excel (.xlsx):</label>
+                        <input type="file" name="excelFile" class="form-control" accept=".xlsx, .xls" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-cloud-upload me-1"></i> Mulai Import Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // SweetAlert Feedback
+            var successMsg = $('#tempDataSuccess').text();
+            var errorMsg = $('#tempDataError').text();
+
+            if (successMsg) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: successMsg,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+            if (errorMsg) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: errorMsg
+                });
+            }
+
+            // AJAX Record Start Time (Catat Waktu Ambil Laptop)
+            $('.record-time-btn').on('click', function () {
+                var btn = $(this);
+                var itemId = btn.data('id');
+
+                Swal.fire({
+                    title: 'Catat Waktu Ambil Laptop?',
+                    text: 'Waktu saat ini akan dicatat sebagai Start Time pengambilan laptop dari User.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="bi bi-clock-history"></i> Ya, Catat Waktu',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("RecordStartTime", "Maintenance")', { id: itemId }, function (response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Waktu Dicatat',
+                                    text: response.message + ' (Start Time: ' + response.startTime + ')',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Gagal', response.message, 'error');
+                            }
+                        }).fail(function () {
+                            Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

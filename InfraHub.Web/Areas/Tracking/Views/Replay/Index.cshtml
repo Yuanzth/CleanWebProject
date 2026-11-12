@@ -1,0 +1,97 @@
+@{ Layout = "_Layout";
+
+   ViewData["Title"] = "";
+}
+
+@section Styles {
+    @* Leaflet CSS *@
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @* Replay CSS *@
+    <link rel="stylesheet" href="~/assets/css/tracking.css"> @* Need basic tracking styles for icons *@
+    <link rel="stylesheet" href="~/assets/css/replay.css">
+}
+
+    <div class="replay-page-wrapper">
+        @* Map Area *@
+        <div id="replayMap"></div>
+
+        @* Floating Top Panel for Device Info *@
+        <div class="replay-info-panel">
+            <h3 id="replayDeviceName">Loading Device...</h3>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+                <input type="date" id="replayDateInput" class="replay-date-input">
+                <button id="btnChangeDate" class="replay-change-btn">Set</button>
+            </div>
+        </div>
+
+        @* Floating Bottom Panel for Playback Controls & Chart *@
+        <div class="replay-controls-panel">
+            @* Speed Chart *@
+            <div class="replay-chart-container" style="width: 100%; height: 80px; margin-bottom: 10px;">
+                <canvas id="replaySpeedChart"></canvas>
+            </div>
+
+            <div class="replay-stats">
+                <span class="replay-stat-item"><i class="fa-solid fa-gauge"></i> <span id="replayCurrentSpeed">0 km/h</span></span>
+                <span class="replay-stat-item"><i class="fa-solid fa-clock"></i> <span id="replayCurrentTime">--:--</span></span>
+            </div>
+            
+            <div class="replay-timeline-wrapper">
+                <span id="replayStartTime" class="replay-time-edge">00:00</span>
+                <input type="range" id="replayTimeline" class="replay-slider" min="0" max="100" value="0" step="0.1">
+                <span id="replayEndTime" class="replay-time-edge">23:59</span>
+            </div>
+            
+            <div class="replay-actions">
+                <button id="btnPlayPause" class="replay-btn play-btn" title="Play/Pause">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+                <div class="replay-speed-selector">
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn active" data-speed="1">1x</button>
+                    <button class="speed-btn" data-speed="3">3x</button>
+                    <button class="speed-btn" data-speed="5">5x</button>
+                </div>
+            </div>
+        </div>
+
+        @* Close / Back Button *@
+        <button class="replay-close-btn" onclick="window.close()" title="Close Replay">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+}
+
+@section Scripts {
+    @* Leaflet JS *@
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    @* Leaflet KMZ Plugin (requires JSZip) *@
+    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/leaflet-kmz@latest/dist/leaflet-kmz.js"></script>
+    @* Chart.js *@
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    @* Replay JS *@
+    <script src="~/js/tracking/replay.js" asp-append-version="true"></script>
+
+    @* Hide header and footer for full screen experience *@
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const header = document.querySelector('.main-header');
+            if (header) {
+                header.style.display = 'none'; 
+            }
+            const footer = document.querySelector('footer');
+            if (footer) {
+                footer.style.display = 'none';
+            }
+            const container = document.querySelector('.main-container');
+            if(container) {
+                container.style.padding = '0';
+                container.style.margin = '0';
+                container.style.maxWidth = '100%';
+            }
+        });
+    </script>
+}
+

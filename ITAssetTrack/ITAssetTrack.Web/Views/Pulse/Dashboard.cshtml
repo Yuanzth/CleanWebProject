@@ -1,0 +1,538 @@
+@{
+    ViewData["Title"] = "ITAssetTrack — Fleet Telemetry Dashboard";
+}
+
+<div class="pulse-dashboard-container">
+    <!-- Header Title & Live Status Indicator -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-2 py-1 rounded-pill" style="font-size: 11px; letter-spacing: 0.5px;">
+                    <i class="bi bi-broadcast-pin me-1"></i> ITAssetTrack PULSE v1.2.0
+                </span>
+                <h1 class="h4 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    Fleet Telemetry Analytics
+                </h1>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Pemantauan kesehatan komputer armada, utilisasi hardware, kuota data, dan aktivitas telemetri realtime</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill d-flex align-items-center gap-2">
+                <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
+                <span class="fw-semibold small">Live Telemetry Active</span>
+            </span>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm" onclick="refreshDashboardData()">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Live KPI Metric Cards Strip ── -->
+    <div class="row g-2 g-md-3 mb-3">
+        <!-- Online Devices -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Online</span>
+                    <span class="badge bg-success rounded-circle p-1"><i class="bi bi-laptop text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" id="kpiOnline">@ViewBag.OnlineDevices</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Aktif</span> dari @ViewBag.TotalRegisteredAssets Komputer
+                </div>
+            </div>
+        </div>
+
+        <!-- AFK / Idle Devices -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-warning">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">AFK / Idle</span>
+                    <span class="badge bg-warning rounded-circle p-1"><i class="bi bi-moon-stars-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" id="kpiAfk">@ViewBag.AfkDevices</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-warning fw-semibold"><i class="bi bi-clock-history me-1"></i>Idle</span> tanpa aktivitas
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Devices -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-secondary">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Offline</span>
+                    <span class="badge bg-secondary rounded-circle p-1"><i class="bi bi-power text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" id="kpiOffline">@ViewBag.OfflineDevices</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-secondary fw-semibold">Tidak terhubung</span> >15m
+                </div>
+            </div>
+        </div>
+
+        <!-- Mismatch Alerts -->
+        <div class="col-6 col-md-3 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-danger">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">User Mismatch</span>
+                    <span class="badge bg-danger rounded-circle p-1"><i class="bi bi-shield-exclamation text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-danger mb-0" id="kpiMismatch">@ViewBag.ActiveMismatchCount</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-danger fw-semibold">NRP Berbeda</span> hari ini
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Battery BMS -->
+        <div class="col-6 col-md-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-info">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">BMS Health</span>
+                    <span class="badge bg-info rounded-circle p-1"><i class="bi bi-battery-charging text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-dark mb-0" id="kpiBattery">@ViewBag.AvgBatteryHealth%</div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-info fw-semibold">Rata-rata</span> seluruh armada
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Daily Network Traffic -->
+        <div class="col-6 col-md-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-primary">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small fw-medium text-uppercase" style="font-size: 11px;">Data Usage</span>
+                    <span class="badge bg-primary rounded-circle p-1"><i class="bi bi-hdd-network-fill text-white" style="font-size: 10px;"></i></span>
+                </div>
+                <div class="h3 fw-bold text-primary mb-0" id="kpiTraffic">@ViewBag.TotalDailyTrafficGb <small style="font-size: 13px;">GB</small></div>
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                    <span class="text-primary fw-semibold">Traffic 24 Jam</span> hari ini
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Main Analytical Charts Section (NO PIE CHARTS: Horizontal Bars & Progress Tiers) ── -->
+    <div class="row g-3 mb-3">
+        <!-- OS Version Fleet Distribution (Horizontal Bar Chart) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-windows text-primary"></i> Distribusi Sistem Operasi Komputer
+                        </h6>
+                        <span class="text-muted small" style="font-size: 11px;">Deteksi versi OS Windows (misal: 24H2, 23H2) pada armada</span>
+                    </div>
+                </div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="osDistChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Load Averages (CPU / RAM / GPU Grouped Bar) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-cpu text-info"></i> Utilisasi Hardware Rata-Rata
+                        </h6>
+                        <span class="text-muted small" style="font-size: 11px;">Beban CPU, Memory RAM, dan GPU (Min / Avg / Peak Max)</span>
+                    </div>
+                </div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="hardwareLoadChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Secondary Row: Battery Health Tiers & Top Network Consumers ── -->
+    <div class="row g-3 mb-3">
+        <!-- Battery Health Breakdown (Horizontal Progress Bars) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-battery-half text-success"></i> Status Kesehatan Baterai (BMS)
+                </h6>
+                <span class="text-muted small mb-3" style="font-size: 11px;">Kondisi degradasi baterai berdasarkan persentase health controller</span>
+
+                <div class="d-flex flex-column gap-3 mt-2">
+                    <!-- Good Tier -->
+                    <div>
+                        <div class="d-flex justify-content-between small fw-semibold mb-1">
+                            <span class="text-success"><i class="bi bi-shield-check me-1"></i>Normal / Baik (Health &ge; 80%)</span>
+                            <span id="batGoodText">0 Komputer (0%)</span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 6px; background-color: #f1f5f9;">
+                            <div id="batGoodBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fair Tier -->
+                    <div>
+                        <div class="d-flex justify-content-between small fw-semibold mb-1">
+                            <span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Sedang / Warning (Health 50% - 79%)</span>
+                            <span id="batFairText">0 Komputer (0%)</span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 6px; background-color: #f1f5f9;">
+                            <div id="batFairBar" class="progress-bar bg-warning" role="progressbar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Degraded Tier -->
+                    <div>
+                        <div class="d-flex justify-content-between small fw-semibold mb-1">
+                            <span class="text-danger"><i class="bi bi-battery-alert me-1"></i>Degradasi / Kritis (Health &lt; 50%)</span>
+                            <span id="batDegradedText">0 Komputer (0%)</span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 6px; background-color: #f1f5f9;">
+                            <div id="batDegradedBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-2 bg-light rounded-3 d-flex align-items-center justify-content-between small">
+                    <span class="text-muted" style="font-size: 11px;">Total komputer terlacak BMS:</span>
+                    <strong class="text-dark" id="batTotalCount">0 Komputer</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Daily Data Consumers (Top 5 Devices, Prioritize Hostname) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-reception-4 text-primary"></i> Top Konsumsi Kuota Data Hari Ini
+                    </h6>
+                    <a href="@Url.Action("Reports", "Pulse")" class="btn btn-link p-0 text-primary small fw-semibold" style="font-size: 11px;">Lihat Semua &rarr;</a>
+                </div>
+                <span class="text-muted small mb-2" style="font-size: 11px;">Komputer dengan akumulasi traffic data jaringan tertinggi dalam 24 jam</span>
+
+                <div class="table-responsive" style="max-height: 220px;">
+                    <table class="table table-hover table-sm align-middle mb-0" style="font-size: 12px;">
+                        <thead class="table-light text-muted">
+                            <tr>
+                                <th>Komputer / Hostname</th>
+                                <th>Download</th>
+                                <th>Upload</th>
+                                <th class="text-end">Total Traffic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topNetworkTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Memuat data traffic...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Bottom Row: User Mismatch Security Alerts & Live Pulse Feed ── -->
+    <div class="row g-3">
+        <!-- User Mismatch Security Center (Prioritize Hostname) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white border-top border-3 border-danger">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold text-danger mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock-fill"></i> Security Center: User Mismatch Alerts
+                    </h6>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill" style="font-size: 10px;">Prioritas Audit</span>
+                </div>
+                <span class="text-muted small mb-2" style="font-size: 11px;">Komputer yang digunakan login oleh NRP/karyawan yang berbeda dari master assignment</span>
+
+                <div class="d-flex flex-column gap-2" id="mismatchAlertsContainer" style="max-height: 240px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 small">Memuat alert mismatch...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Live Pulse Activity Feed (Prioritize Hostname) -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white border-top border-3 border-primary">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold text-primary mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-activity"></i> Live Telemetry Feed (Realtime)
+                    </h6>
+                    <span class="text-muted small" style="font-size: 11px;">Sinkronisasi terbaru</span>
+                </div>
+                <div class="d-flex flex-column gap-2" id="recentPulseFeedContainer" style="max-height: 240px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 small">Memuat live feed...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let osChartInstance = null;
+    let hwChartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initOsDistributionChart();
+        initHardwareLoadChart();
+        loadBatteryDistribution();
+        loadTopNetworkConsumers();
+        loadMismatchAlerts();
+        loadRecentPulseFeed();
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(refreshDashboardData, 30000);
+    });
+
+    function refreshDashboardData() {
+        fetch('/api/pulse/dashboard/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('kpiOnline').innerText = data.online;
+                document.getElementById('kpiAfk').innerText = data.afk;
+                document.getElementById('kpiOffline').innerText = data.offline;
+                document.getElementById('kpiMismatch').innerText = data.mismatchToday;
+                document.getElementById('kpiTraffic').innerHTML = `${data.totalTrafficGb} <small style="font-size: 13px;">GB</small>`;
+            })
+            .catch(err => console.error('Error refreshing KPI stats:', err));
+
+        loadBatteryDistribution();
+        loadTopNetworkConsumers();
+        loadMismatchAlerts();
+        loadRecentPulseFeed();
+    }
+
+    function initOsDistributionChart() {
+        const ctx = document.getElementById('osDistChart').getContext('2d');
+        fetch('/api/pulse/dashboard/os-distribution')
+            .then(res => res.json())
+            .then(data => {
+                const labels = data.map(d => d.osName || 'Unknown');
+                const counts = data.map(d => d.count);
+
+                if (osChartInstance) osChartInstance.destroy();
+
+                osChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Jumlah Komputer',
+                            data: counts,
+                            backgroundColor: 'rgba(21, 101, 192, 0.85)',
+                            borderColor: '#1565C0',
+                            borderWidth: 1,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // HORIZONTAL BAR (NO PIE CHART)
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` ${context.raw} Komputer`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: { color: '#f1f5f9' },
+                                ticks: { font: { size: 10 } }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 10, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    function initHardwareLoadChart() {
+        const ctx = document.getElementById('hardwareLoadChart').getContext('2d');
+        fetch('/api/pulse/dashboard/hardware-load')
+            .then(res => res.json())
+            .then(data => {
+                if (hwChartInstance) hwChartInstance.destroy();
+
+                hwChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['CPU Processor', 'RAM Memory', 'GPU / VGA'],
+                        datasets: [
+                            {
+                                label: 'Min (%)',
+                                data: [data.cpu.min, data.ram.min, data.gpu.min],
+                                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Rata-rata (%)',
+                                data: [data.cpu.avg, data.ram.avg, data.gpu.avg],
+                                backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Peak Max (%)',
+                                data: [data.cpu.max, data.ram.max, data.gpu.max],
+                                backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { font: { size: 10 } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: { color: '#f1f5f9' },
+                                ticks: {
+                                    callback: function(val) { return val + '%'; },
+                                    font: { size: 10 }
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11, weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    function loadBatteryDistribution() {
+        fetch('/api/pulse/dashboard/battery-distribution')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('batTotalCount').innerText = `${data.total} Komputer`;
+
+                document.getElementById('batGoodText').innerText = `${data.goodCount} Komputer (${data.goodPct}%)`;
+                document.getElementById('batGoodBar').style.width = `${data.goodPct}%`;
+
+                document.getElementById('batFairText').innerText = `${data.fairCount} Komputer (${data.fairPct}%)`;
+                document.getElementById('batFairBar').style.width = `${data.fairPct}%`;
+
+                document.getElementById('batDegradedText').innerText = `${data.degradedCount} Komputer (${data.degradedPct}%)`;
+                document.getElementById('batDegradedBar').style.width = `${data.degradedPct}%`;
+            });
+    }
+
+    function loadTopNetworkConsumers() {
+        fetch('/api/pulse/dashboard/top-network')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('topNetworkTableBody');
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Belum ada data traffic hari ini</td></tr>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(item => {
+                    const downGb = (item.downloadMb / 1024).toFixed(2);
+                    const upGb = (item.uploadMb / 1024).toFixed(2);
+                    const totGb = (item.totalMb / 1024).toFixed(2);
+                    const compName = item.computerName || item.hostname;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-primary d-flex align-items-center gap-1">
+                                    <i class="bi bi-laptop"></i> ${compName}
+                                </div>
+                                <div class="text-muted small" style="font-size: 10px;">User: ${item.displayName || item.loggedInUser} &bull; SN: ${item.serialNumber}</div>
+                            </td>
+                            <td><span class="text-success"><i class="bi bi-arrow-down-short"></i>${downGb} GB</span></td>
+                            <td><span class="text-primary"><i class="bi bi-arrow-up-short"></i>${upGb} GB</span></td>
+                            <td class="text-end fw-bold text-dark">${totGb} GB</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            });
+    }
+
+    function loadMismatchAlerts() {
+        fetch('/api/pulse/dashboard/mismatch-alerts')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('mismatchAlertsContainer');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-success py-3 small"><i class="bi bi-shield-check fa-lg me-1"></i> Seluruh komputer sinkron dengan penugasan</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(a => {
+                    const compName = a.computerName || a.hostname;
+                    html += `
+                        <div class="p-2 border border-danger-subtle bg-danger-subtle rounded-3 d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-bold text-danger small"><i class="bi bi-laptop me-1"></i>${compName}</div>
+                                <div class="text-dark" style="font-size: 11px;">
+                                    User Login: <strong>${a.displayName || a.loggedInUser}</strong> vs Ditugaskan: <span class="badge bg-secondary">${a.assignedNrp}</span>
+                                </div>
+                            </div>
+                            <span class="text-muted" style="font-size: 10px;">${new Date(a.createdAt).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            });
+    }
+
+    function loadRecentPulseFeed() {
+        fetch('/api/pulse/dashboard/recent-feed')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('recentPulseFeedContainer');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3 small">Belum ada laporan telemetri</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(p => {
+                    const isManual = p.reportType === 'Manual Sync';
+                    const badgeClass = isManual ? 'bg-info' : 'bg-primary';
+                    const timeStr = new Date(p.createdAt).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                    const compName = p.computerName || p.hostname;
+
+                    html += `
+                        <div class="p-2 border rounded-3 d-flex align-items-center justify-content-between bg-light">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge ${badgeClass} rounded-pill px-2 py-1" style="font-size: 9px;">${p.reportType || 'Scheduled'}</span>
+                                <div>
+                                    <div class="fw-bold text-dark small"><i class="bi bi-laptop me-1 text-primary"></i>${compName} &bull; <span class="text-muted" style="font-size: 11px;">${p.displayName || p.loggedInUser}</span></div>
+                                    <div class="text-muted" style="font-size: 10px;">SN: ${p.serialNumber} &bull; Bat: ${p.batteryHealthPct || '-'}% &bull; ${p.osVersion || 'Win 11'}</div>
+                                </div>
+                            </div>
+                            <span class="text-muted" style="font-size: 10px;">${timeStr}</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            });
+    }
+</script>
+}

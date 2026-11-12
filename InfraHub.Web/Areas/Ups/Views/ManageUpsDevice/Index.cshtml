@@ -1,0 +1,802 @@
+@{ Layout = "~/Views/Shared/_Layout.cshtml"; }
+
+@{ ViewData["Title"] = "Manage UPS Devices"; }
+
+@section styles {
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+<link rel="stylesheet" href="/assets/css/upsManage.css">
+<style>
+    /* === SIDEBAR === */
+    .udt-left-card {
+        position: sticky;
+        top: 80px;
+        max-height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+    }
+    .udt-left-body {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .udt-left-body::-webkit-scrollbar { width: 4px; }
+    .udt-left-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+    .udt-site-search {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .udt-site-search input {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+        padding: 8px 12px 8px 32px;
+        color: #e2e8f0;
+        font-size: 0.82rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .udt-site-search input:focus { border-color: rgba(99,102,241,0.4); }
+    .udt-site-search input::placeholder { color: #475569; }
+    .udt-site-search { position: relative; }
+    .udt-site-search i {
+        position: absolute;
+        left: 22px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #475569;
+        font-size: 0.75rem;
+    }
+
+    .udt-site-item {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .udt-site-item:hover { background: rgba(255,255,255,0.04); }
+    .udt-site-item.active {
+        background: rgba(59,130,246,0.1);
+        border-left: 3px solid #3b82f6;
+    }
+    .udt-site-item .site-info { flex: 1; min-width: 0; }
+    .udt-site-item .site-code {
+        color: #e2e8f0;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .udt-site-item .site-name {
+        color: #64748b;
+        font-size: 0.72rem;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .udt-site-count {
+        background: rgba(255,255,255,0.06);
+        color: #94a3b8;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        min-width: 24px;
+        text-align: center;
+    }
+    .udt-site-item.active .udt-site-count {
+        background: rgba(59,130,246,0.2);
+        color: #60a5fa;
+    }
+    .udt-ups-only-field, .udt-sensor-ip-field { display: none; }
+
+    /* === STATS BAR === */
+    .udt-stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .udt-stat-mini {
+        background: var(--ups-card-bg);
+        border: 1px solid var(--ups-card-border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .udt-stat-mini-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+    .udt-stat-mini-val {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        line-height: 1;
+    }
+    .udt-stat-mini-label {
+        font-size: 0.7rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-top: 2px;
+    }
+
+    /* === FILTER BAR (NEW) === */
+    .udt-filter-bar {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 0;
+        margin-bottom: 16px;
+    }
+    .udt-filter-bar::-webkit-scrollbar { height: 0; }
+    .udt-filter-btn {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #94a3b8;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .udt-filter-btn:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+    .udt-filter-btn.active {
+        background: rgba(99,102,241,0.15);
+        border-color: rgba(99,102,241,0.3);
+        color: #818cf8;
+    }
+    .udt-filter-count {
+        background: rgba(255,255,255,0.08);
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .udt-filter-btn.active .udt-filter-count {
+        background: rgba(99,102,241,0.25);
+    }
+</style>
+}
+
+<div class="udt-page">
+    <div class="container-fluid">
+
+        <div class="udt-page-header">
+            <div class="udt-page-title">
+                <div class="udt-page-icon">
+                    <i class="fa-solid fa-server"></i>
+                </div>
+                <div>
+                    <h1>DC Device Manager</h1>
+                    <p>Kelola perangkat UPS, Sensor Suhu, PAC, dan CCTV</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3 mb-4 mb-md-0">
+                <div class="udt-card udt-left-card">
+                    <div class="udt-card-header" style="padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <h5 style="margin: 0; color: #e2e8f0; font-size: 0.9rem; font-weight: 600;"><i class="fa-solid fa-map-location-dot" style="margin-right: 6px; color: #818cf8;"></i>Sites</h5>
+                    </div>
+                    <div class="udt-site-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="siteSearchInput" placeholder="Cari site...">
+                    </div>
+                    <div class="udt-card-body p-0 udt-left-body">
+                        <div class="udt-site-list">
+                            <div class="udt-site-item active" data-id="">
+                                <div class="site-info">
+                                    <span class="site-code"><i class="fa-solid fa-layer-group" style="margin-right: 5px; font-size: 0.8rem;"></i> Semua Site</span>
+                                    <span class="site-name">Tampilkan seluruh device</span>
+                                </div>
+                                <span class="udt-site-count" id="countAll">@(ViewBag.SiteDeviceCounts != null ? ((Dictionary<Guid?, int>)ViewBag.SiteDeviceCounts).Values.Sum() : 0)</span>
+                            </div>
+                            @if (ViewBag.Sites != null)
+                            {
+                                var counts = ViewBag.SiteDeviceCounts as Dictionary<Guid?, int>;
+                                foreach (var site in ViewBag.Sites)
+                                {
+                                    var cnt = counts != null && counts.ContainsKey(site.Id) ? counts[site.Id] : 0;
+                                    <div class="udt-site-item" data-id="@site.Id">
+                                        <div class="site-info">
+                                            <span class="site-code">@site.SiteCode</span>
+                                            <span class="site-name">@site.SiteName</span>
+                                        </div>
+                                        <span class="udt-site-count">@cnt</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-9">
+                <!-- Stats Bar -->
+                <div class="udt-stats-bar" id="statsBar">
+                    <div class="udt-stat-mini">
+                        <div class="udt-stat-mini-icon" style="background: rgba(99,102,241,0.12); color: #818cf8;">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div>
+                            <div class="udt-stat-mini-val" id="statTotal">0</div>
+                            <div class="udt-stat-mini-label">Total Device</div>
+                        </div>
+                    </div>
+                    <div class="udt-stat-mini">
+                        <div class="udt-stat-mini-icon" style="background: rgba(34,197,94,0.12); color: #4ade80;">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div>
+                            <div class="udt-stat-mini-val" id="statActive">0</div>
+                            <div class="udt-stat-mini-label">Active</div>
+                        </div>
+                    </div>
+                    <div class="udt-stat-mini">
+                        <div class="udt-stat-mini-icon" style="background: rgba(239,68,68,0.12); color: #f87171;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </div>
+                        <div>
+                            <div class="udt-stat-mini-val" id="statInactive">0</div>
+                            <div class="udt-stat-mini-label">Inactive</div>
+                        </div>
+                    </div>
+                    <div class="udt-stat-mini">
+                        <div class="udt-stat-mini-icon" style="background: rgba(245,158,11,0.12); color: #fbbf24;">
+                            <i class="fa-solid fa-tags"></i>
+                        </div>
+                        <div>
+                            <div class="udt-stat-mini-val" id="statCategories">0</div>
+                            <div class="udt-stat-mini-label">Kategori</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar + Add Button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                    <div class="udt-filter-bar" style="margin-bottom: 0;">
+                        <button class="udt-filter-btn active" data-filter="">Semua <span class="udt-filter-count" id="fcAll">0</span></button>
+                        <button class="udt-filter-btn" data-filter="UPS DC">UPS DC <span class="udt-filter-count" id="fcUpsDc">0</span></button>
+                        <button class="udt-filter-btn" data-filter="UPS USER">UPS User <span class="udt-filter-count" id="fcUpsUser">0</span></button>
+                        <button class="udt-filter-btn" data-filter="SENSOR">Sensor Suhu <span class="udt-filter-count" id="fcSensor">0</span></button>
+                        <button class="udt-filter-btn" data-filter="PAC RUANGAN DC">PAC <span class="udt-filter-count" id="fcPac">0</span></button>
+                        <button class="udt-filter-btn" data-filter="CCTV AVAILBILITY">CCTV <span class="udt-filter-count" id="fcCctv">0</span></button>
+                    </div>
+                    <button class="udt-btn-add" id="btnAddUps">
+                        <i class="fa-solid fa-plus"></i> Tambah Device
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div class="udt-card">
+                    <div class="udt-card-body" id="deviceTableContainer">
+                        <table id="upsDeviceTable" class="table w-100">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Device</th>
+                                    <th>Kategori</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="udt-card-body" id="deviceCardContainer" style="display:none; padding: 0;">
+                        <div class="udt-device-grid" id="deviceGrid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade udt-modal" id="upsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="upsModalTitle">
+                    <i class="fa-solid fa-server"></i>
+                    <span id="upsModalTitleText">Tambah Device</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="upsForm">
+                <input type="hidden" id="ups_id" name="ups_id">
+                
+                <div class="modal-body">
+                    <h6 style="color: #94a3b8; margin-bottom: 15px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">Basic Information</h6>
+                    
+                    <div class="udt-form-row">
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">Kategori Device <span style="color:#f87171">*</span></label>
+                            <select id="device_category_type" name="deviceCategoryType" class="udt-form-select" required style="font-weight: bold; color: #3b82f6;">
+                                <option value="">-- Pilih Kategori --</option>
+                                <option value="UPS DC">UPS DC</option>
+                                <option value="UPS USER">UPS USER</option>
+                                <option value="SENSOR SUHU RUANGAN">Sensor Suhu Ruangan</option>
+                                <option value="PAC RUANGAN DC">PAC Ruangan DC</option>
+                                <option value="CCTV AVAILBILITY">CCTV Availability</option>
+                            </select>
+                        </div>
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">Site <span style="color:#f87171">*</span></label>
+                            <select id="ups_site_id" name="SiteId" class="udt-form-select" required>
+                                <option value="">-- Pilih Site --</option>
+                                @if (ViewBag.Sites != null)
+                                {
+                                    foreach (var siteItem in ViewBag.Sites)
+                                    {
+                                        <option value="@siteItem.Id">@siteItem.SiteCode - @siteItem.SiteName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="udt-form-row">
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">Nama Device <span style="color:#f87171">*</span></label>
+                            <input type="text" id="ups_device_name" name="DeviceName"
+                                class="udt-form-control" placeholder="ex: Server Room A / Sensor Suhu 1" required>
+                        </div>
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">IP Address</label>
+                            <input type="text" id="ups_ip_address" name="IpAddress"
+                                class="udt-form-control" placeholder="ex: 192.168.1.100">
+                        </div>
+                    </div>
+
+                    <div class="udt-form-row">
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">Device Username</label>
+                            <input type="text" id="ups_username" name="UpsUsername"
+                                class="udt-form-control" placeholder="ex: admin">
+                        </div>
+                        <div class="udt-form-group">
+                            <label class="udt-form-label">Device Password</label>
+                            <input type="password" id="ups_password" name="UpsPassword"
+                                class="udt-form-control" placeholder="ex: password">
+                        </div>
+                    </div>
+
+                    <div class="udt-ups-only-field">
+                        <h6 style="color: #94a3b8; margin-top: 20px; margin-bottom: 15px; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">Spesifikasi UPS</h6>
+                        
+                        <div class="udt-form-row">
+                            <div class="udt-form-group">
+                                <label class="udt-form-label">Serial Number <span style="color:#f87171">*</span></label>
+                                <input type="text" id="ups_serial_number" name="SerialNumber"
+                                    class="udt-form-control" placeholder="ex: APC-0012345">
+                            </div>
+                            <div class="udt-form-group">
+                                <label class="udt-form-label">UPS Phase Type <span style="color:#f87171">*</span></label>
+                                <select id="ups_phase_type" name="UpsPhaseType" class="udt-form-select">
+                                    <option value="3/3">3Ø In / 3Ø Out &mdash; 3-Phase ke 3-Phase</option>
+                                    <option value="3/1">3Ø In / 1Ø Out &mdash; 3-Phase ke 1-Phase</option>
+                                    <option value="1/1">1Ø In / 1Ø Out &mdash; 1-Phase ke 1-Phase</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="udt-form-row">
+                            <div class="udt-form-group">
+                                <label class="udt-form-label">UPS Type <span style="color:#f87171">*</span></label>
+                                <select id="ups_type" name="UpsType" class="udt-form-select">
+                                    <option value="EATON 9155">EATON 9155</option>
+                                    <option value="EATON 9355">EATON 9355</option>
+                                    <option value="EATON 9PX">EATON 9PX</option>
+                                    <option value="EATON 9130">EATON 9130</option>
+                                    <option value="EATON 1930">EATON 1930</option>
+                                    <option value="EATON 9E">EATON 9E</option>
+                                    <option value="TROY-X">TROY-X</option>
+                                </select>
+                            </div>
+                            <div class="udt-form-group">
+                                <label class="udt-form-label">Room Sensor IP (Suhu Internal UPS)</label>
+                                <input type="text" id="ups_room_sensor_ip" name="RoomSensorIp"
+                                    class="udt-form-control" placeholder="ex: 10.11.27.52">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer" style="gap:10px;">
+                    <button type="submit" class="udt-btn-save" id="upsSubmitBtn">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+<script>
+let dtTable;
+let currentSiteId = null;
+let allDeviceData = [];
+
+$(function () {
+    const header = document.querySelector('.main-header');
+    if (header) header.classList.add('header-ups');
+
+    $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
+
+    // Initialize DataTable (6 columns)
+    dtTable = $('#upsDeviceTable').DataTable({
+        serverSide: false,
+        dom: '<"udt-dt-top"lf>rt<"udt-dt-bottom"ip>',
+        ajax: {
+            url: '/api/ups/manage/devices',
+            data: function (d) { d.siteId = currentSiteId; },
+            dataSrc: function (json) { return json.data || []; }
+        },
+        columns: [
+            { data: 'DT_RowIndex', orderable: false, searchable: false, width: '40px' },
+            { data: 'device_name' },
+            { data: 'category_badge', orderable: false },
+            { data: 'ip_col', orderable: false },
+            { data: 'status_badge', orderable: false },
+            { data: 'action', orderable: false, searchable: false, width: '90px' },
+        ],
+        language: {
+            search: '',
+            searchPlaceholder: 'Cari device...',
+            lengthMenu: 'Tampilkan _MENU_',
+            info: '_START_–_END_ dari _TOTAL_ device',
+            infoEmpty: 'Tidak ada data',
+            paginate: { previous: '‹', next: '›' },
+        },
+        pageLength: 15,
+    });
+
+    dtTable.on('xhr.dt', function (e, settings, json, xhr) {
+        allDeviceData = json.data || [];
+        updateStats(allDeviceData);
+        if (currentSiteId) {
+            renderGridCards(allDeviceData);
+            filterCards($('.udt-filter-btn.active').data('filter') || '');
+        }
+    });
+
+    // Site Click Handler
+    $('.udt-site-item').on('click', function() {
+        $('.udt-site-item').removeClass('active');
+        $(this).addClass('active');
+        
+        currentSiteId = $(this).data('id') || null;
+        if (!currentSiteId) {
+            $('#deviceTableContainer').fadeIn(200);
+            $('#deviceCardContainer').hide();
+        } else {
+            $('#deviceTableContainer').hide();
+            $('#deviceCardContainer').fadeIn(200);
+        }
+        
+        dtTable.ajax.reload();
+    });
+
+    // Site Search
+    $('#siteSearchInput').on('input', function() {
+        const q = $(this).val().toLowerCase();
+        $('.udt-site-item').each(function() {
+            const id = $(this).data('id');
+            if (!id && id !== '') { $(this).show(); return; } // "Semua Site" always show
+            const code = $(this).find('.site-code').text().toLowerCase();
+            const name = $(this).find('.site-name').text().toLowerCase();
+            $(this).toggle(code.includes(q) || name.includes(q) || !q);
+        });
+    });
+
+    // Category Filter Click Handler
+    $('.udt-filter-btn').on('click', function() {
+        $('.udt-filter-btn').removeClass('active');
+        $(this).addClass('active');
+        
+        const filterVal = $(this).data('filter');
+        if (filterVal) {
+            dtTable.column(2).search(filterVal).draw();
+        } else {
+            dtTable.column(2).search('').draw();
+        }
+
+        if (currentSiteId) filterCards(filterVal);
+    });
+
+    function filterCards(filterVal) {
+        if (!filterVal) {
+            $('.udt-device-card').show();
+        } else {
+            $('.udt-device-card').hide();
+            $('.udt-device-card[data-category*="'+filterVal+'"]').show();
+        }
+    }
+
+    function updateStats(data) {
+        const total = data.length;
+        const active = data.filter(d => d.is_active).length;
+        const inactive = total - active;
+        const cats = new Set(data.map(d => d.ups_category || d.asset_type)).size;
+        
+        $('#statTotal').text(total);
+        $('#statActive').text(active);
+        $('#statInactive').text(inactive);
+        $('#statCategories').text(cats);
+
+        // Filter counts
+        const countUpsDc = data.filter(d => (d.ups_category || '').includes('UPS DC')).length;
+        const countUpsUser = data.filter(d => (d.ups_category || '').includes('UPS USER')).length;
+        const countSensor = data.filter(d => (d.asset_type || '').toUpperCase() === 'SENSOR' || (d.ups_category || '').includes('SENSOR')).length;
+        const countPac = data.filter(d => (d.ups_category || '').includes('PAC')).length;
+        const countCctv = data.filter(d => (d.ups_category || '').includes('CCTV')).length;
+        
+        $('#fcAll').text(total);
+        $('#fcUpsDc').text(countUpsDc);
+        $('#fcUpsUser').text(countUpsUser);
+        $('#fcSensor').text(countSensor);
+        $('#fcPac').text(countPac);
+        $('#fcCctv').text(countCctv);
+    }
+
+    function renderGridCards(data) {
+        const grid = $('#deviceGrid');
+        grid.empty();
+
+        if (data.length === 0) {
+            grid.html('<div style="grid-column: 1 / -1; text-align: center; color: #475569; padding: 50px 20px;"><i class="fa-solid fa-inbox" style="font-size: 2rem; margin-bottom: 12px; display: block; color: #334155;"></i>Tidak ada device di site ini.</div>');
+            return;
+        }
+
+        data.forEach(item => {
+            let catType = item.ups_category || '';
+            let assetType = (item.asset_type || '').toUpperCase();
+            let isSensor = catType.includes('SENSOR') || assetType === 'SENSOR';
+            let isPac = catType.includes('PAC') || assetType === 'PAC';
+            let isCctv = catType.includes('CCTV') || assetType === 'CCTV';
+            
+            let iconClass = 'fa-car-battery';
+            let accentColor = '#3b82f6';
+            if (isSensor) { iconClass = 'fa-temperature-half'; accentColor = '#f59e0b'; }
+            if (isPac) { iconClass = 'fa-fan'; accentColor = '#10b981'; }
+            if (isCctv) { iconClass = 'fa-video'; accentColor = '#8b5cf6'; }
+
+            let catLabel = catType;
+            if (catType === 'SENSOR SUHU RUANGAN') catLabel = 'Sensor Suhu';
+            else if (catType === 'PAC RUANGAN DC') catLabel = 'PAC';
+            else if (catType === 'CCTV AVAILBILITY') catLabel = 'CCTV';
+            else if (!catLabel) catLabel = assetType || 'UPS';
+
+            let statusClass = item.is_active ? 'status-active' : 'status-inactive';
+            let statusText = item.is_active ? 'Active' : 'Inactive';
+
+            let cardHtml = `
+                <div class="udt-device-card" data-category="${catType}" data-id="${item.id}" style="--accent: ${accentColor};">
+                    <!-- Top Bar: Category Pill & Status Pill -->
+                    <div class="udt-card-top-bar">
+                        <span class="udt-card-cat-tag">
+                            <i class="fa-solid ${iconClass}"></i>
+                            ${catLabel}
+                        </span>
+                        <span class="udt-card-status-pill ${statusClass}">
+                            <span class="status-dot"></span>
+                            ${statusText}
+                        </span>
+                    </div>
+
+                    <!-- Device Name (Full Width) -->
+                    <div class="udt-card-device-title" title="${item.device_name || '-'}">
+                        ${item.device_name || '-'}
+                    </div>
+
+                    <!-- Metadata Rows -->
+                    <div class="udt-card-meta-list">
+                        <div class="udt-card-meta-row">
+                            <span class="label">IP Address</span>
+                            <span class="val monospace">${item.ip_address || '—'}</span>
+                        </div>
+                        ${!isSensor && !isPac && !isCctv ? `
+                        <div class="udt-card-meta-row">
+                            <span class="label">Tipe UPS</span>
+                            <span class="val">${item.ups_type || '—'}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+            grid.append(cardHtml);
+        });
+    }
+
+    function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        const r = parseInt(hex.substring(0,2), 16);
+        const g = parseInt(hex.substring(2,4), 16);
+        const b = parseInt(hex.substring(4,6), 16);
+        return `${r},${g},${b}`;
+    }
+
+    // Bind Edit Click on Card
+    $('body').on('click', '.udt-device-card', function(e) {
+        if ($(e.target).closest('.udt-btn-delete').length > 0) return;
+        const id = $(this).data('id');
+        if(id) {
+            $.get('/api/ups/manage/devices/' + id, function (data) {
+                resetModal();
+                $('#upsModalTitleText').text('Edit Device');
+                $('#upsSubmitBtn').html('<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan');
+                $('#ups_id').val(data.id);
+                $('#ups_site_id').val(data.site_id);
+                $('#ups_device_name').val(data.device_name);
+                $('#ups_serial_number').val(data.serial_number);
+                $('#ups_ip_address').val(data.ip_address);
+                $('#device_category_type').val(data.ups_category || 'UPS DC').trigger('change');
+                
+                if ((data.ups_category || 'UPS DC').startsWith('UPS')) {
+                    $('#ups_room_sensor_ip').val(data.room_sensor_ip);
+                    $('#ups_username').val(data.ups_username);
+                    $('#ups_password').val(data.ups_password);
+                    $('#ups_phase_type').val(data.ups_phase_type);
+                    if (data.ups_type && $('#ups_type option[value="' + data.ups_type + '"]').length === 0) {
+                        $('#ups_type').append(new Option(data.ups_type, data.ups_type));
+                    }
+                    $('#ups_type').val(data.ups_type || 'EATON 9355');
+                }
+                
+                $('#upsModal').modal('show');
+            });
+        }
+    });
+
+    // Device Category Change Handler
+    $('#device_category_type').on('change', function() {
+        const val = $(this).val();
+        if (val.startsWith('UPS')) {
+            $('.udt-ups-only-field').show();
+            $('#ups_serial_number').prop('required', true);
+            $('#ups_phase_type').prop('required', true);
+            $('#ups_type').prop('required', true);
+        } else {
+            $('.udt-ups-only-field').hide();
+            $('#ups_serial_number').prop('required', false);
+            $('#ups_phase_type').prop('required', false);
+            $('#ups_type').prop('required', false);
+        }
+    });
+
+    // Open Add Modal
+    $('#btnAddUps').on('click', function () {
+        resetModal();
+        $('#ups_site_id').val(currentSiteId || '');
+        $('#upsModalTitleText').text('Tambah Device');
+        $('#upsSubmitBtn').html('<i class="fa-solid fa-plus"></i> Tambah');
+        $('#device_category_type').trigger('change');
+        $('#upsModal').modal('show');
+    });
+
+    // Form Submit (Add + Edit)
+    $('#upsForm').on('submit', function (e) {
+        e.preventDefault();
+        const id       = $('#ups_id').val();
+        const isEdit   = !!id;
+        const url      = isEdit ? `/api/ups/manage/devices/${id}` : '/api/ups/manage/devices';
+        const method   = isEdit ? 'PUT' : 'POST';
+        const formData = $(this).serialize();
+
+        $('#upsSubmitBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...');
+
+        $.ajax({
+            url, type: method, data: formData,
+            success: function (res) {
+                $('#upsModal').modal('hide');
+                dtTable.ajax.reload(null, false);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: res.success, timer: 2000, showConfirmButton: false,
+                    background: '#0f172a', color: '#e2e8f0', iconColor: '#4ade80' });
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.message || 'Periksa kembali input Anda.';
+                Swal.fire({ icon: 'error', title: 'Gagal!', text: msg,
+                    background: '#0f172a', color: '#e2e8f0', iconColor: '#f87171' });
+            },
+            complete: function () {
+                $('#upsSubmitBtn').prop('disabled', false).html('<i class="fa-solid fa-floppy-disk"></i> Simpan');
+            }
+        });
+    });
+
+    // Edit button (table)
+    $('body').on('click', '.udt-btn-edit', function () {
+        const id = $(this).data('id');
+        $.get(`/api/ups/manage/devices/${id}`, function (data) {
+            resetModal();
+            $('#upsModalTitleText').text('Edit Device');
+            $('#upsSubmitBtn').html('<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan');
+            $('#ups_id').val(data.id);
+            $('#ups_site_id').val(data.site_id);
+            $('#ups_device_name').val(data.device_name);
+            $('#ups_serial_number').val(data.serial_number);
+            $('#ups_ip_address').val(data.ip_address);
+            $('#device_category_type').val(data.ups_category || 'UPS DC').trigger('change');
+            
+            if ((data.ups_category || 'UPS DC').startsWith('UPS')) {
+                $('#ups_room_sensor_ip').val(data.room_sensor_ip);
+                $('#ups_username').val(data.ups_username);
+                $('#ups_password').val(data.ups_password);
+                $('#ups_phase_type').val(data.ups_phase_type);
+                if (data.ups_type && $('#ups_type option[value="' + data.ups_type + '"]').length === 0) {
+                    $('#ups_type').append(new Option(data.ups_type, data.ups_type));
+                }
+                $('#ups_type').val(data.ups_type || 'EATON 9355');
+            }
+            
+            $('#upsModal').modal('show');
+        });
+    });
+
+    // Delete button
+    $('body').on('click', '.udt-btn-delete', function () {
+        const id   = $(this).data('id');
+        const name = $(this).data('name');
+        Swal.fire({
+            title: 'Hapus Device?',
+            html: `Device <strong>${name}</strong> akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#ef4444',
+            background: '#0f172a', color: '#e2e8f0',
+        }).then(res => {
+            if (!res.isConfirmed) return;
+            $.ajax({
+                url: `/api/ups/manage/devices/${id}`, type: 'DELETE',
+                success: function (r) {
+                    dtTable.ajax.reload(null, false);
+                    Swal.fire({ icon: 'success', title: 'Dihapus!', text: r.success, timer: 1800, showConfirmButton: false,
+                        background: '#0f172a', color: '#e2e8f0' });
+                },
+                error: function (xhr) {
+                    Swal.fire({ icon: 'error', title: 'Gagal!', text: xhr.responseJSON?.error || 'Error',
+                        background: '#0f172a', color: '#e2e8f0' });
+                }
+            });
+        });
+    });
+});
+
+function resetModal() {
+    $('#upsForm')[0].reset();
+    $('#ups_id').val('');
+    $('#device_category_type').val('').trigger('change');
+    $('#ups_type').val('EATON 9355');
+}
+</script>
+}
