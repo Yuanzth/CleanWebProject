@@ -7,6 +7,28 @@
     var user = HttpContextAccessor.HttpContext?.User;
     var roleName = user?.FindFirst("RoleName")?.Value ?? "";
     var currentPath = HttpContextAccessor.HttpContext?.Request.Path.Value?.ToLower() ?? "";
+
+    // Deteksi Subsystem Aktif: "bts" | "ups" | "tracking"
+    string activeSubsystem = "bts";
+    if (currentPath.StartsWith("/ups"))
+    {
+        activeSubsystem = "ups";
+    }
+    else if (currentPath.StartsWith("/tracking"))
+    {
+        activeSubsystem = "tracking";
+    }
+    else if (currentPath.StartsWith("/bts"))
+    {
+        activeSubsystem = "bts";
+    }
+    else
+    {
+        // Fallback untuk route shared / settings berdasarkan hak akses role
+        if (RoleHelper.CanAccessModule(roleName, "Bts")) activeSubsystem = "bts";
+        else if (RoleHelper.CanAccessModule(roleName, "Ups")) activeSubsystem = "ups";
+        else if (RoleHelper.CanAccessModule(roleName, "Tracking")) activeSubsystem = "tracking";
+    }
 }
 
 <!DOCTYPE html>
@@ -196,6 +218,226 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* ========== LOGO BADGE ========== */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.35);
+            flex-shrink: 0;
+        }
+
+        /* ========== SUB-SYSTEM SWITCHER STYLES ========== */
+        .subsystem-selector-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-left: 12px;
+            margin-right: 16px;
+        }
+
+        .subsystem-selector-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+        }
+
+        .subsystem-selector-btn:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .subsystem-selector-btn:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+        }
+
+        .subsystem-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .subsystem-dot.bts { background-color: #38bdf8; color: #38bdf8; }
+        .subsystem-dot.ups { background-color: #f59e0b; color: #f59e0b; }
+        .subsystem-dot.tracking { background-color: #10b981; color: #10b981; }
+
+        .subsystem-dropdown-menu {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: calc(100% + 8px);
+            min-width: 300px;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+            padding: 8px;
+            z-index: 1050;
+            animation: subsystemDropdownFadeIn 0.2s ease-out;
+        }
+
+        .subsystem-dropdown-menu.show {
+            display: block;
+        }
+
+        @@keyframes subsystemDropdownFadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .subsystem-dropdown-header {
+            padding: 8px 12px 6px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 4px;
+        }
+
+        .subsystem-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #e2e8f0;
+            text-decoration: none;
+            transition: all 0.18s ease;
+            position: relative;
+        }
+
+        .subsystem-option:hover {
+            background: rgba(51, 65, 85, 0.6);
+            color: #ffffff;
+        }
+
+        .subsystem-option.active {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #ffffff;
+        }
+
+        .subsystem-opt-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .subsystem-opt-icon.bts {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .subsystem-opt-icon.ups {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .subsystem-opt-icon.tracking {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .subsystem-opt-text {
+            flex-grow: 1;
+        }
+
+        .subsystem-opt-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: inherit;
+        }
+
+        .subsystem-opt-desc {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+
+        .subsystem-option.active .subsystem-opt-title {
+            color: #38bdf8;
+        }
+
+        .subsystem-check {
+            font-size: 0.8rem;
+            color: #38bdf8;
+            margin-left: auto;
+        }
+
+        /* Light theme overrides */
+        .theme-light .subsystem-selector-btn {
+            background: rgba(241, 245, 249, 0.9);
+            border-color: rgba(15, 23, 42, 0.12);
+            color: #0f172a;
+        }
+        .theme-light .subsystem-selector-btn:hover {
+            background: #ffffff;
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .theme-light .subsystem-dropdown-menu {
+            background: #ffffff;
+            border-color: #e2e8f0;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
+        }
+        .theme-light .subsystem-dropdown-header {
+            color: #64748b;
+            border-bottom-color: #f1f5f9;
+        }
+        .theme-light .subsystem-option {
+            color: #334155;
+        }
+        .theme-light .subsystem-option:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        .theme-light .subsystem-option.active {
+            background: rgba(37, 99, 235, 0.08);
+            border-color: rgba(37, 99, 235, 0.25);
+            color: #1d4ed8;
+        }
+        .theme-light .subsystem-opt-desc {
+            color: #64748b;
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -204,39 +446,90 @@
 
     <header class="main-header @(currentPath.StartsWith("/tracking", StringComparison.OrdinalIgnoreCase) ? "header-tracking" : (currentPath.StartsWith("/ups", StringComparison.OrdinalIgnoreCase) ? "header-ups" : ""))">
         <div class="logo-container">
-            <img class="logo-icon" src="~/assets/img/logo-infrahub.png" alt="Logo InfraHub">
+            <div class="logo-icon-badge"><i class="fa-solid fa-cubes-stacked"></i></div>
             <div class="logo-text">InfraHub-BMS</div>
         </div>
 
+        <!-- SUB-SYSTEM SWITCHER -->
+        <div class="subsystem-selector-wrapper">
+            <button class="subsystem-selector-btn" id="subsystemSwitcherBtn" type="button" aria-haspopup="true" aria-expanded="false">
+                <span class="subsystem-dot @activeSubsystem"></span>
+                <span class="subsystem-label">
+                    @if(activeSubsystem == "bts") {
+                        <i class="fa-solid fa-tower-broadcast" style="margin-right: 4px;"></i> <span>BTS Monitoring</span>
+                    } else if(activeSubsystem == "ups") {
+                        <i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> <span>DC Infrastructure</span>
+                    } else if(activeSubsystem == "tracking") {
+                        <i class="fa-solid fa-satellite-dish" style="margin-right: 4px;"></i> <span>LTE Quality &amp; Tracking</span>
+                    }
+                </span>
+                <i class="fa-solid fa-chevron-down" style="font-size: 0.72rem; margin-left: 4px; opacity: 0.7;"></i>
+            </button>
+
+            <div class="subsystem-dropdown-menu" id="subsystemDropdownMenu">
+                <div class="subsystem-dropdown-header">Sub-Sistem Monitoring</div>
+                
+                @if(RoleHelper.CanAccessModule(roleName, "Bts"))
+                {
+                    <a href="/Bts/Dashboard" class="subsystem-option @(activeSubsystem == "bts" ? "active" : "")">
+                        <div class="subsystem-opt-icon bts"><i class="fa-solid fa-tower-broadcast"></i></div>
+                        <div class="subsystem-opt-text">
+                            <div class="subsystem-opt-title">BTS Monitoring</div>
+                            <div class="subsystem-opt-desc">Tower, repeater, dan status BTS</div>
+                        </div>
+                        @if(activeSubsystem == "bts") { <i class="fa-solid fa-check subsystem-check"></i> }
+                    </a>
+                }
+
+                @if(RoleHelper.CanAccessModule(roleName, "Ups"))
+                {
+                    <a href="/Ups/Dashboard" class="subsystem-option @(activeSubsystem == "ups" ? "active" : "")">
+                        <div class="subsystem-opt-icon ups"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="subsystem-opt-text">
+                            <div class="subsystem-opt-title">DC Infrastructure</div>
+                            <div class="subsystem-opt-desc">UPS, PAC, sensor suhu &amp; CCTV</div>
+                        </div>
+                        @if(activeSubsystem == "ups") { <i class="fa-solid fa-check subsystem-check"></i> }
+                    </a>
+                }
+
+                @if(RoleHelper.CanAccessModule(roleName, "Tracking"))
+                {
+                    <a href="/Tracking/Live" class="subsystem-option @(activeSubsystem == "tracking" ? "active" : "")">
+                        <div class="subsystem-opt-icon tracking"><i class="fa-solid fa-satellite-dish"></i></div>
+                        <div class="subsystem-opt-text">
+                            <div class="subsystem-opt-title">LTE Quality &amp; Tracking</div>
+                            <div class="subsystem-opt-desc">Armada bergerak &amp; kualitas sinyal LTE</div>
+                        </div>
+                        @if(activeSubsystem == "tracking") { <i class="fa-solid fa-check subsystem-check"></i> }
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- CONTEXTUAL NAV MENU (Hanya menampilkan menu subsystem yang aktif) -->
         <div class="nav-menu">
-            @if(RoleHelper.CanAccessModule(roleName, "Bts"))
+            @if(activeSubsystem == "bts" && RoleHelper.CanAccessModule(roleName, "Bts"))
             {
                 <a href="/Bts/Monitoring" class="nav-item @(currentPath.StartsWith("/bts/monitoring") ? "active" : "")">
                     <div class="nav-text nav-icon">
                         <i class="fa-solid fa-chart-line" style="margin-right: 8px;"></i>Monitoring
                     </div>
                 </a>
-            }
 
-            @if(RoleHelper.CanAccessModule(roleName, "Bts"))
-            {
                 <a href="/Bts/Dashboard" class="nav-item @(currentPath.StartsWith("/bts/dashboard") ? "active" : "")">
                     <div class="nav-text nav-icon">
                         <i class="fa-solid fa-chart-bar" style="margin-right: 8px;"></i>Dashboard
                     </div>
                 </a>
-            }
 
-            @if(RoleHelper.CanAccessModule(roleName, "Bts"))
-            {
                 <a href="/Bts/Report" class="nav-item @(currentPath.StartsWith("/bts/report") ? "active" : "")">
                     <div class="nav-text nav-icon">
-                        <i class="fa-solid fa-file-invoice" style="margin-right: 8px;"></i>Report & Analytics
+                        <i class="fa-solid fa-file-invoice" style="margin-right: 8px;"></i>Report &amp; Analytics
                     </div>
                 </a>
             }
-
-            @if(RoleHelper.CanAccessModule(roleName, "Ups"))
+            else if(activeSubsystem == "ups" && RoleHelper.CanAccessModule(roleName, "Ups"))
             {
                 <a href="/Ups/Monitoring" class="nav-item @(currentPath.StartsWith("/ups/monitoring") ? "active" : "")">
                     <div class="nav-text nav-icon">
@@ -273,6 +566,7 @@
                         </a>
                     </div>
                 </div>
+
                 <a href="/Ups/Acknowledge" class="nav-item @(currentPath.StartsWith("/ups/acknowledge") ? "active" : "")">
                     <div class="nav-text nav-icon">
                         <i class="fa-solid fa-clipboard-check" style="margin-right: 8px;"></i>Verifikasi Acknowledge
@@ -286,8 +580,7 @@
                     </div>
                 </a>
             }
-
-            @if(RoleHelper.CanAccessModule(roleName, "Tracking"))
+            else if(activeSubsystem == "tracking" && RoleHelper.CanAccessModule(roleName, "Tracking"))
             {
                 <a href="/Tracking/Live" class="nav-item @(currentPath.Equals("/tracking/live", StringComparison.OrdinalIgnoreCase) || currentPath.Equals("/tracking", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
                     <div class="nav-text nav-icon">
@@ -311,7 +604,7 @@
 
                     <div id="trackingManageDropdown" class="manage-dropdown-content" style="display: none; min-width: 220px;">
                         <a href="/Tracking/Manage/Sites" class="manage-dropdown-item">
-                            <i class="fa-solid fa-map-location-dot" style="width:24px;"></i> Sites & Boundaries
+                            <i class="fa-solid fa-map-location-dot" style="width:24px;"></i> Sites &amp; Boundaries
                         </a>
                         <a href="/Tracking/Manage/Devices" class="manage-dropdown-item">
                             <i class="fa-solid fa-satellite-dish" style="width:24px;"></i> Devices
@@ -320,35 +613,26 @@
                 </div>
             }
 
-            @if(RoleHelper.CanAccessModule(roleName, "Reports"))
-            {
-                <a href="/Reports" class="nav-item @(currentPath.StartsWith("/reports") ? "active" : "")">
-                    <div class="nav-text nav-icon">
-                        <i class="fa-solid fa-chart-pie" style="margin-right: 8px;"></i>Reports & Analytics
-                    </div>
-                </a>
-            }
-
             @if(roleName == "Administrator")
             {
                 <div style="position: relative; display: inline-block;">
                     <a href="#" class="nav-item @(currentPath.StartsWith("/shared/manage") ? "active" : "")" id="manageDropdownBtn"
                         style="cursor: pointer; display: flex; align-items: center;">
                         <div class="nav-text nav-icon">
-                            <i class="fa-solid fa-gears" style="margin-right: 8px;"></i>Manage
+                            <i class="fa-solid fa-gears" style="margin-right: 8px;"></i>Admin Manage
                             <i class="fa-solid fa-caret-down" style="margin-left: 4px;"></i>
                         </div>
                     </a>
 
                     <div id="manageDropdownContent" class="manage-dropdown-content" style="display: none;">
                         <a href="/Shared/ManageAreaSite" class="manage-dropdown-item">
-                            <i class="fa-solid fa-map-location-dot" style="width: 24px;"></i> Area & Site
+                            <i class="fa-solid fa-map-location-dot" style="width: 24px;"></i> Area &amp; Site
                         </a>
                         <a href="/Shared/ManageDevices" class="manage-dropdown-item">
                             <i class="fa-solid fa-tower-cell" style="width: 24px;"></i> Device / Asset
                         </a>
                         <a href="/Shared/ManageUserRole" class="manage-dropdown-item">
-                            <i class="fa-solid fa-users-gear" style="width: 24px;"></i> Users & Assignments
+                            <i class="fa-solid fa-users-gear" style="width: 24px;"></i> Users &amp; Assignments
                         </a>
                     </div>
                 </div>
@@ -454,6 +738,31 @@
                 });
             }
 
+            // ========== SUB-SYSTEM SWITCHER DROPDOWN ==========
+            const subsystemBtn = document.getElementById('subsystemSwitcherBtn');
+            const subsystemMenu = document.getElementById('subsystemDropdownMenu');
+
+            if (subsystemBtn && subsystemMenu) {
+                subsystemBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpen = subsystemMenu.classList.toggle('show');
+                    subsystemBtn.setAttribute('aria-expanded', isOpen);
+
+                    // Tutup dropdown lain
+                    if (manageContent) manageContent.style.display = 'none';
+                    if (dcLogContent) dcLogContent.style.display = 'none';
+                    const profileMenu = document.getElementById('dropdownMenu');
+                    if (profileMenu && profileMenu.classList.contains('show')) {
+                        profileMenu.classList.remove('show');
+                    }
+                });
+
+                subsystemMenu.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+
             // ========== DROPDOWN MANAGE ==========
             const manageBtn = document.getElementById('manageDropdownBtn');
             const manageContent = document.getElementById('manageDropdownContent');
@@ -531,7 +840,13 @@
                 const avatarTrigger = document.getElementById('avatarTrigger');
                 const manageContent = document.getElementById('manageDropdownContent');
                 const dcLogContent = document.getElementById('dcLogDropdownContent');
+                const subsystemMenu = document.getElementById('subsystemDropdownMenu');
+                const subsystemBtn = document.getElementById('subsystemSwitcherBtn');
 
+                if (subsystemMenu && subsystemMenu.classList.contains('show')) {
+                    subsystemMenu.classList.remove('show');
+                    if (subsystemBtn) subsystemBtn.setAttribute('aria-expanded', 'false');
+                }
                 if (dropdownMenu && dropdownMenu.classList.contains('show')) {
                     dropdownMenu.classList.remove('show');
                     avatarTrigger.setAttribute('aria-expanded', 'false');
@@ -553,6 +868,13 @@
             const manageContent = document.getElementById('manageDropdownContent');
             const dcLogBtn = document.getElementById('dcLogDropdownBtn');
             const dcLogContent = document.getElementById('dcLogDropdownContent');
+            const subsystemBtn = document.getElementById('subsystemSwitcherBtn');
+            const subsystemMenu = document.getElementById('subsystemDropdownMenu');
+
+            if (subsystemMenu && !subsystemBtn?.contains(e.target) && !subsystemMenu.contains(e.target)) {
+                subsystemMenu.classList.remove('show');
+                if (subsystemBtn) subsystemBtn.setAttribute('aria-expanded', 'false');
+            }
 
             if (dropdownMenu && !avatarTrigger.contains(e.target) && !dropdownMenu.contains(e.target)) {
                 dropdownMenu.classList.remove('show');
