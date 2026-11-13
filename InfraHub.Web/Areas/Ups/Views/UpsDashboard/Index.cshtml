@@ -1377,7 +1377,7 @@
             
             devices.forEach(dev => {
                 let st = (dev.ups_status || "").toLowerCase();
-                let isOffline = st === 'offline' || st === 'connection error' || st === 'auth error';
+                let isOffline = dev.is_offline === true || st === 'offline' || st === 'connection error' || st === 'auth error' || st === 'system error' || st === 'down' || !dev.latest_sample_at;
                 
                 if (!isOffline) {
                     devicesOnlineCount++;
@@ -1491,7 +1491,7 @@
                 let devHasWarning = [dev._vInClassA, dev._vInClassB, dev._vInClassC, dev._vOutClass, dev._freqClass, dev._loadClass, dev._tempClass, dev._battClass].includes('is-warning');
                 
                 let st = (dev.ups_status || "").toLowerCase();
-                let isOffline = st === 'offline' || st === 'connection error' || st === 'auth error';
+                let isOffline = dev.is_offline === true || st === 'offline' || st === 'connection error' || st === 'auth error' || st === 'system error' || st === 'down' || !dev.latest_sample_at;
                 
                 dev._badgeClass = 'normal';
                 dev._badgeText = 'Normal';

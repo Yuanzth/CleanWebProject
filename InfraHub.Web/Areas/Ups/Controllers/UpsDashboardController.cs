@@ -143,7 +143,7 @@ WITH ups_devices AS (
         d.ip_address,
         d.ups_type,
         d.ups_phase_type,
-        COALESCE(d.ups_category, 'UPS DC') AS ups_category,
+        COALESCE(d.ups_category, d.ups_type, 'UPS DC') AS ups_category,
         COALESCE(z.site_id, d.site_id) AS site_id,
         at.type_name AS asset_type_name
     FROM tbl_m_devices d

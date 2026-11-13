@@ -309,4 +309,9 @@ INSERT INTO tbl_m_devices (id, site_id, asset_type_id, serial_number, imei, phon
 INSERT INTO tbl_s_unregistered_devices (id, serial_number, last_seen, created_at, updated_at) VALUES ('D5E6EA36-4914-5311-AE85-3EC5EDD14444', N'UNREG-MODEM-9001', DATEADD(MINUTE, -5, GETDATE()), GETDATE(), GETDATE());
 INSERT INTO tbl_s_unregistered_devices (id, serial_number, last_seen, created_at, updated_at) VALUES ('BF923DFB-F035-5547-9DC1-C13973DA0B11', N'UNREG-MODEM-9002', DATEADD(MINUTE, -10, GETDATE()), GETDATE(), GETDATE());
 INSERT INTO tbl_s_unregistered_devices (id, serial_number, last_seen, created_at, updated_at) VALUES ('18417D8E-EF7B-5B39-B083-C11DEAB9D706', N'UNREG-MODEM-9003', DATEADD(MINUTE, -15, GETDATE()), GETDATE(), GETDATE());
+
+-- 7. Normalize ups_category for PAC, SENSOR, and CCTV
+UPDATE tbl_m_devices
+SET ups_category = ups_type
+WHERE ups_category IS NULL AND ups_type IN ('PAC RUANGAN DC', 'SENSOR SUHU RUANGAN', 'CCTV AVAILBILITY');
 GO

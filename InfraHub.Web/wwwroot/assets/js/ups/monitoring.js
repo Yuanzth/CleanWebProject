@@ -309,9 +309,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function isTimestampStale(timestamp, thresholdMs) {
-        if (!timestamp) return false;
+        if (!timestamp) return true;
         var sampleDate = new Date(timestamp);
-        if (isNaN(sampleDate.getTime())) return false;
+        if (isNaN(sampleDate.getTime())) return true;
         thresholdMs = thresholdMs || (15 * 60 * 1000);
         var diff = new Date().getTime() - sampleDate.getTime();
         if (diff > thresholdMs) {
@@ -340,6 +340,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isTimestampStale(data.device_time, 15 * 60 * 1000)) {
                 isOffline = true;
             }
+        } else {
+            isOffline = true;
         }
 
         if (isOffline) {
@@ -891,8 +893,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 renderUPSData(data);
             } else {
                 console.warn('No UPS data available. Device may not have recent logs.');
-                // Still render with mock data for UI visibility, but log the issue
-                renderUPSData(mockDbData);
+                var offlineData = normalizeUpsData({
+                    ups_status: 'Offline',
+                    is_active: 0,
+                    device_time: null,
+                    ip_address: '-'
+                });
+                renderUPSData(offlineData);
             }
         });
 

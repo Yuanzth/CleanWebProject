@@ -26,20 +26,30 @@ if /I "%AUTH%"=="Y" (
 )
 
 echo.
-echo [1/4] Membuat database db_infrahub dan db_itassettrack...
+echo [1/5] Membuat database db_infrahub dan db_itassettrack...
 sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -i "database\init-scripts\01_init_databases.sql"
 
 echo.
-echo [2/4] Me-restore skema dan master data db_itassettrack...
-sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_itassettrack -i "database\init-scripts\02_restore_itassettrack.sql"
+echo [2/5] Me-restore skema dan master data db_itassettrack...
+if exist "database\init-scripts\02_restore_itassettrack.sql" (
+    sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_itassettrack -i "database\init-scripts\02_restore_itassettrack.sql"
+) else (
+    sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_itassettrack -i "database\init-scripts\02_restore_eendso.sql"
+)
 
 echo.
-echo [3/4] Me-restore skema dan master data db_infrahub...
+echo [3/5] Me-restore skema dan master data db_infrahub...
 sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_infrahub -i "database\init-scripts\03_restore_monitoring_master.sql"
 
 echo.
-echo [4/4] Membuat Stored Procedures monitoring hub...
+echo [4/5] Membuat Stored Procedures monitoring hub...
 sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_infrahub -i "database\init-scripts\04_create_procedures_monitoring.sql"
+
+echo.
+echo [5/5] Inisialisasi seed data master dan update akun...
+if exist "database\init-scripts\05_clean_master_and_dummy_seed.sql" (
+    sqlcmd -S "%SERVER%" %SQLCMD_AUTH% -d db_infrahub -i "database\init-scripts\05_clean_master_and_dummy_seed.sql"
+)
 
 echo.
 echo ========================================================
